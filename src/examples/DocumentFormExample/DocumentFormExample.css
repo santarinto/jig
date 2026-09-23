@@ -1,0 +1,2 @@
+.ds-example-doc { display: flex; flex-direction: column; gap: var(--ds-space-5); max-width: 720px; }
+.ds-example-doc__table { border-radius: var(--ds-radius); overflow: hidden; }

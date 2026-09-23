@@ -1,0 +1,4 @@
+/* У `TextField` нет приватных правил: обёртка `.ds-field*` и геометрия
+   `.ds-input` вынесены в общий `src/styles/field-frame.css`, поверхность и
+   состояния `.ds-input` — в `src/styles/field-surface.css`. Лист оставлен как
+   маркер и чтобы `TextField` оставался в периметре `bem-modifiers`. */

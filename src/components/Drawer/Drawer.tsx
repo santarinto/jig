@@ -1,0 +1,76 @@
+import { useEffect, useId, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { useFocusTrap } from '../../internal/useFocusTrap.js'
+import { useOverlayIsolation } from '../../internal/useOverlayIsolation.js'
+import { useDsText } from '../../dictionary/DsText.js'
+import './Drawer.css'
+
+export interface DrawerProps {
+  open: boolean
+  onClose: () => void
+  side?: 'left' | 'right' | 'bottom'
+  title?: string
+  footer?: React.ReactNode
+  children: React.ReactNode
+  /** Куда монтировать портал оверлея. Default document.body. С кастомным контейнером изоляция фона не применяется. */
+  container?: HTMLElement
+  /** Закрывать по клику по подложке. Default true. false — случайный клик мимо не стирает форму. */
+  closeOnBackdrop?: boolean
+  /** Закрывать по Escape. Default true. */
+  closeOnEscape?: boolean
+}
+
+export function Drawer({
+  open,
+  onClose,
+  side = 'right',
+  title,
+  footer,
+  children,
+  container,
+  closeOnBackdrop = true,
+  closeOnEscape = true,
+}: DrawerProps) {
+  const t = useDsText()
+  const panelRef = useRef<HTMLDivElement>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const titleId = useId()
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
+  useFocusTrap({ enabled: open, ref: panelRef })
+  useOverlayIsolation({ enabled: open, ref: overlayRef, container })
+
+  useEffect(() => {
+    if (!open || !closeOnEscape) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCloseRef.current() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, closeOnEscape])
+
+  if (!open) return null
+
+  return createPortal(
+    <div className="ds-drawer__overlay" ref={overlayRef} onClick={closeOnBackdrop ? onClose : undefined}>
+      <div
+        className={`ds-drawer ds-drawer--${side}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        ref={panelRef}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {title && (
+          <div className="ds-drawer__header">
+            <span className="ds-drawer__title" id={titleId}>{title}</span>
+            <button type="button" className="ds-drawer__close" aria-label={t['drawer.close']} onClick={onClose}>×</button>
+          </div>
+        )}
+        <div className="ds-drawer__body">{children}</div>
+        {footer && <div className="ds-drawer__footer">{footer}</div>}
+      </div>
+    </div>,
+    container ?? document.body,
+  )
+}

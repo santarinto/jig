@@ -1,0 +1,58 @@
+/* Base skeleton block: dedicated skeleton tokens keep the base/highlight
+   contrast correct (and visible) in both light and dark themes. */
+.ds-skel {
+  display: block;
+  background: var(--ds-skel-base);
+  border-radius: var(--ds-radius);
+}
+.ds-skel-lines { display: flex; flex-direction: column; gap: var(--ds-space-3); }
+
+/* Variants */
+.ds-skel--text { height: 0.72em; width: 100%; border-radius: var(--ds-radius-sm); }
+.ds-skel--rect { width: 100%; height: var(--ds-space-6); }
+.ds-skel--circle { border-radius: 50%; }
+
+/* --- sweep: a bright band travels left→right (narrow band = pronounced sheen) --- */
+.ds-skel--sweep {
+  background-image: linear-gradient(
+    90deg,
+    var(--ds-skel-base) 38%,
+    var(--ds-skel-highlight) 50%,
+    var(--ds-skel-base) 62%
+  );
+  background-size: 220% 100%;
+  animation: ds-skel-sweep 1.15s ease-in-out infinite;
+}
+@keyframes ds-skel-sweep {
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
+}
+
+/* --- pulse: opacity fade in/out --- */
+.ds-skel--pulse { animation: ds-skel-pulse 1.4s ease-in-out infinite; }
+@keyframes ds-skel-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* --- retro: square corners, deep sunken 3D bevel, blocky marching band --- */
+.ds-skel--retro {
+  border-radius: 0;
+  background-image: linear-gradient(
+    90deg,
+    var(--ds-skel-base) 40%,
+    var(--ds-skel-highlight) 50%,
+    var(--ds-skel-base) 60%
+  );
+  background-size: 300% 100%;
+  box-shadow:
+    inset 2px 2px 0 var(--ds-text-muted),
+    inset -2px -2px 0 var(--ds-surface),
+    inset 0 0 0 1px var(--ds-border-strong);
+  animation: ds-skel-sweep 1s steps(9) infinite;
+}
+.ds-skel--retro.ds-skel--circle { border-radius: 50%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-skel--sweep, .ds-skel--pulse, .ds-skel--retro { animation: none; }
+}

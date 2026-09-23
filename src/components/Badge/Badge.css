@@ -1,0 +1,84 @@
+.ds-badge {
+  display: inline-flex; align-items: center; gap: var(--ds-space-2);
+  height: calc(1.125rem * var(--ds-ui-scale)); padding: 0 var(--ds-space-3);
+  font-size: var(--ds-fs-sm); font-weight: 500; line-height: 1;
+  border-radius: var(--ds-radius-sm); border: 1px solid transparent; white-space: nowrap;
+}
+.ds-badge__dot { width: calc(0.375rem * var(--ds-ui-scale)); height: calc(0.375rem * var(--ds-ui-scale)); border-radius: 50%; background: currentColor; }
+.ds-badge--neutral { background: var(--ds-surface-subtle); color: var(--ds-text-secondary); border-color: var(--ds-border); }
+.ds-badge--accent  { background: var(--ds-table-selected); color: var(--ds-accent-active); }
+[data-theme="dark"] .ds-badge--accent { color: var(--ds-accent); }
+/* Tint from the tone, label from the tone's -fg pair — see tokens.css. */
+.ds-badge--success { background: color-mix(in srgb, var(--ds-success) 12%, transparent); color: var(--ds-success-fg); }
+.ds-badge--warning { background: color-mix(in srgb, var(--ds-warning) 12%, transparent); color: var(--ds-warning-fg); }
+.ds-badge--error   { background: color-mix(in srgb, var(--ds-error) 12%, transparent); color: var(--ds-error-fg); }
+.ds-badge--info    { background: color-mix(in srgb, var(--ds-info) 12%, transparent); color: var(--ds-info-fg); }
+
+/* --- brand: цвет ИЗ ДАННЫХ потребителя ------------------------------------
+   Шов — переменная `--ds-badge-brand`, а не свойство: потребитель отдаёт
+   ЗНАЧЕНИЕ (свободный хекс из его базы), а решение, что им красится, остаётся
+   здесь. Из одного хекса выводятся ДВА цвета, и оба нормализованы:
+
+   подложка — светлота 0.6, потому что сырой тинт произвольного хекса бывает
+   НЕВИДИМ: `color-mix(#ffffff 12%, white)` даёт ΔE 0.00 от поверхности, а
+   `#111827` на тёмной — 1.79 при пороге заметности ≈2.3 (тот же порог, что у
+   зебры таблицы). После нормализации ΔE не опускается ниже 4.5 на ТРЁХ
+   поверхностях, где бейдж живёт (`--ds-surface`, `--ds-surface-subtle`,
+   `--ds-table-zebra`), в обеих темах; худшее — 4.58 на тёмной
+   `--ds-surface-subtle`.
+
+   До DS-101 здесь стояло «не ниже 5.2 ни на одном из 228 хексов». 5.2 —
+   это ровно `#ffffff` на СВЕТЛОЙ `--ds-surface`, то есть на одной поверхности:
+   величина мерилась честно, а площадь была 228 × 1, и множество в утверждении
+   называлось не то. Потребитель померил на своих подложках и принёс 4.89
+   (светлые `--ds-surface-subtle` и `--ds-table-zebra` дают его обе); шесть
+   поверхностей дали 4.58 — ниже, чем нашёл он, и там, куда не смотрел и он.
+   Зебра тут не экзотика: `DataTable` включает её ПО УМОЛЧАНИЮ, то есть половина
+   тегов у потребителя сидит на ней, и никто её не включал;
+
+   метка — светлота `--ds-brand-fg-l`, единственное, что зависит от темы:
+   0.43 на светлой, 0.82 на тёмной. Ровно тот диапазон, в котором сидят
+   рукописные `--ds-*-fg` (0.43–0.48 и 0.74–0.82) — то есть это не новое
+   правило, а то же самое, посчитанное вместо перечисления.
+
+   Хрома срезана по 0.16 — верх диапазона тех же `--ds-*-fg` (`--ds-error-fg`
+   даёт 0.156). Без среза чистый `#00ff00` уходит на ΔE 23–27, вдвое громче
+   штатного тона: тег кричал бы громче статуса. Тон при этом сохраняется —
+   срезается только насыщенность.
+
+   `/ 1` в обоих — не украшение: относительный цвет наследует альфу ИСТОЧНИКА,
+   а из базы законно приезжает восьмизначный хекс. `#c026d380` без этой доли
+   давал бы метку в половину непрозрачности, то есть 2.6:1 вместо обещанных
+   5.0, — и замер бы этого не поймал, потому что кормится шестизначными.
+   Альфа потребителя здесь отбрасывается сознательно: прозрачностью подложки
+   распоряжается компонент, потребитель отдаёт цвет.
+
+   Худшее из 12 хексов на шести поверхностях: 5.98:1, на светлой
+   `--ds-table-zebra`, при полу 5.0, который держит
+   `tokens/badgeTintContrast.test.ts` для штатных тонов. Разовый прогон по 228
+   хексам при DS-81 давал 5.78:1 на светлой и 6.45:1 на тёмной — на ОДНОЙ
+   поверхности и без повтора, воспроизвести его нечем; повторяемое число здесь.
+   Измерено в хроме, не выведено: `make measure`, кейс «Badge: цвет из данных».
+
+   Запасного `var(--ds-badge-brand, ...)` здесь НЕТ, и это не забывчивость.
+   Класс и переменную ставит одно условие в `Badge.tsx` — валидный хекс, — то
+   есть класс без переменной не рождается вовсе. Запасное значение на этом
+   месте было бы правилом, которое нельзя ни выполнить, ни проверить; вместо
+   него инвариант, и его стережёт `Badge.test.tsx`.
+
+   `@supports` обязателен, а не вежлив: значение содержит `var()`, поэтому
+   браузер без относительного цвета отбросит объявление не при разборе, а при
+   вычислении, и `color` уйдёт в наследуемый, А НЕ в предыдущее объявление.
+   Внутри блока — то же правило целиком. Запасная ветка красит сырым цветом и
+   альфу источника не снимает: там уже нет средства её снять, и это честнее,
+   чем прикидываться, будто нормализация работает везде. */
+.ds-badge--brand {
+  background: color-mix(in srgb, var(--ds-badge-brand) 12%, transparent);
+  color: var(--ds-text-primary);
+}
+@supports (color: oklch(from red 0.5 min(c, 0.16) h)) {
+  .ds-badge--brand {
+    background: color-mix(in srgb, oklch(from var(--ds-badge-brand) 0.6 min(c, 0.16) h / 1) 12%, transparent);
+    color: oklch(from var(--ds-badge-brand) var(--ds-brand-fg-l) min(c, 0.16) h / 1);
+  }
+}

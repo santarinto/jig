@@ -1,0 +1,84 @@
+.ds-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--ds-space-3);
+  height: var(--ds-h-default); padding: 0 var(--ds-space-5);
+  font-family: var(--ds-font-ui); font-size: var(--ds-fs-base); font-weight: 500; line-height: 1;
+  border: 1px solid transparent; border-radius: var(--ds-radius);
+  cursor: pointer; user-select: none; white-space: nowrap;
+  /* `as="a"` рендерит ссылку теми же классами: подчёркивание и синий цвет по
+     умолчанию ломают вид кнопки. Снимаем здесь, а не в отдельном селекторе:
+     ссылка — это та же кнопка, только с `href`, и отдельный CSS-блок породил
+     бы вторую поверхность, которую надо синхронизировать с первой. */
+  text-decoration: none; color: inherit;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.ds-btn:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+/* `:disabled` для `<button>`, `[aria-disabled="true"]` для `<a>` (у неё нет
+   нативного disabled). `pointer-events: none` гасит мышь на заблокированной
+   ссылке — без этого ховеры `:hover:not(:disabled)` (для `<a>` всегда true)
+   оставили бы её визуально активной. */
+.ds-btn:disabled, .ds-btn[aria-disabled="true"] { cursor: default; opacity: .55; pointer-events: none; }
+.ds-btn--sm { height: var(--ds-h-compact); padding: 0 var(--ds-space-4); font-size: var(--ds-fs-sm); }
+.ds-btn--lg { height: var(--ds-h-comfortable); padding: 0 var(--ds-space-6); font-size: var(--ds-fs-lg); }
+.ds-btn--icon { width: var(--ds-h-default); padding: 0; }
+.ds-btn--icon.ds-btn--sm { width: var(--ds-h-compact); }
+.ds-btn--icon.ds-btn--lg { width: var(--ds-h-comfortable); }
+
+.ds-btn--primary { background: var(--ds-accent); color: var(--ds-text-on-accent); }
+.ds-btn--primary:hover:not(:disabled) { background: var(--ds-accent-hover); }
+.ds-btn--primary:active:not(:disabled) { background: var(--ds-accent-active); }
+
+/* НАЖИМАЕМОЕ ОТЛИЧАЕТСЯ ОТ ЗАПОЛНЯЕМОГО ПОДЛОЖКОЙ (DS-269). Рамка у
+   secondary и у поля одна — `--ds-control-border`, порог 3 : 1 взят на 267 и
+   опускать его у кнопки нельзя, она тоже контрол. Пока заливка тоже была
+   общей (`--ds-surface`), кнопку от пустого поля отличали только выключка и
+   начертание: в ряду «поле, поле, кнопка» она читалась ещё одним полем.
+   Поле — лист, «сюда пишут», `--ds-surface`; кнопка — ступень `--ds-surface-subtle`
+   (ΔE 2.77 светлая, 3.78 тёмная при пороге заметности ≈2.3), язык учётной системы.
+   Наведение — `--ds-table-hover`, системный токен «под курсором»: акцент рамки
+   на нём объявлен в `colourPairs.ts`, а на `--ds-section-bar` — нет. */
+.ds-btn--secondary { background: var(--ds-surface-subtle); color: var(--ds-text-primary); border-color: var(--ds-control-border); }
+.ds-btn--secondary:hover:not(:disabled) { background: var(--ds-table-hover); border-color: var(--ds-accent); }
+
+.ds-btn--ghost { background: transparent; color: var(--ds-text-primary); }
+.ds-btn--ghost:hover:not(:disabled) { background: var(--ds-surface-subtle); }
+
+/* Тон error на прозрачных вариантах: красный текст/иконка, заливка та же,
+   что у обычного ghost/secondary. Цвет держится и на :hover — иначе системный
+   ховер, красящий только фон, оставил бы текст, но потребитель раньше дублировал
+   правило именно из страха, что перекрасит. Здесь :hover явно повторяет цвет,
+   чтобы вопрос был закрыт в системе, а не в вёрстке потребителя. */
+.ds-btn--tone-error.ds-btn--ghost,
+.ds-btn--tone-error.ds-btn--secondary { color: var(--ds-error-fg); }
+.ds-btn--tone-error.ds-btn--ghost:hover:not(:disabled),
+.ds-btn--tone-error.ds-btn--secondary:hover:not(:disabled) { color: var(--ds-error-fg); }
+
+.ds-btn--danger { background: var(--ds-error); color: var(--ds-text-on-solid); }
+[data-theme="dark"] .ds-btn--danger { color: var(--ds-text-on-accent); }
+.ds-btn--danger:hover:not(:disabled) { filter: brightness(0.94); }
+
+/* Тот же приём, что у danger, и по той же причине: в тёмной теме заливка
+   светлая, и белый текст на ней даёт 2.78 — читать нечем. Со сменой на
+   --ds-text-on-accent становится 6.68. */
+.ds-btn--success { background: var(--ds-success); color: var(--ds-text-on-solid); }
+[data-theme="dark"] .ds-btn--success { color: var(--ds-text-on-accent); }
+.ds-btn--success:hover:not(:disabled) { filter: brightness(0.94); }
+
+/* Own layout so consumer resets (Tailwind preflight: svg { display: block }) can't stack icon children. */
+.ds-btn__label { display: inline-flex; align-items: center; gap: var(--ds-space-3); }
+.ds-btn.is-loading .ds-btn__label { opacity: .7; }
+
+/* Значок в подписи: icon и iconEnd (DS-360). Кнопка сама рисует его через
+   `<Icon className="ds-btn__icon">` (гейт `icon-contract`) — класс садится НА
+   ТОТ ЖЕ узел, что и `.ds-icon`, а не на обёртку сверху: `.ds-icon` держит
+   размер и нормализацию чужого SVG (`--ds-size-icon`), здесь — только
+   выравнивание внутри `.ds-btn__label`. Перенесено из `.ds-cmdbar__icon` /
+   `.ds-appbar__icon`: оба решали одно и то же — `display: inline-flex;
+   align-items: center` — каждое на своей стороне, хотя иконка ЛЮБОЙ кнопки
+   всегда живёт в `.ds-btn__label`, у которого уже есть gap. */
+.ds-btn__icon { display: inline-flex; align-items: center; }
+.ds-btn__spinner {
+  width: calc(0.75rem * var(--ds-ui-scale)); height: calc(0.75rem * var(--ds-ui-scale)); border-radius: 50%;
+  border: 2px solid currentColor; border-top-color: transparent;
+  animation: ds-spin .6s linear infinite;
+}
+@keyframes ds-spin { to { transform: rotate(360deg); } }

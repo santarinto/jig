@@ -1,0 +1,41 @@
+.ds-modal__overlay {
+  position: fixed; inset: 0; z-index: var(--ds-z-modal);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ds-overlay); padding: var(--ds-space-6);
+}
+/* Пол ширины УСТУПАЕТ вьюпорту (DS-167).
+   Виновата была `min-width`, а не `max-width`: потолок лишь не даёт расти,
+   а пол ОТКАЗЫВАЕТСЯ сжиматься. На кадре 360 при шкале 1.5 `calc(20rem*1.5)`
+   даёт 480 — окно уезжало за оба края (замерено: слева −60, справа 420),
+   начало заголовка срезано на 35px, а крестик закрытия стоял на 371..407,
+   то есть закрыть окно мышью было НЕЛЬЗЯ.
+   Доля — `calc(100vw - 2 * var(--ds-space-6))`, ровно поля самой подложки, а
+   НЕ `100%`. `100%` здесь измеряется точнее (это буквально content-box
+   подложки), но при `width: 100%` пол в процентах не может превысить ширину —
+   то есть `min(20rem*scale, 100%)` не уступает вьюпорту, а МОЛЧА УДАЛЯЕТ пол:
+   объявление остаётся в файле и не значит уже ничего. Полоса прокрутки этой
+   доле не мешает: она ~15px, а поле 32·шкала ≥ 32, и окно в худшем случае
+   заходит в отступ подложки на 7.5px с каждой стороны, не за край экрана.
+   `max-width` зажимать не нужно: при `width: 100%` рост и так связан с
+   подложкой — виноват был пол, потолок и не ломался.
+   Образец в системе — Drawer: `min(calc(22.5rem*scale), 90vw)`. */
+.ds-modal {
+  min-width: min(calc(20rem * var(--ds-ui-scale)), calc(100vw - 2 * var(--ds-space-6))); max-width: calc(35rem * var(--ds-ui-scale)); width: 100%;
+  background: var(--ds-surface); border: 1px solid var(--ds-border-overlay); border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-md); overflow: hidden;
+}
+.ds-modal__header {
+  display: flex; align-items: center; justify-content: space-between;
+  height: var(--ds-h-comfortable); padding: 0 var(--ds-space-4) 0 var(--ds-space-6);
+  background: var(--ds-surface-subtle); border-bottom: 1px solid var(--ds-border);
+}
+.ds-modal__title { font-weight: 500; color: var(--ds-text-primary); }
+/* Пол цели РЯДОМ с масштабируемым размером (DS-207): `calc(1.5rem * scale)`
+   даёт на шкале 1 ровно 24, то есть крестик стоял на полу без запаса, и любая
+   шкала ниже его пробивала — 21.0×21.0 при 0.875. Пара строк, а не `max()`
+   внутри одного свойства: размер живёт в `width`/`height`, пол в `min-*`, и на
+   1.5 побеждает размер — крестик остаётся 36, пол его не зажимает. */
+.ds-modal__close { width: calc(1.5rem * var(--ds-ui-scale)); height: calc(1.5rem * var(--ds-ui-scale)); min-width: var(--ds-target-min); min-height: var(--ds-target-min); background: none; border: none; border-radius: var(--ds-radius-sm); color: var(--ds-text-muted); cursor: pointer; font-size: var(--ds-fs-lg); line-height: 1; }
+.ds-modal__close:hover { background: var(--ds-surface); color: var(--ds-text-primary); }
+.ds-modal__body { padding: var(--ds-space-6); color: var(--ds-text-primary); }
+.ds-modal__footer { display: flex; justify-content: flex-end; gap: var(--ds-space-3); padding: var(--ds-space-4) var(--ds-space-6); border-top: 1px solid var(--ds-border); background: var(--ds-surface-subtle); }

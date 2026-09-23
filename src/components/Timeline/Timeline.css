@@ -1,0 +1,135 @@
+/* Лента событий.
+
+   Рельс решается тремя селекторами по позиции в списке, без вычисления классов
+   в JS. Это возможно потому, что заголовок дня всегда стоит ПЕРЕД своей группой
+   и никогда не замыкает список: значит последний <li> — всегда событие, а
+   первым может быть либо заголовок, либо событие.
+
+   Линия проходит сквозь заголовок дня: хронология непрерывна, разрыв на
+   границе суток читался бы как «здесь началась другая лента». */
+.ds-timeline {
+  --ds-tl-dot: calc(0.5rem * var(--ds-ui-scale));
+  --ds-tl-pad: var(--ds-space-4);
+  --ds-tl-line: calc(var(--ds-fs-base) * 1.35);
+  /* Центр маркера по вертикали = центр ПЕРВОЙ строки заголовка события.
+     Не центр всего блока: у длинного тела маркер уехал бы вниз. */
+  --ds-tl-center: calc(var(--ds-tl-pad) + var(--ds-tl-line) / 2);
+  --ds-tl-rail: calc(var(--ds-tl-dot) / 2);
+
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-base);
+  color: var(--ds-text-primary);
+}
+
+.ds-timeline__item,
+.ds-timeline__day {
+  position: relative;
+  padding-left: var(--ds-space-7);
+}
+
+/* Сегмент рельса на всю высоту строки — и у события, и у заголовка дня.
+   Непрерывность получается сама: сегменты стыкуются без зазора. */
+.ds-timeline__item::before,
+.ds-timeline__day::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--ds-tl-rail);
+  width: 1px;
+  /* --ds-border-strong, а не --ds-border: лента может лежать прямо на
+     --ds-bg-app, а не только на --ds-surface, и там --ds-border даёт отношение
+     1.275 — линия отрисована и почти не видна. Соединительная линия это
+     определяющий признак ленты: без неё остаётся список с точками.
+     Со strong выходит 1.563 в светлой и 1.964 в тёмной. Закреплено замером:
+     рельс обязан быть отличим от подложки, а не просто существовать. */
+  background: var(--ds-border-strong);
+}
+
+/* Над первым маркером рельса нет. Первым в списке стоит либо заголовок дня
+   (тогда его сегмент лишний целиком), либо само событие. */
+.ds-timeline__day:first-child::before { content: none; }
+
+.ds-timeline__item:first-child::before,
+.ds-timeline__day:first-child + .ds-timeline__item::before {
+  top: var(--ds-tl-center);
+}
+
+/* Под последним маркером рельса нет. Заголовок дня список не замыкает. */
+.ds-timeline__item:last-child::before {
+  bottom: calc(100% - var(--ds-tl-center));
+}
+
+.ds-timeline__item {
+  padding-top: var(--ds-tl-pad);
+  padding-bottom: var(--ds-space-5);
+}
+
+.ds-timeline__marker {
+  position: absolute;
+  left: 0;
+  top: calc(var(--ds-tl-center) - var(--ds-tl-dot) / 2);
+  width: var(--ds-tl-dot);
+  height: var(--ds-tl-dot);
+  border-radius: 50%;
+  /* Кольцо цвета поверхности: маркер лежит поверх рельса и должен его
+     перебивать, а не смешиваться с ним. */
+  box-shadow: 0 0 0 2px var(--ds-surface);
+}
+
+.ds-timeline__marker--neutral { background: var(--ds-border-strong); }
+.ds-timeline__marker--accent { background: var(--ds-accent); }
+.ds-timeline__marker--success { background: var(--ds-success); }
+.ds-timeline__marker--warning { background: var(--ds-warning); }
+.ds-timeline__marker--error { background: var(--ds-error); }
+.ds-timeline__marker--info { background: var(--ds-info); }
+
+.ds-timeline__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ds-space-4);
+  line-height: 1.35;
+}
+
+.ds-timeline__kind {
+  font-weight: 600;
+}
+
+.ds-timeline__time {
+  color: var(--ds-text-muted);
+  font-size: var(--ds-fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.ds-timeline__body {
+  margin-top: var(--ds-space-2);
+  color: var(--ds-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.ds-timeline__day {
+  padding-top: var(--ds-space-5);
+  padding-bottom: var(--ds-space-2);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+}
+
+/* Плотный режим: шаг между событиями уменьшается. Проверяется замером —
+   модификатор, существующий классом при бессмысленном селекторе, уехал бы
+   мимо всех остальных гейтов (MetricStrip.dense, 1.6.0). */
+.ds-timeline--dense {
+  --ds-tl-pad: var(--ds-space-2);
+}
+
+.ds-timeline--dense .ds-timeline__item {
+  padding-bottom: var(--ds-space-3);
+}
+
+.ds-timeline--dense .ds-timeline__day {
+  padding-top: var(--ds-space-3);
+}

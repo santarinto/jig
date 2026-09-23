@@ -1,0 +1,38 @@
+/* Card lab — prototype styling only, all on --ds-* tokens so the numbers
+   settled here transfer straight into the real component. */
+.cardp__stage { display: grid; gap: var(--ds-space-6); padding: var(--ds-space-6); background: var(--ds-bg-app); }
+
+.cardp {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  overflow: hidden;
+}
+.cardp__head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--ds-space-4);
+  min-height: var(--cardp-head-h);
+  padding: var(--ds-space-2) var(--ds-space-5);
+  background: var(--cardp-head-bg);
+  border-bottom: 1px solid var(--ds-border);
+}
+.cardp__head--noborder { border-bottom: none; }
+.cardp__titles { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.cardp__title { font-weight: 600; color: var(--ds-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cardp__subtitle { font-size: var(--ds-fs-sm); color: var(--ds-text-muted); }
+
+.cardp__link {
+  display: inline-flex; align-items: center; gap: var(--ds-space-2);
+  font-size: var(--ds-fs-sm); color: var(--ds-accent); text-decoration: none; white-space: nowrap;
+}
+.cardp__link:hover { text-decoration: underline; }
+.cardp__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--ds-h-compact); height: var(--ds-h-compact);
+  background: none; border: none; border-radius: var(--ds-radius-sm);
+  color: var(--ds-text-muted); cursor: pointer;
+}
+.cardp__icon:hover { background: var(--ds-surface-subtle); color: var(--ds-text-primary); }
+
+.cardp__body { padding: var(--ds-space-6); }
+.cardp__body--dense { padding: var(--ds-space-4); }
+.cardp__body--flush { padding: 0; }

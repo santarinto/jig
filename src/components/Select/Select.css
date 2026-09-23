@@ -1,0 +1,15 @@
+/* Поверхность и состояния — в `src/styles/field-surface.css`. */
+.ds-select-wrap { position: relative; display: inline-flex; }
+.ds-select {
+  appearance: none; width: 100%;
+  height: var(--ds-h-default); padding: 0 var(--ds-space-7) 0 var(--ds-space-4);
+  font-size: var(--ds-fs-base); cursor: pointer;
+}
+.ds-select--sm { height: var(--ds-h-compact); font-size: var(--ds-fs-sm); }
+.ds-select:disabled { cursor: default; }
+/* Только посадка знака в рамке поля: форму, размер и цвет даёт `.ds-caret`.
+   Поворота у `menu` нет, поэтому `transform` здесь ни с чем не спорит. */
+.ds-select__chevron {
+  position: absolute; right: var(--ds-space-4); top: 50%; transform: translateY(-50%);
+  pointer-events: none;
+}

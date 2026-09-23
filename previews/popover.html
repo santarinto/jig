@@ -1,0 +1,68 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px;height:300px;display:flex;gap:64px;align-items:flex-start">
+  <!-- Панель показана открытой: закрытый Popover её не рендерит. Две привязки
+       из четырёх — снизу-слева и сверху-справа: они и различают раскладки. -->
+  <span class="ds-popover">
+    <button type="button" class="ds-btn ds-btn--secondary ds-btn--md" aria-haspopup="dialog" aria-expanded="true" aria-controls="pv-bottom">Фильтры</button>
+    <div id="pv-bottom" class="ds-popover__panel ds-popover__panel--bottom-start" role="dialog" aria-label="Фильтры" style="width:240px">
+      <div class="ds-field"><label class="ds-field__label" for="pv-org">Организация</label>
+        <input id="pv-org" class="ds-input ds-input--sm" placeholder="Все"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm">Сбросить</button>
+        <button type="button" class="ds-btn ds-btn--primary ds-btn--sm">Применить</button>
+      </div>
+    </div>
+  </span>
+
+  <span class="ds-popover" style="margin-top:180px">
+    <button type="button" class="ds-btn ds-btn--secondary ds-btn--md" aria-haspopup="dialog" aria-expanded="true" aria-controls="pv-top">Подробнее</button>
+    <div id="pv-top" class="ds-popover__panel ds-popover__panel--top-end" role="dialog" aria-label="Подробнее" style="width:220px">
+      Проведён 25.08.2026. Сумма 128&nbsp;400&nbsp;₽.
+    </div>
+  </span>
+
+  <!-- ГОЛЫЙ `<button>` в триггере (DS-366): единственная цель на этой
+       странице, которую держит не оформление кнопки, а пол `--ds-target-min`
+       из класса `ds-popover__trigger`. До этой задачи `Popover` клону класса
+       не ставил вовсе — ровно тот же пробел, что чинили у `DropdownMenu`
+       (DS-323, пересмотр 359). Компонент дописывает класс к
+       `className` потребителя; оформления в нём нет — оно в общем листе
+       `src/styles/trigger-floor.css`, где и правило, и оба его предела.
+       Снимите правило из листа — обход «Цель клика» покраснеет именно здесь:
+       голая кнопка без класса даёт 74.4×21.0 px, и ОДИНАКОВО на всех четырёх
+       шкалах `make measure` (0.875/1/1.15/1.5) — замерено мутацией, не
+       предположено; она не наследует `--ds-fs-*`, поэтому от `--ds-ui-scale`
+       не зависит вовсе, в отличие от прежней шкалируемой обёртки
+       `DropdownMenu`. На `ds-btn` выше (оба триггера над этим) правило —
+       no-op, там пол держит сама кнопка. -->
+  <span class="ds-popover">
+    <button type="button" class="ds-popover__trigger" aria-haspopup="dialog" aria-expanded="false">Действия</button>
+  </span>
+
+  <!-- ГОЛЫЙ `<button>` с ОДНОЗНАКОВОЙ подписью — единственное место на этой
+       странице, где узкое место именно `min-inline-size`, а не
+       `min-block-size` (ревью DS-366). Оба триггера выше узки по
+       ВЫСОТЕ (натуральные 74.4×21.0 — см. соседний докблок), а по ширине с
+       запасом выше пола 24 и без правила: мутация, убирающая ТОЛЬКО
+       `min-inline-size`, их не тронет. Кнопка-иконка без подписи — самый
+       частый вид триггера в реальной вёрстке, и это она: `block-size: 28px`
+       инлайном держит высоту заведомо выше пола САМА, без правила листа
+       (сверено мутацией — эта кнопка на 28px не отзывается на снятие
+       `min-block-size` вовсе), а вот по ширине однозначный «+» без правила
+       уже узкий. `padding-inline: 0` рядом стоит НЕ для красоты: с падингом
+       UA по умолчанию натуральная ширина была 23.8 против пола 24 — запас
+       0.2px не отличить от метрической погрешности шрифта или UA-стилей
+       будущего chromium, и случай тихо перестал бы что-либо проверять при
+       первом же дрейфе на десятые доли пикселя. Без падинга запас честный.
+       Замерено в браузере (playwright, `dist/src/styles.css`): натуральная
+       ширина БЕЗ `min-inline-size` — 11.8px при заданных 28.0px высоты, то
+       есть на 12.2px ниже пола 24 и только по ширине. С правилом на месте —
+       24×28. Без этого триггера половина правила (`min-inline-size`) не
+       проверена НИКОГДА: мутация, убирающая только его, зелёный `measure` не
+       тронула бы вовсе — ни здесь, ни на широких триггерах выше, у которых
+       узкое место высота. -->
+  <span class="ds-popover">
+    <button type="button" class="ds-popover__trigger" style="block-size:28px;padding-inline:0" aria-haspopup="dialog" aria-expanded="false">+</button>
+  </span>
+</div></body></html>

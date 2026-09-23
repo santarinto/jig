@@ -1,0 +1,270 @@
+/* Потоковый лог: моно-панель со строками фиксированной анатомии.
+
+   Колонки времени и вида фиксированной ширины, текст занимает остаток и
+   переносится под себя — грид даёт это без единого отступа вручную. */
+.ds-log {
+  --ds-log-gutter: calc(1rem * var(--ds-ui-scale));
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+  color: var(--ds-text-primary);
+}
+
+/* min-height: 0 здесь избыточен, пока стоит overflow: элемент со скроллом сам
+   получает min-height:auto = 0 по спецификации, и снятие строки не меняет ни
+   пикселя (проверено мутацией). Оставлен как явная запись намерения: без
+   overflow это единственное, что позволяет области сжаться в колонке flex.
+   Настоящую поломку — потерю прокрутки — сторожит замер, и сторожит по
+   scrollTop, потому что геометрия при overflow:visible остаётся той же. */
+.ds-log__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--ds-space-3) 0;
+}
+
+/* Распорки, держащие полную высоту списка вместо неотрисованных строк.
+   Их высота приходит из измерения, а не из объявленного размера, поэтому
+   пиксели здесь законны и в масштабировании не участвуют. */
+.ds-log__pad {
+  flex: 0 0 auto;
+}
+
+.ds-log__line {
+  display: grid;
+  grid-template-columns: auto auto auto auto 1fr;
+  align-items: baseline;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-1) var(--ds-space-5);
+  /* Своё семейство, а не системный стек: лог обязан выглядеть одинаково на
+     всех машинах — иначе колонка времени и ширина обрезки зависят от того, что
+     стоит в ОС. Системные имена оставлены запасом на случай, когда woff2 не
+     доехал; запасные варианты живут в самом токене. */
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.45;
+}
+
+/* Ровную колонку времени держит моноширинный шрифт строки, а не
+   font-variant-numeric: в моношрифте цифры и так одной ширины, и tabular-nums
+   здесь был мёртвым правилом — снятие его не меняло ни пикселя. Замер целится
+   в настоящую опору: смену font-family на пропорциональный. */
+.ds-log__time {
+  color: var(--ds-text-muted);
+  white-space: nowrap;
+}
+
+.ds-log__kind {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ds-log__kind--neutral { color: var(--ds-text-secondary); }
+.ds-log__kind--accent { color: var(--ds-accent); }
+.ds-log__kind--success { color: var(--ds-success-fg); }
+.ds-log__kind--warning { color: var(--ds-warning-fg); }
+.ds-log__kind--error { color: var(--ds-error-fg); }
+.ds-log__kind--info { color: var(--ds-info-fg); }
+
+.ds-log__stream {
+  color: var(--ds-text-muted);
+  white-space: nowrap;
+}
+
+/* Обрезка до N строк. Число приходит переменной, потому что -webkit-line-clamp
+   не принимает var() напрямую ни в одном движке — только через саму
+   переменную в позиции значения, что здесь и сделано. */
+.ds-log__text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--ds-log-clamp, 3);
+  line-clamp: var(--ds-log-clamp, 3);
+  overflow: hidden;
+  /* Пути, хеши и base64 — сплошные токены без пробелов; без этого правила
+     они распирают панель по горизонтали вместо переноса. */
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.ds-log__text--free,
+.ds-log__text--open {
+  display: block;
+  overflow: visible;
+}
+
+/* Кнопка разворота в отдельной колонке слева: клик по самой строке отбирал бы
+   выделение текста, а лог читают копированием. */
+.ds-log__toggle {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ds-text-muted);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  /* Ширина фиксирована, чтобы колонка времени не ездила между свёрнутой и
+     развёрнутой строкой. Было `1em` (12px) — самая мелкая цель в системе при
+     поле 24px (SC 2.5.8), и единственная, которую нельзя было прикрыть
+     исключением «spacing»: шаг строк лога 21.39px, то есть круги соседних
+     карет пересекались.
+
+     Плата видимая, и её надо назвать: колонка карет шире на 12px, значит весь
+     лог сдвинут вправо на 12px, а строка стала выше (21.39 → 24). Плотность
+     лога — ценность, но нижняя цель в системе не может быть вдвое ниже пола, а
+     сузить цель обратно нечем: клик по самой строке отбирает выделение текста,
+     ради которого лог и читают. */
+  width: var(--ds-target-min);
+  min-height: var(--ds-target-min);
+  text-align: center;
+}
+
+.ds-log__toggle:hover { color: var(--ds-text-primary); }
+.ds-log__toggle:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+
+/* Без обрезки кнопки нет, но колонка обязана остаться — иначе весь лог
+   съезжает влево относительно режима с обрезкой. */
+/* Ширина ОБЯЗАНА совпадать с кнопкой, иначе строки без каретки съезжают
+   относительно строк с ней. Раньше совпадение держалось тем, что обе стороны
+   написали `1em`, — то есть двумя литералами, а не одной величиной; теперь
+   величина одна. */
+.ds-log__toggle--empty {
+  display: inline-block;
+  width: var(--ds-target-min);
+  /* И высота тоже. Кнопка получила `min-height` как ЦЕЛЬ, а распорка стоит
+     вместо неё — без этой строки лог без `clampLines` держал бы строки 21.4px,
+     а с ним 24px, то есть высота строки зависела бы от пропа, к ней
+     отношения не имеющего. Комментарий выше говорит «величина одна»: это было
+     верно про ширину и неверно про высоту. */
+  min-height: var(--ds-target-min);
+}
+
+/* Возврат к последним записям. Виден только когда следование на паузе.
+
+   Плавает НАД содержимым, а не занимает место в колонке: иначе появление
+   кнопки уменьшало бы область прокрутки, окно пересчитывалось бы под другую
+   высоту, и лог дёргался ровно в тот момент, когда пользователь прокручивает
+   вверх — то есть кнопка мешала бы именно тому действию, которое её вызвало.
+   Закреплено замером: высота области прокрутки с кнопкой и без совпадает. */
+.ds-log__tail {
+  /* Пол цели, а не размер (DS-207). Высота кнопки здесь НЕ написана
+     вовсе — она складывается из `padding` и межстрочного своего кегля, и на
+     0.875 давала 85.6×21.0. Поэтому `max()` тут нечему помогать: складывать
+     внутри одного свойства не с чем, масштабируемой величины в нём нет. Пол
+     ставится отдельными `min-*` и на 1.5 ни во что не упирается — там кнопка
+     и так выше. `min-width` не декорация: подпись приходит из словаря и
+     переопределяется потребителем, односимвольная стрелка уронила бы ширину. */
+  min-width: var(--ds-target-min); min-height: var(--ds-target-min);
+  position: absolute;
+  left: 50%;
+  bottom: var(--ds-space-5);
+  transform: translateX(-50%);
+  box-shadow: var(--ds-shadow-md);
+  padding: var(--ds-space-2) var(--ds-space-5);
+  border: 1px solid var(--ds-border-overlay);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface-subtle);
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-sm);
+  cursor: pointer;
+}
+
+.ds-log__tail:hover { background: var(--ds-section-bar); }
+.ds-log__tail:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+
+/* Навигатор совпадений: плавает в правом верхнем углу, НЕ занимая область
+   прокрутки (та же логика, что у «К последним» внизу) — иначе его появление
+   уменьшало бы окно и пересчитывало высоту под другой размер. Виден только при
+   заданном query; шрифт UI, не моно — это управление, не содержимое лога. */
+.ds-log__nav {
+  position: absolute;
+  top: var(--ds-space-3);
+  right: var(--ds-space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+  /* Вертикального поля нет с DS-325: высоту плашки задают кнопки, а
+     они теперь на полу цели. С прежним `space-1` сверху и снизу плашка
+     была бы выше ещё на 4px (при шкале 1) и закрывала бы больше лога. */
+  padding: 0 var(--ds-space-1);
+  border: 1px solid var(--ds-border-overlay);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface-subtle);
+  box-shadow: var(--ds-shadow-md);
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-sm);
+}
+
+.ds-log__nav-btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--ds-text-primary);
+  font: inherit;
+  line-height: 1;
+  /* Пол цели (DS-325). Было `padding: 0 space-1` вокруг одного глифа
+     «‹» — 9×12 при шкале 1, самая мелкая цель в каталоге, и мельче пола на
+     любой шкале, включая 1.5 (13×18). Растёт САМА кнопка, а не невидимый
+     вынос хита псевдоэлементом: у неё есть фон наведения, и подсветка
+     размером с глиф при цели 24×24 врала бы, куда попадёт клик. Кнопка
+     24×24 на всех четырёх шкалах: глиф и на 1.5 (18px при `line-height: 1`)
+     до пола не дорастает. Плашка по высоте 19.7/22.2/25.2/32.3 →
+     26/26/26/26.3 на 0.875/1/1.15/1.5 — выше на трёх шкалах и НИЖЕ на 1.5
+     (там её прежде растягивал кегль с полем); шире на 29.5/26/24.2/16.
+     Плашка плавает над логом, область прокрутки не отнимает, а прыжок к
+     совпадению ставит строку ПОД неё (`navInset` в LogViewer.tsx). */
+  min-width: var(--ds-target-min);
+  min-height: var(--ds-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--ds-radius-sm);
+}
+
+.ds-log__nav-btn:hover:not(:disabled) { background: var(--ds-section-bar); }
+.ds-log__nav-btn:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+.ds-log__nav-btn:disabled { color: var(--ds-text-muted); cursor: default; }
+
+.ds-log__nav-count {
+  min-width: 3em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-text-secondary);
+}
+
+/* Подсветка вхождения. Фон, а не цвет текста: в моно-логе цветной текст
+   теряется среди уже раскрашенных видов строк. Видимость фона относительно
+   строки закреплена замером в обеих темах. */
+.ds-log__hit {
+  background: var(--ds-highlight);
+  color: inherit;
+  border-radius: var(--ds-radius-sm);
+}
+
+/* ── пустое состояние (DS-190) ──
+   Центрируется `margin: auto` внутри полосы прокрутки, которая и так занимает
+   всю панель, — а не `justify-content` на корне: там кроме полосы живут кнопка
+   «к последним» и навигатор по совпадениям, и центрировать пришлось бы их тоже.
+   Заглушка остаётся ребёнком `__scroll` именно поэтому: панель при пустом логе
+   не теряет свою обвязку. */
+.ds-log--empty .ds-log__scroll {
+  display: flex;
+}
+.ds-log__empty {
+  margin: auto;
+}
+
+/* ── кольцо фокуса прокручиваемой области (DS-192) ──
+   Область стала фокусируемой, значит обязана показывать, что фокус в ней:
+   иначе клавиатурный пользователь получил бы остановку, о которой не
+   догадывается. Токен `--ds-focus-ring-inset`: кольцо снаружи легло бы на рамку панели и
+   на плавающие кнопки, а сама область занимает панель целиком. */
+.ds-log__scroll:focus-visible { outline: none; box-shadow: var(--ds-focus-ring-inset); }

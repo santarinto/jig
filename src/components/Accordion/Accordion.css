@@ -1,0 +1,29 @@
+.ds-accordion {
+  border: 1px solid var(--ds-border); border-radius: var(--ds-radius);
+  background: var(--ds-surface); overflow: hidden;
+}
+.ds-accordion__item + .ds-accordion__item { border-top: 1px solid var(--ds-border); }
+
+/* Пол цели держится явно (DS-224). Высоту заголовка задаёт не текст,
+   а знак раскрытия: на 0.875 `--ds-size-caret` даёт 12.25px, с падингами
+   22.75 — ниже 24 из SC 2.5.8. Замер этого не видел, потому что превью несло
+   свой svg 14×14 (24.5, зелёный), а не общий `Caret`; гейт `preview-classes`
+   вернул превью настоящую разметку, и «Цель клика» покраснела. На шкале 1
+   пол не работает (26 без него) — правка видна только на плотных шкалах. */
+.ds-accordion__header {
+  display: flex; align-items: center; justify-content: flex-start; gap: var(--ds-space-4);
+  width: 100%; min-height: var(--ds-target-min); padding: var(--ds-space-3) var(--ds-space-4);
+  font-family: var(--ds-font-ui); font-size: var(--ds-fs-base); font-weight: 500; text-align: left;
+  color: var(--ds-text-primary); background: transparent; border: none; cursor: pointer;
+}
+.ds-accordion__header:hover { background: var(--ds-surface-subtle); }
+.ds-accordion__header:focus-visible { outline: none; box-shadow: var(--ds-focus-ring-inset); }
+.ds-accordion__header.is-open { background: var(--ds-section-bar); }
+
+.ds-accordion__title { flex: 1 1 auto; min-width: 0; }
+
+.ds-accordion__panel {
+  padding: var(--ds-space-4); font-size: var(--ds-fs-base); color: var(--ds-text-secondary); line-height: 1.5;
+  border-top: 1px solid var(--ds-border);
+}
+

@@ -1,0 +1,37 @@
+.ds-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-3);
+  height: var(--ds-h-default);
+  padding: 0 var(--ds-space-4);
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ds-text-primary);
+  cursor: pointer;
+  user-select: none;
+  transition: background .12s, border-color .12s, color .12s;
+}
+
+.ds-theme-toggle:hover {
+  /* Покой уже `--ds-surface-subtle` (button-surface.css, DS-269), поэтому
+     наведение — токен «под курсором», как у `.ds-btn--secondary`. */
+  background: var(--ds-table-hover);
+  border-color: var(--ds-accent);
+}
+
+.ds-theme-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus-ring);
+}
+
+.ds-theme-toggle__icon {
+  display: inline-flex;
+  color: var(--ds-text-secondary);
+}
+
+.ds-theme-toggle[aria-pressed="true"] .ds-theme-toggle__icon {
+  color: var(--ds-accent);
+}

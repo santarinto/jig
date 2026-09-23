@@ -1,0 +1,29 @@
+.ds-datepicker { position: relative; }
+.ds-datepicker__control { position: relative; display: flex; align-items: center; }
+
+/* Input reserves space for the clear (×) + calendar buttons on the right. */
+.ds-datepicker__input { width: 100%; padding-right: calc(var(--ds-h-default) + var(--ds-space-5)); }
+.ds-datepicker__input.ds-input--sm { padding-right: calc(var(--ds-h-compact) + var(--ds-space-5)); }
+
+.ds-datepicker__btn {
+  position: absolute; right: 0; top: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--ds-h-default); height: 100%; padding: 0;
+  color: var(--ds-text-secondary); background: transparent;
+  /* Шов между полем и кнопкой календаря внутри одной рамки (DS-267). */
+  border: none; border-left: 1px solid var(--ds-control-border); cursor: pointer;
+  border-top-right-radius: var(--ds-radius); border-bottom-right-radius: var(--ds-radius);
+}
+.ds-datepicker__btn:hover:not(:disabled) { color: var(--ds-accent); background: var(--ds-surface-subtle); }
+.ds-datepicker__btn:focus-visible { outline: none; color: var(--ds-accent); box-shadow: var(--ds-focus-ring); }
+
+.ds-datepicker__clear {
+  position: absolute; right: var(--ds-h-default); top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: calc(1.5rem * var(--ds-ui-scale)); height: calc(1.5rem * var(--ds-ui-scale));
+  min-width: var(--ds-target-min); min-height: var(--ds-target-min); padding: 0; font-size: var(--ds-fs-lg); line-height: 1;
+  color: var(--ds-text-muted); background: transparent; border: none; border-radius: 50%; cursor: pointer;
+}
+.ds-datepicker__clear:hover:not(:disabled) { color: var(--ds-text-primary); background: var(--ds-surface-subtle); }
+
+.ds-datepicker__popup { position: absolute; z-index: var(--ds-z-popup); top: calc(100% + var(--ds-space-1)); left: 0; }

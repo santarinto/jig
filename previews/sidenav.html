@@ -1,0 +1,40 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px;display:flex;gap:24px;align-items:flex-start">
+  <!-- Развёрнутая: ветка раскрыта, у активного пункта tabindex=0 (roving). -->
+  <nav class="ds-sidenav" style="width:212px" aria-label="Разделы">
+    <div class="ds-sidenav__header"><span class="ds-sidenav__mark" aria-hidden="true">Р</span><span class="ds-sidenav__title">Ромашка</span></div>
+    <div class="ds-sidenav__group">
+      <div class="ds-sidenav__group-title">Документы</div>
+      <ul class="ds-sidenav__list">
+        <li class="ds-sidenav__row">
+          <button type="button" class="ds-sidenav__item is-active" tabindex="0" aria-current="page">
+            <span class="ds-sidenav__icon" aria-hidden="true">▤</span><span class="ds-sidenav__label">Реализации</span><span class="ds-sidenav__count">12</span></button>
+        </li>
+        <li class="ds-sidenav__row">
+          <button type="button" class="ds-sidenav__item" tabindex="-1" aria-expanded="true">
+            <span class="ds-sidenav__icon" aria-hidden="true">▤</span><span class="ds-sidenav__label">Счета</span><svg class="ds-caret ds-caret--branch is-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></button>
+          <ul class="ds-sidenav__sublist">
+            <li class="ds-sidenav__row"><button type="button" class="ds-sidenav__item ds-sidenav__item--child" tabindex="-1"><span class="ds-sidenav__label">На оплату</span></button></li>
+            <li class="ds-sidenav__row"><button type="button" class="ds-sidenav__item ds-sidenav__item--child" tabindex="-1"><span class="ds-sidenav__label">Оплаченные</span></button></li>
+          </ul>
+        </li>
+        <li class="ds-sidenav__row">
+          <button type="button" class="ds-sidenav__item" tabindex="-1" disabled><span class="ds-sidenav__label">Архив</span></button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Свёрнутая: подписи нет, и цель клика держится одной иконкой — режим, в
+       котором цель мельчает первым. -->
+  <nav class="ds-sidenav ds-sidenav--collapsed" aria-label="Разделы, свёрнуто">
+    <div class="ds-sidenav__header"><span class="ds-sidenav__mark" aria-hidden="true">Р</span></div>
+    <div class="ds-sidenav__group">
+      <ul class="ds-sidenav__list">
+        <li class="ds-sidenav__row"><button type="button" class="ds-sidenav__item is-active" tabindex="0" title="Реализации" aria-current="page"><span class="ds-sidenav__icon" aria-hidden="true">▤</span></button></li>
+        <li class="ds-sidenav__row"><button type="button" class="ds-sidenav__item" tabindex="-1" title="Счета"><span class="ds-sidenav__icon" aria-hidden="true">▦</span></button></li>
+      </ul>
+    </div>
+  </nav>
+</div></body></html>

@@ -1,0 +1,143 @@
+{
+  "pkg": "@santarinto/jig",
+  "globalName": "Jig",
+  "projectId": "c9b54803-ce93-4210-afe1-c06531098a88",
+  "shape": "package",
+  "srcDir": "src",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": "tokens/tokens.css",
+  "buildCmd": "npm run build",
+  "overrides": {
+    "Modal": {
+      "cardMode": "single",
+      "viewport": "720x400"
+    },
+    "DocumentFormExample": {
+      "cardMode": "column"
+    },
+    "WorkspaceExample": {
+      "cardMode": "column"
+    },
+    "AppBar": {
+      "cardMode": "column"
+    },
+    "Dashboard": {
+      "cardMode": "column"
+    },
+    "DataTable": {
+      "cardMode": "column"
+    },
+    "LineChart": {
+      "cardMode": "column"
+    },
+    "Textarea": {
+      "cardMode": "column"
+    },
+    "SearchBar": {
+      "cardMode": "column"
+    },
+    "DropdownMenu": {
+      "cardMode": "single",
+      "viewport": "260x260",
+      "primaryStory": "Open"
+    },
+    "Drawer": {
+      "cardMode": "single",
+      "viewport": "460x400",
+      "primaryStory": "Right"
+    },
+    "Popover": {
+      "cardMode": "single",
+      "viewport": "300x240",
+      "primaryStory": "Settings"
+    },
+    "Toaster": {
+      "cardMode": "single",
+      "viewport": "380x260",
+      "primaryStory": "Stacked"
+    },
+    "Alert": {
+      "cardMode": "column"
+    },
+    "EmptyState": {
+      "cardMode": "column"
+    },
+    "Stat": {
+      "cardMode": "column"
+    },
+    "BarChart": {
+      "cardMode": "column"
+    },
+    "DonutChart": {
+      "cardMode": "column"
+    },
+    "Card": {
+      "cardMode": "column"
+    },
+    "Heatmap": {
+      "cardMode": "column"
+    },
+    "KeyValueList": {
+      "cardMode": "column"
+    },
+    "Timeline": {
+      "cardMode": "column"
+    },
+    "CodeBlock": {
+      "cardMode": "column"
+    },
+    "EdgeBundling": {
+      "cardMode": "column"
+    },
+    "Pagination": {
+      "cardMode": "column"
+    },
+    "Tabs": {
+      "cardMode": "column"
+    },
+    "TabPanel": {
+      "cardMode": "column"
+    },
+    "Center": {
+      "cardMode": "column"
+    },
+    "Fit": {
+      "cardMode": "column"
+    },
+    "Grid": {
+      "cardMode": "column"
+    },
+    "PageShell": {
+      "cardMode": "column"
+    },
+    "Prose": {
+      "cardMode": "column"
+    },
+    "Tree": {
+      "cardMode": "column"
+    },
+    "LedgerList": {
+      "cardMode": "column"
+    },
+    "ToggleGroup": {
+      "cardMode": "column"
+    },
+    "DsText": {
+      "cardMode": "column"
+    },
+    "Stack": {
+      "cardMode": "column"
+    }
+  },
+  "docsMap": {
+    "Toast": ".design-sync/docs/Toast.md"
+  },
+  "readmeHeader": ".design-sync/conventions.md",
+  "extraFonts": [
+    "fonts/inter.css",
+    "fonts/mono.css"
+  ],
+  "guidelinesGlob": [
+    "docs/colour-pairings.md"
+  ]
+}

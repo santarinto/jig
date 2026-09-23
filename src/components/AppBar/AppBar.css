@@ -1,0 +1,105 @@
+/* Шапка приложения: бренд, центр, действия.
+
+   ПОРЯДОК УСТУПКИ МЕСТА (DS-306, DS-309): центр до своего пола →
+   свёртка действий в «Ещё» → центр вторым рядом → перенос бренда. Прокрутки у
+   шапки нет. Второй ряд законен ровно в одном случае — под центр: он
+   самостоятельный элемент ввода, а не продолжение ряда действий. Действия и
+   бренд второго ряда не получают никогда. */
+.ds-appbar {
+  display: flex; align-items: center; gap: var(--ds-space-6);
+  /* `min-height`, а не `height`: перенесённый бренд растит шапку. На широком
+     экране ничего не переносится, и высота та же, что была. */
+  min-height: calc(2.75rem * var(--ds-ui-scale)); padding: 0 var(--ds-space-6);
+  background: var(--ds-surface); border-bottom: 1px solid var(--ds-border);
+  color: var(--ds-text-primary);
+  /* Якорь для холостой «Ещё»: выведенная из потока, она позиционируется от
+     шапки, а не от ближайшего прокручиваемого предка у потребителя. */
+  position: relative;
+}
+
+/* Имя продукта НЕ РЕЖЕТСЯ: ни многоточия, ни обрезки. Не сжимается, пока есть
+   что свернуть (`flex-shrink: 0`), а свёрнутым всё — переносится: по пробелам,
+   одно длинное слово — `overflow-wrap`. `white-space: nowrap` здесь нет
+   намеренно: с ним `long` на кадре 360 уводит документ на +366 при шкале 1. */
+.ds-appbar__brand {
+  flex: 0 0 auto;
+  font-weight: 600; font-size: var(--ds-fs-lg);
+  overflow-wrap: break-word;
+}
+.ds-appbar.is-collapsed .ds-appbar__brand { flex-shrink: 1; min-width: 0; }
+
+/* Центр — первая жертва, но НЕ ДО НУЛЯ (DS-309: на нуле его начинка
+   рисовалась поверх бренда и действий). `flex-basis: 0`: при избытке он
+   забирает тот же остаток, что и раньше (он единственный растущий), а при
+   нехватке стоит на полу и не делит сжатие с брендом пропорционально.
+
+   ПОЛ — min-content центра: `min-width` у него автоматический. У чипа,
+   ссылки, навигации min-content честный, и больше ничего не нужно. */
+.ds-appbar__center { flex: 1 1 0; display: flex; }
+.ds-appbar__centerbox { flex: 1 1 auto; display: flex; justify-content: center; }
+/* ОБЪЯВЛЕННЫЙ пол — только центру с ПОЛЕМ ВВОДА. У поля с `width: 100%`
+   min-content врёт: 18 px при шкале 1 (замер), и поле на полу из своего
+   содержимого было бы шириной в курсор. У `SearchBar` номинал задан шириной
+   поля, и его min-content честный — 296 px при шкале 1, пол ему не нужен. 12em — не
+   больше, чем нужно полю, чтобы в нём читался запрос. Всем подряд этот пол не
+   ставится: короткий чип «Автопарк-Юг» с ним уходил во второй ряд без нужды и
+   забирал с собой действия. Итог для поля — `max(12em, min-content)`:
+   `GlobalSearch` шириной `20rem × шкала` шире 12em и держит свой. */
+.ds-appbar__centerbox:has(input, textarea, select, [role="search"], [role="combobox"]) { min-width: 12em; }
+
+.ds-appbar__actions { flex: 0 0 auto; display: flex; align-items: center; gap: var(--ds-space-4); }
+.ds-appbar__row { display: flex; align-items: center; gap: var(--ds-space-4); flex: 0 0 auto; }
+/* Без действий ряда нет и в потоке: пустой, он дал бы лишний зазор перед
+   `trailing`. */
+.ds-appbar__row:empty { display: none; }
+
+/* Свёрнутый ряд ужимается до бюджета и отрезает спрятанный хвост. Свёрнутые
+   действия остаются в потоке — их ширина источник следующего замера
+   (см. `CommandBar.css`, тот же механизм). Бренд в это время не сжимается,
+   поэтому сжатие достаётся ряду целиком. */
+.ds-appbar__row.is-folded { overflow: hidden; }
+/* Ширину свёрнутому ряду ставит компонент ЧИСЛОМ (видимые действия), а не
+   раскладка: ряд, забирающий остаток, оставлял бы пустоту перед «Ещё» и
+   отнимал ширину у пола центра. Отсюда же обёртка действий не сжимается
+   никогда — её ширина известна до раскладки. */
+
+/* ВТОРОЙ РЯД — ЦЕНТР (DS-309). Первый ряд держит прежнюю высоту шапки,
+   центр встаёт под ним на всю ширину. */
+.ds-appbar.is-stacked { flex-wrap: wrap; }
+.ds-appbar.is-stacked .ds-appbar__center { order: 1; flex: 1 0 100%; padding-bottom: var(--ds-space-4); }
+/* Во втором ряду центр ОДИН, и пол ему больше не нужен: соседей, на которых
+   он мог бы лечь, в ряду нет. Без этих нулей ряд держал бы min-content
+   начинки — у `SearchBar` это его номинал (444 px при шкале 1.5) при
+   `max-width: 100%`, — и на 300 px при шкале 1.5 шапка выпирала бы на 168 px
+   (замер `measure`). Для счёта пол читается со снятым `is-stacked`
+   (`centerFloor`), иначе этот ноль раскачивал бы шапку между рядами. */
+.ds-appbar.is-stacked .ds-appbar__center,
+.ds-appbar.is-stacked .ds-appbar__centerbox { min-width: 0; }
+.ds-appbar.is-stacked .ds-appbar__actions { margin-left: auto; min-height: calc(2.75rem * var(--ds-ui-scale)); }
+/* Перенос бренда в двухрядной шапке — `flex-basis: 0`, а не сжатие: ряды
+   разбиваются по гипотетической ширине, и бренд шириной в строку ушёл бы в
+   свой ряд вместо того, чтобы перенестись. */
+.ds-appbar.is-stacked.is-collapsed .ds-appbar__brand { flex: 1 1 0; }
+
+.ds-appbar [data-ds-folded] { visibility: hidden; pointer-events: none; }
+
+.ds-appbar__sep {
+  width: 1px; height: calc(1.125rem * var(--ds-ui-scale));
+  margin: 0 var(--ds-space-2); background: var(--ds-border-strong);
+  flex: 0 0 auto;
+}
+/* Своей `.ds-appbar__icon` здесь больше НЕТ (DS-360): значок действия
+   рисует `Button.icon`, метрику держит его `.ds-btn__icon` (`Button.css`).
+   Тот же приём, что снял `.ds-cmdbar__icon` у `CommandBar` — вторая копия
+   одного и того же правила на своей стороне. */
+
+/* «Ещё» — тот же `Button size="sm" variant="ghost"`, что у `CommandBar`:
+   оба ряда строит `actionOverflow`. Перерисовка метрик токенами ушла на
+   DS-359 вместе с обёрткой `.ds-dropdown__triggerwrap`. */
+.ds-appbar__more { flex: 0 0 auto; }
+.ds-appbar__more.is-idle {
+  position: absolute; left: 0; top: 0;
+  visibility: hidden; pointer-events: none;
+}
+
+.ds-appbar__trailing { flex: 0 0 auto; display: inline-flex; align-items: center; gap: var(--ds-space-4); }

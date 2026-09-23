@@ -1,0 +1,108 @@
+/* DEMO ONLY — общий вид сетки «строка × колонка» для всей галереи. */
+
+.demo-matrix-block {
+  display: block;
+}
+
+.demo-matrix__title {
+  font-size: var(--ds-fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ds-text-muted);
+  margin: 0 0 12px;
+}
+
+.demo-matrix__toolbar {
+  margin-bottom: 16px;
+}
+
+.demo-matrix-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-sm);
+}
+
+.demo-matrix {
+  display: grid;
+  gap: 1px;
+  align-items: stretch;
+  min-width: 36rem;
+  background: var(--ds-border);
+}
+
+/*
+ * Сетка без осей: колонок фиксированное число, ячейки текут. Роли таблицы здесь
+ * не выставляются намеренно — строки и колонки ничего не значат, это набор
+ * образцов, а не таблица данных.
+ */
+.demo-matrix--flow {
+  min-width: 0;
+}
+
+/*
+ * Ряд остаётся элементом ради role="row" — без него role="table" вокруг
+ * columnheader/rowheader/cell невалиден и читалка не соберёт таблицу.
+ * `display: contents` убирает его из блочной модели, поэтому ячейки остаются
+ * прямыми детьми грида и колонки не разъезжаются.
+ */
+.demo-matrix__row {
+  display: contents;
+}
+
+.demo-matrix__corner {
+  background: var(--ds-surface);
+}
+
+.demo-matrix__col-head {
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  text-align: center;
+  color: var(--ds-text-secondary);
+  background: var(--ds-surface);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-matrix__col-note {
+  display: block;
+  font-size: var(--ds-fs-sm);
+  font-weight: 400;
+  color: var(--ds-text-muted);
+  margin-top: 2px;
+}
+
+.demo-matrix__row-label {
+  font-size: var(--ds-fs-sm);
+  color: var(--ds-text-secondary);
+  line-height: 1.35;
+  background: var(--ds-surface);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+}
+
+.demo-matrix__cell {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: var(--ds-surface);
+  padding: 8px;
+  min-height: 5.5rem;
+}
+
+.demo-matrix__cell .demo-spec {
+  width: 100%;
+}
+
+/*
+ * Содержимое DemoSpec по умолчанию inline-block и ужимается по образцу — верно
+ * для кнопки или бейджа. Компонент, который сам держит ширину, так превращается
+ * в огрызок: ProgressBar замерился 46px вместо полосы.
+ */
+.demo-matrix__cell--stretch .demo-spec__content {
+  display: block;
+  width: 100%;
+}

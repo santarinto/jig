@@ -1,0 +1,204 @@
+/* Metrics settled against a real accounting-system screen: 212px panel, 30px rows,
+   1px gap, 5px outer / 10px inner padding, md radius, tinted active row. */
+.ds-sidenav {
+  display: flex; flex-direction: column;
+  padding: var(--ds-space-2) calc(0.3125rem * var(--ds-ui-scale));
+  background: var(--ds-surface);
+  border-right: 1px solid var(--ds-border);
+  font-family: var(--ds-font-ui); font-size: var(--ds-fs-base);
+  overflow-y: auto;
+  /* Колонка навигации держит свою ширину в flex-ряду (DS-337): у рейки
+     `overflow-y: auto`, значит автоминимум ширины у неё НОЛЬ, и сосед с
+     широким содержимым выжимал её до 11 px — пункты шириной 0. Недостачу
+     обязан нести сосед, а не навигация.
+     Потолок — ширина ряда: развёрнутая 212 × 1.5 = 318 px в ряду 300 иначе
+     уезжала бы за край и теряла правую часть пунктов. Сама панель на узком
+     НЕ сворачивается: рейка прячет подписи в `title`, и когда это приемлемо,
+     решает раскладка потребителя пропом `collapsed`, а не ширина контейнера
+     молча. */
+  flex-shrink: 0;
+  max-width: 100%;
+}
+.ds-sidenav--collapsed { width: calc(2.5rem * var(--ds-ui-scale)); }
+
+.ds-sidenav__header {
+  display: flex; align-items: center; gap: var(--ds-space-3);
+  height: var(--ds-h-default); padding: 0 calc(0.625rem * var(--ds-ui-scale)); margin-bottom: var(--ds-space-3);
+  font-weight: 600; color: var(--ds-text-primary);
+  white-space: nowrap; overflow: hidden;
+}
+.ds-sidenav--collapsed .ds-sidenav__header { justify-content: center; padding: 0; }
+.ds-sidenav__mark {
+  flex: 0 0 auto; width: calc(1.125rem * var(--ds-ui-scale)); height: calc(1.125rem * var(--ds-ui-scale)); border-radius: var(--ds-radius-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--ds-accent); color: var(--ds-text-on-accent);
+  font-size: var(--ds-fs-sm); font-weight: 700;
+}
+
+.ds-sidenav__group-title {
+  font-size: var(--ds-fs-sm); text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ds-text-muted);
+  padding: var(--ds-space-4) calc(0.625rem * var(--ds-ui-scale)) var(--ds-space-2);
+  white-space: nowrap; overflow: hidden;
+}
+.ds-sidenav__separator {
+  height: 1px; background: var(--ds-border); margin: var(--ds-space-3) 0;
+}
+
+.ds-sidenav__list,
+.ds-sidenav__sublist { list-style: none; margin: 0; padding: 0; }
+.ds-sidenav__row { display: flex; flex-direction: column; }
+.ds-sidenav__list > .ds-sidenav__row + .ds-sidenav__row,
+.ds-sidenav__sublist > .ds-sidenav__row { margin-top: 1px; }
+
+.ds-sidenav__item {
+  display: flex; align-items: center; gap: var(--ds-space-3);
+  /* `relative` — под знаки свёрнутой рейки (точка и знак ветки ниже). Они
+     лежат абсолютно ИМЕННО ради цели клика: попади они в поток, плашка
+     поделилась бы между иконкой и знаком. */
+  position: relative;
+  width: 100%; height: calc(1.875rem * var(--ds-ui-scale)); padding: 0 calc(0.625rem * var(--ds-ui-scale));
+  border: none; border-radius: var(--ds-radius-md);
+  background: transparent; color: var(--ds-text-secondary);
+  font: inherit; font-size: var(--ds-fs-base); text-align: left; cursor: pointer;
+  white-space: nowrap; overflow: hidden;
+}
+.ds-sidenav__item:hover:not(:disabled):not(.is-active) {
+  background: var(--ds-surface-subtle); color: var(--ds-text-primary);
+}
+.ds-sidenav__item:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+.ds-sidenav__item:disabled { color: var(--ds-text-muted); cursor: not-allowed; }
+
+/* Active row: tinted plate, matching the selected-row language of the tables. */
+.ds-sidenav__item.is-active {
+  background: var(--ds-table-selected);
+  color: var(--ds-accent-active);
+  font-weight: 600;
+}
+[data-theme="dark"] .ds-sidenav__item.is-active { color: var(--ds-accent); }
+
+.ds-sidenav__item--child { padding-left: var(--ds-space-8); font-size: var(--ds-fs-sm); }
+.ds-sidenav--collapsed .ds-sidenav__item { justify-content: center; padding: 0; }
+
+/* Размер значка — `--ds-size-icon`, а не `--ds-space-6` (DS-263). Оба
+   сегодня равны `calc(1rem * var(--ds-ui-scale))` и дают одно и то же число
+   (15.99 и 23.99 на шкалах 1 и 1.5) — именно поэтому неверный токен здесь
+   никогда себя не проявлял и разъехался бы МОЛЧА при первой правке любого из
+   двух. Отступ и размер знака — разные величины, совпавшие на отметке 1rem. */
+.ds-sidenav__icon {
+  flex: 0 0 auto; width: var(--ds-size-icon); height: var(--ds-size-icon);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ds-sidenav__label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+.ds-sidenav__count {
+  flex: 0 0 auto; min-width: calc(1.125rem * var(--ds-ui-scale)); height: var(--ds-space-6); padding: 0 calc(0.3125rem * var(--ds-ui-scale));
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--ds-fs-sm); font-weight: 500; border-radius: 8px;
+  /* Спокойный счётчик — та же пара, что у `Tabs` и `RouteBar`: сплошной
+     `--ds-surface-subtle` плюс `--ds-text-muted` (4.97 светлая, 4.83 тёмная).
+     Была своя полупрозрачная плашка `mix(text-primary 10%)`, и на ней текст
+     давал 4.42 в тёмной, а под курсором — где плашка пункта сама становится
+     `--ds-surface-subtle` и подложки складываются — 4.42 и после снижения
+     процента (DS-130). Стопка из двух подложек и есть то, чего сплошной
+     цвет не умеет: он не зависит от того, что под ним.
+     Под курсором плашка счётчика сливается с плашкой пункта — ровно так же,
+     как у `Tabs` в варианте plain; контраст самого числа при этом не меняется,
+     потому что пара та же. */
+  background: var(--ds-surface-subtle);
+  color: var(--ds-text-muted);
+}
+/* Активный счётчик: одна плашка на обе темы вместо двух правил с разными
+   тонами и процентами. Текст — `--ds-accent-fg`, роль «акцент как текст на
+   акцентной плашке» (5.29 светлая, 5.18 тёмная). Тёмная до этого давала 3.39:
+   тинт клался поверх `--ds-table-selected`, который сам уже тинт, и две
+   подложки съедали контраст. */
+.ds-sidenav__item.is-active .ds-sidenav__count {
+  background: color-mix(in srgb, var(--ds-accent) 18%, transparent);
+  color: var(--ds-accent-fg);
+}
+
+
+/* ── Свёрнутая рейка: точка вместо счётчика и знак ветки (DS-242) ────
+   Оба знака лежат АБСОЛЮТНО и оба `pointer-events: none`, поэтому цель клика
+   пункта остаётся всей плашкой — ровно та же, что у листа без знаков. Это и
+   было условием: индикатор не имеет права съесть цель. */
+
+/* «Непусто» — единственное, что говорится на сорока пикселях. Цвет акцентный,
+   а не `--ds-danger`: счётчик здесь означает количество, а не беду, и красная
+   точка объявила бы тревогу там, где её нет. */
+.ds-sidenav__dot {
+  position: absolute; top: var(--ds-space-2); right: var(--ds-space-2);
+  width: var(--ds-space-3); height: var(--ds-space-3);
+  border-radius: 50%;
+  background: var(--ds-accent);
+  pointer-events: none;
+}
+/* На активной плашке точка стоит на тинте акцента — тот же тон сливался бы с
+   ней. `--ds-accent-active` держит её видимой, как и подпись рядом. */
+.ds-sidenav__item.is-active .ds-sidenav__dot { background: var(--ds-accent-active); }
+[data-theme="dark"] .ds-sidenav__item.is-active .ds-sidenav__dot { background: var(--ds-accent); }
+
+/* Знак ветки — НИЖНИЙ правый угол, а не середина края: середину занимает
+   точка, а знак, который переезжает в зависимости от наличия счётчика, читался
+   бы как два разных знака.
+
+   ВПЛОТНУЮ К УГЛУ, без отступа, и это замер, а не вкус. При `right/bottom:
+   var(--ds-space-1)` ink шеврона (`m9 6 6 6-6 6` в поле 24, то есть 9..15 плюс
+   обводка) заходил на ink иконки примерно на 1×1.4px: плашка 29.13×30, иконка
+   16px по центру, шеврон 10px. Один пиксель — не «почти не видно», а хэйрлайн,
+   который на шкале потребителя (1.15) растёт вместе со всем
+   остальным. Собственные поля шеврона внутри его коробки (~3px с каждой
+   стороны при 10px) и есть тот отступ, который здесь нужен, — второй,
+   заданный снаружи, только сдвигал знак ОБРАТНО на иконку.
+
+   Точке это правило не переносится: значок-счётчик на углу иконки — сам по
+   себе приём, и наложение там читается как «на этом разделе есть новое», а не
+   как столкновение двух знаков. */
+.ds-sidenav__branchmark {
+  position: absolute; right: 0; bottom: 0;
+  color: var(--ds-text-muted);
+  pointer-events: none;
+}
+
+/* ── Всплывающее подменю свёрнутой ветки ──────────────────────────────────
+   Координаты считает `useAnchoredPosition` (`position: fixed`), поэтому из-под
+   `overflow-y: auto` самой панели подменю выходит, а не режется по её ширине в
+   40px. До DS-240 этого способа не было вовсе, и ветка в рейке потому и
+   осталась без раскрытия. Зазор и поджим объявлены ЗДЕСЬ токенами: JS их
+   читает, но числами в JS они перестали бы умножаться на `--ds-ui-scale`. */
+.ds-sidenav__flyout {
+  /* Зазор тот же, что у остальных оверлеев, потому что отсчитывается от того
+     же — от края узла, из которого подменю выходит. Узел этот ПАНЕЛЬ, а не
+     плашка ветки, и задаёт его `sideAnchorRef` в компоненте, а не число здесь:
+     расстояние от плашки до края панели непостоянно (падинг плюс полоса
+     прокрутки, когда рейка прокручивается), и зазором его не выразить. */
+  --ds-anchor-gap: var(--ds-space-1);
+  --ds-anchor-inset: var(--ds-space-2);
+  position: absolute; z-index: var(--ds-z-popup);
+  width: max-content;
+  min-width: calc(11.25rem * var(--ds-ui-scale)); max-width: var(--ds-w-popup-max);
+  padding: var(--ds-space-2) calc(0.3125rem * var(--ds-ui-scale));
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border-overlay);
+  border-radius: var(--ds-radius);
+  box-shadow: var(--ds-shadow-md);
+}
+/* Пункт ВНУТРИ подменю — пункт развёрнутой панели, а не рейки. Без этой
+   строки его накрыло бы правило `.ds-sidenav--collapsed .ds-sidenav__item`
+   (подменю лежит внутри свёрнутой панели), и подменю рисовало бы иконки по
+   центру без подписей — то есть повторяло бы рейку вместо того, чтобы её
+   раскрывать. */
+.ds-sidenav--collapsed .ds-sidenav__flyout .ds-sidenav__item {
+  justify-content: flex-start; padding: 0 calc(0.625rem * var(--ds-ui-scale));
+}
+
+/* Подпись ветки: в рейке её не видно, и без заголовка непонятно, ЧТО раскрыто.
+   Набор — как у заголовка группы, потому что роль та же: это шапка списка, а не
+   пункт. */
+.ds-sidenav__flyout-title {
+  font-size: var(--ds-fs-sm); text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ds-text-muted);
+  padding: var(--ds-space-2) calc(0.625rem * var(--ds-ui-scale)) var(--ds-space-3);
+  white-space: nowrap; overflow: hidden;
+}

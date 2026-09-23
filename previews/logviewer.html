@@ -1,0 +1,52 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px;max-width:720px">
+<div class="ds-log" style="height: calc(320px * var(--ds-ui-scale, 1))">
+  <div class="ds-log__scroll" tabindex="0" aria-label="Журнал">
+    <div class="ds-log__pad" style="height:0" aria-hidden="true"></div>
+
+    <div class="ds-log__line">
+      <button type="button" class="ds-log__toggle" aria-expanded="false" aria-label="Развернуть строку"><span aria-hidden="true">▸</span></button>
+      <time class="ds-log__time" datetime="2026-07-29T12:04:31+03:00">12:04:31</time>
+      <span class="ds-log__kind ds-log__kind--neutral">Система</span>
+      <span class="ds-log__stream">stdout</span>
+      <span class="ds-log__text" style="--ds-log-clamp:3">воркер запущен, run_id=8c1f2a</span>
+    </div>
+
+    <div class="ds-log__line">
+      <button type="button" class="ds-log__toggle" aria-expanded="false" aria-label="Развернуть строку"><span aria-hidden="true">▸</span></button>
+      <time class="ds-log__time" datetime="2026-07-29T12:04:31+03:00">12:04:31</time>
+      <span class="ds-log__kind ds-log__kind--info">Ответ</span>
+      <span class="ds-log__stream">stdout</span>
+      <span class="ds-log__text" id="clamped" style="--ds-log-clamp:3">Читаю файл <mark class="ds-log__hit">src/components</mark>/DataTable/DataTable.tsx, затем проверяю инварианты. Эта строка нарочно длинная, чтобы упереться в обрезку до трёх строк и показать многоточие: продолжение видно только после разворота, и ровно так экран и сканируют.</span>
+    </div>
+
+    <div class="ds-log__line">
+      <button type="button" class="ds-log__toggle" aria-expanded="false" aria-label="Развернуть строку"><span aria-hidden="true">▸</span></button>
+      <time class="ds-log__time" datetime="2026-07-29T12:04:32+03:00">12:04:32</time>
+      <span class="ds-log__kind ds-log__kind--warning">Инструмент</span>
+      <span class="ds-log__stream">stdout</span>
+      <span class="ds-log__text" id="nospace" style="--ds-log-clamp:3">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFsZXgiLCJpYXQiOjE1MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</span>
+    </div>
+
+    <div class="ds-log__line">
+      <button type="button" class="ds-log__toggle" aria-expanded="true" aria-label="Свернуть строку"><span aria-hidden="true">▾</span></button>
+      <time class="ds-log__time" datetime="2026-07-29T12:04:38+03:00">12:04:38</time>
+      <span class="ds-log__kind ds-log__kind--error">Ошибка</span>
+      <span class="ds-log__stream">stderr</span>
+      <span class="ds-log__text ds-log__text--open" id="opened">Читаю файл src/components/DataTable/DataTable.tsx, затем проверяю инварианты. Эта строка нарочно длинная, чтобы упереться в обрезку до трёх строк и показать многоточие: продолжение видно только после разворота, и ровно так экран и сканируют.</span>
+    </div>
+
+    <div class="ds-log__line">
+      <button type="button" class="ds-log__toggle" aria-expanded="false" aria-label="Развернуть строку"><span aria-hidden="true">▸</span></button>
+      <time class="ds-log__time" datetime="2026-07-29T12:05:02+03:00">12:05:02</time>
+      <span class="ds-log__kind ds-log__kind--success">Готово</span>
+      <span class="ds-log__stream">stdout</span>
+      <span class="ds-log__text" style="--ds-log-clamp:3">прогон завершён за 31 с</span>
+    </div>
+
+    <div class="ds-log__pad" style="height:0" aria-hidden="true"></div>
+  </div>
+  <button type="button" class="ds-log__tail">К последним</button>
+</div>
+</div></body></html>

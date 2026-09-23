@@ -1,0 +1,23 @@
+.ds-empty {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-8) var(--ds-space-6);
+  font-family: var(--ds-font-ui);
+}
+.ds-empty__icon { color: var(--ds-text-muted); opacity: 0.8; line-height: 0; margin-bottom: var(--ds-space-1); }
+.ds-empty__title { font-size: var(--ds-fs-lg); font-weight: 600; color: var(--ds-text-primary); }
+.ds-empty__desc { font-size: var(--ds-fs-base); color: var(--ds-text-secondary); max-width: calc(20rem * var(--ds-ui-scale)); line-height: 1.5; }
+.ds-empty__action { margin-top: var(--ds-space-3); }
+
+/* Инлайн-вариант: тот же блок, но раскладка строкой — для ячейки таблицы и угла
+   карточки. Без крупной иконки и кегля заголовка; заглушку-иконку компонент в
+   инлайне не подставляет вовсе. */
+.ds-empty--inline {
+  display: inline-flex; flex-direction: row; align-items: baseline;
+  gap: var(--ds-space-2); padding: 0; text-align: left;
+  font-size: var(--ds-fs-sm); color: var(--ds-text-secondary);
+}
+.ds-empty--inline .ds-empty__icon { margin: 0; align-self: center; }
+.ds-empty--inline .ds-empty__title { font-size: var(--ds-fs-sm); font-weight: 400; color: var(--ds-text-secondary); }
+.ds-empty--inline .ds-empty__desc { font-size: var(--ds-fs-sm); max-width: none; line-height: inherit; }
+.ds-empty--inline .ds-empty__action { margin: 0; }

@@ -1,0 +1,101 @@
+# CocoSearch Configuration
+# https://github.com/VioletCranberry/cocosearch
+
+# Index name (optional - defaults to directory name)
+# Задан явно: имя каталога — `my-design`, а дефис CocoSearch не принимает
+# («must contain only letters, digits, and underscores»). Имя должно быть
+# уникальным на машине: одна БД `cocosearch` хранит индексы всех проектов,
+# и два проекта с одинаковым indexName молча писали бы в одни таблицы.
+indexName: jig
+
+# Linked indexes for cross-project search (monorepo setups)
+# Automatically includes these indexes when searching this project
+# linkedIndexes:
+#   - shared-lib
+#   - common-utils
+
+# Indexing settings
+indexing:
+  # `.design-sync/previews/**` — сгенерированные превью компонентов: дословные
+  # копии того, что уже лежит в `src/` и `demo/`. В индексе они давали 217
+  # чанков (~5%) дублей, которые конкурировали с настоящими исходниками
+  # в выдаче. Сам код живёт в `src/`, превью — артефакт выгрузки.
+  #
+  # `scripts/search-bench.py` — набор замера качества поиска: вопросы лежат в
+  # нём ДОСЛОВНО, и в индексе он отвечал на них сам. 21.09.2026 (DS-355)
+  # стоял #1 (0.590) на вопросе про цвета категорий и #3 (0.622) на «клик
+  # против перетаскивания», то есть занимал место в топ-10 ровно там, где
+  # настоящий ответ слаб, и замер мерил в том числе себя.
+  excludePatterns:
+    - ".design-sync/**"
+    - "scripts/search-bench.py"
+
+  # File patterns to include (glob patterns)
+  # includePatterns:
+  #   - "*.py"
+  #   - "*.js"
+  #   - "*.ts"
+
+  # File patterns to exclude (glob patterns)
+  # excludePatterns:
+  #   - "*_test.py"
+  #   - "*.min.js"
+
+  # Chunk settings
+  # Не трогать без замера распределения: потолок здесь почти никогда не
+  # достигается. Чанкер режет по структуре кода, и на 20.09.2026 (DS-354)
+  # подъём с 1000 до 3000 дал ЧЕТЫРЕ чанка длиннее 1500 байт из 13741, медиана
+  # не сдвинулась (832 байта). Проверять так:
+  #   select count(*) filter (where upper(location)-lower(location) > 950)
+  #   from codeindex_<index>__<index>_chunks;
+  # chunkSize: 1000
+  # chunkOverlap: 300
+
+# Search settings
+search: {}
+  # Maximum results returned
+  # resultLimit: 10
+
+  # Minimum similarity score (0.0 - 1.0)
+  # minScore: 0.3
+
+# Embedding settings
+# bge-m3 вместо дефолтного nomic-embed-text: комментарии, спеки и запросы здесь
+# русские, а nomic англоцентричен — на русском он даёт плоскую similarity без
+# различения. 1024 измерения (у nomic — 768), смена модели требует полной
+# переиндексации.
+embedding:
+  provider: ollama
+  model: bge-m3
+  outputDimension: 1024
+  # Provider: ollama (default, local), openai, or openrouter
+  # provider: ollama
+  # Model (default depends on provider: ollama -> nomic-embed-text,
+  #   openai -> text-embedding-3-small, openrouter -> openai/text-embedding-3-small)
+  # model: nomic-embed-text
+  # Custom / OpenAI-compatible endpoint (Infinity, TEI, vLLM). For the ollama
+  # provider this overrides COCOSEARCH_OLLAMA_URL.
+  # baseUrl: http://localhost:8080
+  # Override the embedding vector size (only if your model needs it)
+  # outputDimension: 768
+  # NOTE: remote providers also need COCOSEARCH_EMBEDDING_API_KEY (env var),
+  # unless baseUrl points at a local server. Switching provider/model requires
+  # a `cocosearch index . --fresh` reindex.
+
+# Optional query-rewrite controller (default: disabled)
+# An LLM expands vague natural-language queries into better search terms before
+# retrieval (e.g. "how does login work" -> "authentication session credential
+# login user token"). When disabled, search is byte-for-byte identical and no
+# generative model is ever called. Configured just like the embedding provider.
+# controller:
+#   enabled: false
+#   provider: ollama        # ollama (default), openai, openrouter
+#   model: qwen2.5:3b       # default depends on provider
+#   # baseUrl: http://localhost:11434   # custom / OpenAI-compatible endpoint
+#   # timeout: 5.0          # seconds; falls back to the original query on timeout
+
+# Logging (default: file output disabled)
+# When enabled, logs are written to ~/.cocosearch/logs/cocosearch.log
+# (10MB rotation, 3 backups). Equivalent to COCOSEARCH_LOG_FILE=true.
+# logging:
+#   file: false

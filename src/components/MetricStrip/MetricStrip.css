@@ -1,0 +1,58 @@
+/* Cells are separated by the grid colour showing through 1px gaps — the same
+   language as the tables, not a card with shadows. */
+.ds-metrics {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  gap: 1px; margin: 0; padding: 0; list-style: none;
+  background: var(--ds-table-grid);
+  border: 1px solid var(--ds-table-grid);
+  border-radius: var(--ds-radius);
+  overflow: hidden;
+  font-family: var(--ds-font-ui);
+}
+/* Перенос на заданное число колонок. Число здесь явное, а не выведенное из
+   ширины: ячейку, оставшуюся одна в последнем ряду, надо растянуть на весь ряд,
+   иначе рядом с ней зияет дорожка цвета сетки (замер: 3 метрики в 2 колонки —
+   159px из 320). Выражается это через nth-child, а он не принимает переменную,
+   поэтому auto-fit с minmax тут не подходит. */
+.ds-metrics--cols-2, .ds-metrics--cols-3, .ds-metrics--cols-4,
+.ds-metrics--cols-5, .ds-metrics--cols-6 { grid-auto-flow: row; }
+.ds-metrics--cols-2 { grid-template-columns: repeat(2, 1fr); }
+.ds-metrics--cols-3 { grid-template-columns: repeat(3, 1fr); }
+.ds-metrics--cols-4 { grid-template-columns: repeat(4, 1fr); }
+.ds-metrics--cols-5 { grid-template-columns: repeat(5, 1fr); }
+.ds-metrics--cols-6 { grid-template-columns: repeat(6, 1fr); }
+.ds-metrics--cols-2 > .ds-metrics__cell:last-child:nth-child(2n+1) { grid-column: 1 / -1; }
+.ds-metrics--cols-3 > .ds-metrics__cell:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
+.ds-metrics--cols-4 > .ds-metrics__cell:last-child:nth-child(4n+1) { grid-column: 1 / -1; }
+.ds-metrics--cols-5 > .ds-metrics__cell:last-child:nth-child(5n+1) { grid-column: 1 / -1; }
+.ds-metrics--cols-6 > .ds-metrics__cell:last-child:nth-child(6n+1) { grid-column: 1 / -1; }
+.ds-metrics__cell {
+  display: flex; flex-direction: column; gap: var(--ds-space-1);
+  padding: var(--ds-space-5) var(--ds-space-6);
+  background: var(--ds-surface);
+  min-width: 0;
+}
+.ds-metrics--dense .ds-metrics__cell { padding: var(--ds-space-3) var(--ds-space-4); }
+
+.ds-metrics__label {
+  font-size: var(--ds-fs-sm); color: var(--ds-text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ds-metrics__value {
+  font-size: var(--ds-fs-lg); font-weight: 700; color: var(--ds-text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* «Данных нет» отличается от значения ДВУМЯ каналами сразу, а не одним
+   (DS-93). Только цветом было бы мало: приглушённый жирный прочерк
+   рядом с тёмным жирным числом расходится лишь светлотой — тот же разряд
+   разницы, на котором система уже обожглась с зеброй (ΔE 1.73: полоса задана,
+   а глаз две строки не делит). Замерено до правки: голый прочерк давал вес 700
+   и цвет rgb(38,38,38) — побуквенно то же, что соседнее настоящее число. */
+.ds-metrics__value--empty { font-weight: 400; color: var(--ds-text-muted); }
+
+.ds-metrics__value--success { color: var(--ds-success); }
+.ds-metrics__value--warning { color: var(--ds-warning); }
+.ds-metrics__value--error { color: var(--ds-error); }
+
+.ds-metrics__hint { font-size: var(--ds-fs-sm); color: var(--ds-text-secondary); }

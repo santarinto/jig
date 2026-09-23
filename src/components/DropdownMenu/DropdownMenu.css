@@ -1,0 +1,92 @@
+.ds-dropdown { position: relative; display: inline-block; }
+
+/* Built-in "⋯" kebab trigger */
+.ds-dropdown__kebab {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--ds-h-compact); height: var(--ds-h-compact);
+  padding: 0; font-size: var(--ds-fs-lg); line-height: 1;
+  color: var(--ds-text-secondary);
+  background: transparent; border: 1px solid transparent; border-radius: var(--ds-radius);
+  cursor: pointer;
+}
+.ds-dropdown__kebab:hover { background: var(--ds-surface-subtle); color: var(--ds-text-primary); }
+.ds-dropdown__kebab:focus-visible { outline: none; border-color: var(--ds-accent); box-shadow: var(--ds-focus-ring); }
+
+/* ПОЛ ЦЕЛИ КЛИКА СВОЕГО ТРИГГЕРА (DS-323, пересмотр 359) переехал в
+   общий лист `src/styles/trigger-floor.css` (DS-366): тот же вопрос
+   встал у `Popover`, а класс `ds-dropdown__trigger` — уже выпущенное имя,
+   которое общий лист не переименовывает. Довод и оба названных предела —
+   в докблоке того листа. `DropdownMenu.tsx` импортирует его сам, тем же
+   `shared-sheets` держится, если правило здесь появится снова второй копией. */
+
+/* Menu surface.
+   Ширина — ПО СОДЕРЖИМОМУ, между полом и потолком (DS-159). Абсолютный
+   блок без `width` ужимается по содержащему блоку — по кебабу 28px — и с одной
+   `min-width` меню выходило всегда ровно 180px: «Отменить проведение» ломалось
+   на две строки в пункте фиксированной высоты (замерено clientHeight 28 при
+   scrollHeight 30). `max-content` снимает зависимость от якоря; потолок
+   `--ds-w-popup-max` говорит, где длинный пункт переносится, а не тянет меню
+   через экран. `--end` считает правый край от якоря, поэтому растущее меню
+   едет ВЛЕВО и правые края остаются совмещёнными — держит замер. */
+.ds-dropdown__menu {
+  position: absolute; z-index: var(--ds-z-popup);
+  width: max-content;
+  min-width: calc(11.25rem * var(--ds-ui-scale)); max-width: var(--ds-w-popup-max);
+  padding: var(--ds-space-1) 0;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border-overlay);
+  border-radius: var(--ds-radius);
+  box-shadow: var(--ds-shadow-md);
+}
+/* Зазор от якоря и поджим от края экрана объявлены ЗДЕСЬ, а читает их JS
+   (`useAnchoredPosition`). Так они остаются токенами и умножаются на
+   `--ds-ui-scale`; окажись они числами в компоненте — меню на полуторной шкале
+   отходило бы от кебаба на столько же, на сколько на единичной, и гейт
+   `js-px-scale` этого не увидел бы, потому что смотрит за размерами, а не за
+   координатами. */
+.ds-dropdown__menu { --ds-anchor-gap: var(--ds-space-1); --ds-anchor-inset: var(--ds-space-2); }
+
+/* СТАТИЧЕСКИЙ ФОЛБЭК, а не второй источник правды. Компонент считает позицию
+   сам и перекрывает эти четыре правила инлайном (`position: fixed` плюс
+   `left`/`top`, с гашением `right`/`bottom`). Правила остаются ради РУЧНОЙ
+   вёрстки по классам — превью и случаи `measure` рисуют разметку без JS, и
+   именно на ней держится случай про ширину и направление роста
+   (DS-159). Тот же приём и по той же причине, что фолбэки `0px` у
+   `--ds-table-min-*`. */
+.ds-dropdown__menu--start { left: 0; }
+.ds-dropdown__menu--end { right: 0; }
+.ds-dropdown__menu:not(.ds-dropdown__menu--up) { top: calc(100% + var(--ds-space-1)); }
+.ds-dropdown__menu--up { bottom: calc(100% + var(--ds-space-1)); }
+
+/* Items */
+.ds-dropdown__item {
+  display: flex; align-items: center; gap: var(--ds-space-3);
+  /* `min-height`, не `height`: пункт, перенесённый на две строки у потолка
+     ширины, растёт, а не режет текст (DS-159). Однострочный по-прежнему
+     ровно `--ds-h-compact` — вертикальный падинг в него укладывается. */
+  width: 100%; min-height: var(--ds-h-compact); padding: var(--ds-space-1) var(--ds-space-4);
+  font-family: var(--ds-font-ui); font-size: var(--ds-fs-base); text-align: left;
+  color: var(--ds-text-primary);
+  background: transparent; border: none; cursor: pointer;
+}
+.ds-dropdown__item.is-active:not(:disabled),
+.ds-dropdown__item:hover:not(:disabled) { background: var(--ds-table-hover); }
+/* `outline: none` без замены — единственное такое место в системе было здесь:
+   сосед (`__kebab` выше; до DS-359 их было два — с обёрткой своего
+   триггера) браузерное кольцо гасит и тут же ставит своё.
+   Пункт меню гасил и не ставил, то есть клавиатурный пользователь
+   при движении стрелками не видел, где он. Фон `.is-active` эту роль не несёт:
+   он же ставится по наведению мыши, и «где фокус» от «где курсор» неотличимо.
+   Кольцо внутрь (`inset`) — пункт растянут на всю ширину меню, наружное кольцо
+   срезалось бы краем панели. */
+.ds-dropdown__item:focus-visible { outline: none; box-shadow: var(--ds-focus-ring-inset); }
+.ds-dropdown__item--error { color: var(--ds-error); }
+.ds-dropdown__item:disabled { color: var(--ds-text-muted); cursor: default; }
+
+.ds-dropdown__item-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--ds-space-6); height: var(--ds-space-6); flex: 0 0 var(--ds-space-6);
+}
+.ds-dropdown__item-label { flex: 1 1 auto; }
+
+.ds-dropdown__sep { height: 1px; margin: var(--ds-space-1) 0; background: var(--ds-border); }

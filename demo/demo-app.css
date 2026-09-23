@@ -1,0 +1,389 @@
+/* Demo gallery shell — dev-only, not shipped. */
+
+/*
+ * Подложка — тёмный фон приложения `--ds-bg-app`, а разделы вынесены на карточки
+ * `--ds-surface`: секции читаются как приподнятые образцы над общим бэкдропом.
+ * Токен, а не хардкод: подложка следует за темой (тумблер справа сверху).
+ */
+.demo-app {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+  background: var(--ds-bg-app);
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-ui);
+}
+
+.demo-app__nav {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: 16px 12px;
+  border-right: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+}
+
+.demo-app__brand {
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  margin: 0 0 4px;
+  padding: 0 8px;
+}
+
+.demo-app__hint {
+  font-size: var(--ds-fs-sm);
+  color: var(--ds-text-muted);
+  margin: 0 0 16px;
+  padding: 0 8px;
+  line-height: 1.35;
+}
+
+.demo-app__link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  margin-bottom: 2px;
+  border: none;
+  border-radius: var(--ds-radius-sm);
+  background: transparent;
+  color: var(--ds-text-secondary);
+  font: inherit;
+  font-size: var(--ds-fs-sm);
+  cursor: pointer;
+}
+
+.demo-app__link:hover {
+  background: var(--ds-surface-subtle);
+  color: var(--ds-text-primary);
+}
+
+.demo-app__link.is-active {
+  background: var(--ds-accent-subtle);
+  color: var(--ds-accent);
+  font-weight: 600;
+}
+
+.demo-app__labs {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ds-border);
+}
+
+.demo-app__labs-title {
+  font-size: var(--ds-fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ds-text-muted);
+  padding: 0 8px;
+  margin: 0 0 8px;
+}
+
+.demo-app__lab {
+  display: block;
+  padding: 4px 8px;
+  font-size: var(--ds-fs-sm);
+  color: var(--ds-accent);
+  text-decoration: none;
+}
+
+.demo-app__lab:hover {
+  text-decoration: underline;
+}
+
+.demo-app__main {
+  padding: 20px 24px 48px;
+  max-width: 1480px;
+}
+
+.demo-app__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.demo-app__title {
+  font-size: var(--ds-fs-xl);
+  font-weight: 600;
+  margin: 0;
+}
+
+.demo-app__subtitle {
+  margin: 4px 0 0;
+  font-size: var(--ds-fs-sm);
+  color: var(--ds-text-muted);
+}
+
+.demo-section {
+  margin-bottom: 24px;
+  padding: 20px 24px 24px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-md);
+}
+
+.demo-section__title {
+  font-size: var(--ds-fs-lg);
+  font-weight: 600;
+  margin: 0 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ds-border);
+}
+
+.demo-subsection {
+  scroll-margin-top: 16px;
+}
+
+.demo-subsection__title {
+  font-size: var(--ds-fs-lg);
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--ds-text-secondary);
+}
+
+.demo-app__sublink {
+  padding-left: 20px;
+  font-size: var(--ds-fs-sm);
+}
+
+.demo-app__group-label {
+  display: block;
+  padding: 8px 8px 4px;
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ds-text-muted);
+}
+
+.demo-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.demo-grid--2 {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.demo-grid--1 {
+  grid-template-columns: 1fr;
+}
+
+.demo-card {
+  padding: 16px;
+  background: var(--ds-surface-subtle);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+}
+
+.demo-card--plain {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.demo-card--plain .demo-card__label {
+  margin-bottom: 12px;
+}
+
+.demo-card__label {
+  font-size: var(--ds-fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ds-text-muted);
+  margin: 0 0 12px;
+}
+
+.demo-group__title {
+  font-size: var(--ds-fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ds-text-muted);
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+/* Обёртка одного элемента демо (DEMO ONLY). */
+.demo-spec {
+  display: block;
+  max-width: 100%;
+}
+
+.demo-spec--inline {
+  display: block;
+  width: 100%;
+}
+
+.demo-spec--block {
+  width: 100%;
+}
+
+.demo-spec__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  min-height: 22px;
+}
+
+.demo-spec__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.demo-spec__name,
+.demo-spec__size {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border: 1px solid var(--ds-border);
+  border-radius: 2px;
+  background: var(--ds-surface);
+  font-family: var(--ds-font-mono);
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: var(--ds-text-muted);
+  cursor: pointer;
+}
+
+.demo-spec__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
+.demo-spec--inline .demo-spec__name {
+  font-size: 9px;
+}
+
+/* В тёмной теме подписи-чипы (имя/размер/копия) — светлее muted: копировать удобнее. */
+[data-theme='dark'] .demo-spec__name,
+[data-theme='dark'] .demo-spec__size,
+[data-theme='dark'] .demo-spec__copy {
+  color: #c4c4c4;
+}
+
+.demo-spec__name:hover,
+.demo-spec__size:hover,
+.demo-spec__copy:hover {
+  border-color: var(--ds-accent);
+  color: var(--ds-text-primary);
+}
+
+.demo-spec__name.is-copied,
+.demo-spec__size.is-copied,
+.demo-spec__copy.is-copied {
+  border-color: var(--ds-success);
+  color: var(--ds-success);
+}
+
+.demo-spec__copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: 2px;
+  background: var(--ds-surface);
+  color: var(--ds-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.demo-spec__body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+  /* border-box: у блочных спеков width:100% + padding + border под content-box
+     давали бокс шире родителя → 1px горизонтального скролла на всю страницу. */
+  box-sizing: border-box;
+}
+
+.demo-spec--inline .demo-spec__body {
+  min-height: 2rem;
+}
+
+.demo-spec:not(.demo-spec--inline) .demo-spec__body {
+  padding: 12px;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface-subtle);
+}
+
+.demo-spec--block:not(.demo-spec--inline) .demo-spec__body {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.demo-spec__content {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.demo-spec--block .demo-spec__content {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.demo-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.demo-row--spec {
+  gap: 12px;
+}
+
+.demo-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.demo-stack:has(.demo-spec) {
+  gap: 12px;
+}
+
+/* Скролл-обёртке нужна определённая ширина: fit-content родителя спрашивает
+   интринсик у скролл-контейнера, чей контент задан в процентах, — цикл
+   схлопывает ширину в 0, и блок невидим. */
+.demo-spec--block .demo-spec__content:has(> .demo-wide) {
+  width: 100%;
+}
+
+.demo-wide {
+  overflow-x: auto;
+}
+
+/* Узкий контейнер — bbox поля, а не всей карточки. */
+.demo-field-width {
+  width: min(100%, 20rem);
+}
+
+@media (max-width: 720px) {
+  .demo-app {
+    grid-template-columns: 1fr;
+  }
+  .demo-app__nav {
+    position: static;
+    max-height: none;
+    border-right: none;
+    border-bottom: 1px solid var(--ds-border);
+  }
+}

@@ -1,0 +1,177 @@
+/* Список записей с раскрытием (LedgerList). Не <table> и не ARIA-таблица:
+   список <details>, колонки сводки выравнивает CSS subgrid. Почему так —
+   AGENTS.md ## LedgerList. */
+.ds-ledger {
+  display: grid;
+  /* Свой контейнер запроса: раскладку в две строки (ниже) выбирает ширина
+     ЛЕНТЫ, а не вьюпорта. Корень сам себя покрасить запросом не может, поэтому
+     переставляются шапка, записи и итог. */
+  container-type: inline-size;
+  /* grid-template-columns приходит инлайном из columns */
+  font-size: var(--ds-fs-base); color: var(--ds-text-primary); background: var(--ds-surface);
+  border: 1px solid var(--ds-table-grid);
+}
+/* Шапка колонок и каждая запись занимают все треки и раскладывают ячейки на них
+   через subgrid — так правые края чисел совпадают между записями (инвариант). */
+.ds-ledger__head,
+.ds-ledger__rec,
+.ds-ledger__summary {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+}
+.ds-ledger__rec > .ds-ledger__summary { grid-column: 1 / -1; }
+.ds-ledger__head {
+  font-weight: 500; color: var(--ds-text-secondary);
+  background: var(--ds-table-header); border-bottom: 1px solid var(--ds-border-strong);
+}
+.ds-ledger__head > *,
+.ds-ledger__summary > * {
+  padding: 0 var(--ds-space-4);
+  min-height: var(--ds-h-default);
+  display: flex; align-items: center;
+}
+.ds-ledger--dense .ds-ledger__summary > * { min-height: var(--ds-h-compact); }
+/* Выравнивание по вертикали: первая строка описания и сумма на одной линии. */
+.ds-ledger__summary { align-items: baseline; }
+/* Край и цифровая типографика разведены (DS-86): `__end` — куда
+   прижато, `__num` — чем набрано. Словарь логический (`end`, не `right`). */
+.ds-ledger__end { text-align: end; justify-content: flex-end; }
+.ds-ledger__num { font-feature-settings: "tnum"; }
+/* Разделитель записей — `--ds-border`, а не сетка таблицы (DS-312).
+   `--ds-table-grid` даёт 1.27 : 1 к поверхности, и в две строки (ниже порога)
+   запись разводит от соседней в основном эта линия — ослабь её (тема, экран,
+   `opacity` предка), и дата уходит к чужой записи. Ритм в две строки отдан
+   читаемости, а не группировке (см. у порога ниже), так что группировку держит
+   именно линия. В обоих режимах один цвет: лента не меняет вид на пороге.
+   ШАПКА ЗДЕСЬ БОЛЬШЕ НЕ СТОИТ. Правило было общим для записи и шапки и стояло
+   ниже `border-strong` шапки с тем же весом — то есть молча перебивало его, и
+   шапка годами рисовалась сеткой. С `--ds-border` у записи это перевернуло бы
+   иерархию: запись ярче шапки. Теперь у шапки её объявленный `border-strong`. */
+.ds-ledger__rec { border-bottom: 1px solid var(--ds-border); }
+/* <details>/<summary> — снять нативный маркер. Курсор-указатель только у
+   раскрываемой записи: простая (--plain) не интерактивна и не должна казаться
+   кликабельной. */
+.ds-ledger__summary { list-style: none; }
+.ds-ledger__summary::-webkit-details-marker { display: none; }
+.ds-ledger__rec:not(.ds-ledger__rec--plain) > .ds-ledger__summary { cursor: pointer; }
+/* Деталь — во всю ширину, с отступом под колонку описания. */
+.ds-ledger__detail {
+  grid-column: 1 / -1;
+  padding: var(--ds-space-3) var(--ds-space-4) var(--ds-space-4) var(--ds-space-7);
+  color: var(--ds-text-secondary);
+}
+/* Группа — прозрачный для грида контейнер (display:contents не рвёт subgrid),
+   несёт role=group + связь с заголовком. Проверено спайком: треки контейнера
+   доходят до ячеек сквозь него. */
+.ds-ledger__group { display: contents; }
+.ds-ledger__grouphead {
+  grid-column: 1 / -1;
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--ds-space-4);
+  margin: 0; padding: 0 var(--ds-space-4);
+  min-height: var(--ds-h-default);
+  font-size: var(--ds-fs-base); font-weight: 500;
+  background: var(--ds-table-header); border-bottom: 1px solid var(--ds-table-grid);
+}
+.ds-ledger__aside { color: var(--ds-text-muted); font-weight: 400; }
+/* Строка-итог: subgrid-проекция под колонки, подложка шапки. */
+.ds-ledger__foot {
+  grid-column: 1 / -1;
+  display: grid; grid-template-columns: subgrid;
+  background: var(--ds-table-header); font-weight: 500;
+  border-top: 1px solid var(--ds-border-strong);
+}
+.ds-ledger__foot > * { padding: 0 var(--ds-space-4); min-height: var(--ds-h-default); display: flex; align-items: center; }
+.ds-ledger__foot > .ds-ledger__end { justify-content: flex-end; }
+/* muted — приглушённый ТЕКСТ записи, а не фон (DS-137). Тот же разворот,
+   что у строки `DataTable`, и по той же причине: `--ds-surface-subtle` — токен
+   ПОВЕРХНОСТИ, и в тёмной теме он светлее подложки списка (#2E2E2E против
+   #262626), то есть приглушённая запись выходила заметнее живой. Слово `muted`
+   в системе одно (`rowState({muted})` у обоих компонентов) — значить в двух
+   местах разное оно не может. Подложек у записи одна, поэтому пол 4.5:1 здесь
+   меряется на ней: 5.74 в светлой, 6.74 в тёмной. */
+.ds-ledger__rec--muted { color: var(--ds-row-muted-fg); }
+/* Каретка раскрытия живёт ВНУТРИ ведущей ячейки, не отдельным грид-элементом:
+   иначе заняла бы трек и сдвинула колонки (инвариант в Task 7 это стережёт).
+   Только у раскрываемой записи (у --plain каретки нет).
+
+   Поворот описан здесь, а не общим `.is-open`, потому что раскрытие тут —
+   нативный `<details>` и работает без JS: состояние в атрибуте `[open]`, и
+   React о нём не знает. Отсюда же `open="native"` в разметке. */
+.ds-ledger__lead .ds-caret { margin-right: var(--ds-space-2); vertical-align: -0.2em; }
+.ds-ledger__rec[open] .ds-ledger__lead .ds-caret--branch { transform: rotate(90deg); }
+/* Кольцо фокуса на summary (при display:grid дефолтный аутлайн ведёт себя иначе). */
+.ds-ledger__summary:focus-visible {
+  outline: none; box-shadow: var(--ds-focus-ring); border-radius: var(--ds-radius-sm);
+}
+
+/* СТРАХОВКА ОТ НАЛОЖЕНИЯ (DS-307). Порог ниже угадан по фикстуре, а
+   треки у потребителя свои: текстовый трек может оказаться уже слова и выше
+   порога. Тогда текст переносится внутри СВОЕЙ ячейки, хоть по буквам, и на
+   соседнюю не заходит никогда. Сумм и ведущей это не касается: `__end` и
+   `__lead` не переносятся, число и дата не рвутся. Ведущую пришлось исключить
+   по замеру: дата с кареткой занимает трек 96 ровно впритык, и с `anywhere`
+   на широком кадре она ломалась на две строки (высота ячейки 32 → 35). На широкой ленте слово влезает, и перенос
+   идёт по пробелам, как прежде. */
+.ds-ledger__head > :not(:first-child):not(.ds-ledger__end),
+.ds-ledger__summary > :not(.ds-ledger__lead):not(.ds-ledger__end),
+.ds-ledger__foot > :not(.ds-ledger__lead):not(.ds-ledger__end) { min-width: 0; overflow-wrap: anywhere; }
+
+/* ── УЗКАЯ ЛЕНТА: ЗАПИСЬ В ДВЕ СТРОКИ (DS-307) ─────────────────────────
+   Сумма не режется никогда: число, срезанное с конца, — неверное число. Когда
+   ей не хватает строки, запись перестраивается: текстовые колонки сверху, во
+   всю ширину, а ведущая (дата) и суммы — строкой ниже, сумма справа.
+
+   ПОРОГ — ЗАМЕР, А НЕ ВКУС. Точное условие «сумме не хватает» CSS не
+   выражает: оно про ширину содержимого, а `@container` её не видит, JS у
+   статики без гидрации нет. Поэтому порог — число, снятое с худшей записи
+   фикстуры (`data: long`, сумма 1 234 567,89 ₽) при шкале 1, кегль ленты 13 px:
+     ведущая 96 + трек суммы 128 (max-content, с паддингами)
+     + паддинги двух текстовых ячеек 2 × (2 × 8) = 32   → 256 px
+     + запас на один знак суммы (tnum, 8 px)          → 264 px = 20.31em
+     + ЧИТАЕМЫЙ МИНИМУМ ТЕКСТА, 8em на весь текст записи («одно слово
+       назначения»)                                    → 28.31em → 28.4em.
+   Без последнего слагаемого порог считал текст нулевым, и чуть выше него
+   текстовый трек был нулевым тоже: на 360 при шкале 1 назначение (233–302)
+   лежало поверх суммы (225–329). Наложение хуже прокрутки (DS-307).
+   В em контейнера, поэтому шкалу порог учитывает сам: при 1.5 те же слагаемые
+   дают 396 / 19.5 + 8 = 28.31em. Контейнер меряется по content box ленты.
+   Порог один на все ленты: у ленты с суммой длиннее фикстурной одна строка
+   переполнится чуть выше него, у ленты с короткой сложится раньше, чем стало
+   бы тесно. Это цена условия, которое CSS не выражает.
+
+   Ниже порога ячейки не на треках корня: трек можно сменить только у самого
+   корня, а корень запросом не красится. Поэтому строки становятся гибким рядом
+   с переносом и шириной `100cqi` — ровно лента, сколько бы ни требовали треки. */
+@container (max-width: 28.4em) {
+  .ds-ledger__rec { display: block; }
+  .ds-ledger__head,
+  .ds-ledger__summary,
+  .ds-ledger__foot {
+    display: flex; flex-wrap: wrap; align-items: baseline;
+    justify-self: start; box-sizing: border-box; width: 100cqi;
+  }
+  .ds-ledger__summary { display: flex; }
+  .ds-ledger__head > *,
+  .ds-ledger__summary > *,
+  .ds-ledger__foot > * { flex: 1 0 100%; box-sizing: border-box; min-width: 0; }
+  /* Текст — первые строки записи, без пола высоты: пол у строки даты и суммы. */
+  /* У шапки класса `__lead` нет — ведущую колонку там называет позиция. */
+  .ds-ledger__head > :not(:first-child):not(.ds-ledger__end),
+  .ds-ledger__summary > :not(.ds-ledger__lead):not(.ds-ledger__end) {
+    min-height: 0; padding-block-start: var(--ds-space-2);
+  }
+  /* Ведущая и сумма делят строку, пока влезают; не влезли — сумма уходит
+     своей строкой, прижатой вправо, а не режется. */
+  .ds-ledger__lead, .ds-ledger__head > :first-child { order: 1; flex: 0 1 auto; }
+  /* РИТМ НЕ УЖИМАЕТСЯ, И ЭТО РЕШЕНИЕ, А НЕ НЕДОСМОТР (DS-312). Пол
+     `--ds-h-default` у даты и суммы в две строки центрирует их в 48 px (шкала
+     1.5): зазор внутри записи 23 px больше, чем между записями (19). По теории
+     близости это инверсия, и её сняли — внутри 8.3, между 20. Слепое сравнение
+     владельца, дважды с перестановкой сторон, выбрало ПРЕЖНИЙ ритм: какая сумма
+     к какому контрагенту, ясно в обоих, а читать легче с воздухом. Группировку
+     держит линия записи (`--ds-border`, выше), ритм отдан читаемости. Не ужимать
+     без нового слепого сравнения. */
+  .ds-ledger__end { order: 2; flex: 0 0 auto; margin-inline-start: auto; }
+  .ds-ledger__foot > :empty { display: none; }
+}

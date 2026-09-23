@@ -1,0 +1,104 @@
+/* Типографическое тело. Все стили — под `.ds-prose`, чтобы не задевать чужую
+   разметку, и на `--ds-*` токенах, поэтому светлая/тёмная тема работают сами. */
+.ds-prose {
+  min-width: 0;
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-base);
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+.ds-prose > :first-child { margin-top: 0; }
+.ds-prose > :last-child { margin-bottom: 0; }
+
+.ds-prose p,
+.ds-prose ul,
+.ds-prose ol,
+.ds-prose blockquote,
+.ds-prose pre,
+.ds-prose table { margin: 0 0 var(--ds-space-5); }
+
+.ds-prose h1,
+.ds-prose h2,
+.ds-prose h3,
+.ds-prose h4,
+.ds-prose h5,
+.ds-prose h6 {
+  margin: var(--ds-space-7) 0 var(--ds-space-4);
+  font-weight: 600; line-height: 1.3; color: var(--ds-text-primary);
+}
+/* Шесть уровней на ЧЕТЫРЁХ кеглях, и это не нехватка ступеней, а их предмет
+   (DS-375). Над телом шкала держит ровно три ступени — 16 / 20 / 24, —
+   их и занимают h1..h3; h4..h6 садятся на тело и различаются весом. Так было
+   и до подъёма базы: h4..h6 делили один кегль всегда.
+
+   До DS-375 заголовки стояли ступенью ниже (20 / 16 / 14), и h3 отличался
+   от h4 ровно на пиксель — 14 против 13. Различием это не было: разница в
+   пиксель не читается как уровень, и ровно этим доводом из шкалы убрана
+   ступень 13. База 14 сделала мнимое различие явным совпадением, и уровни
+   разъехались по настоящим ступеням, а не по соседним значениям. */
+.ds-prose h1 { font-size: var(--ds-fs-2xl); }
+.ds-prose h2 { font-size: var(--ds-fs-xl); }
+.ds-prose h3 { font-size: var(--ds-fs-lg); }
+.ds-prose h4,
+.ds-prose h5,
+.ds-prose h6 { font-size: var(--ds-fs-base); }
+
+.ds-prose ul,
+.ds-prose ol { padding-left: var(--ds-space-7); }
+.ds-prose li { margin: var(--ds-space-2) 0; }
+.ds-prose li > ul,
+.ds-prose li > ol { margin: var(--ds-space-2) 0; }
+
+.ds-prose a {
+  color: var(--ds-accent); text-decoration: none;
+}
+.ds-prose a:hover { text-decoration: underline; }
+
+.ds-prose strong { font-weight: 600; }
+
+.ds-prose hr {
+  border: none; border-top: 1px solid var(--ds-border);
+  margin: var(--ds-space-6) 0;
+}
+
+/* Инлайновый код. */
+.ds-prose code {
+  font-family: var(--ds-font-mono); font-size: 0.9em;
+  padding: 0.1em 0.35em; border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface-subtle); color: var(--ds-text-primary);
+}
+
+/* Блок кода: длинные строки скроллятся ВНУТРИ блока, а не распирают контейнер. */
+.ds-prose pre {
+  max-width: 100%; overflow-x: auto;
+  padding: var(--ds-space-5); border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-subtle); border: 1px solid var(--ds-border);
+  font-family: var(--ds-font-mono); font-size: var(--ds-fs-sm); line-height: 1.5;
+}
+.ds-prose pre code {
+  padding: 0; background: none; border-radius: 0; font-size: inherit;
+}
+
+.ds-prose blockquote {
+  padding: var(--ds-space-2) var(--ds-space-5);
+  border-left: 3px solid var(--ds-accent);
+  color: var(--ds-text-secondary);
+}
+.ds-prose blockquote > :last-child { margin-bottom: 0; }
+
+/* Таблица: block+overflow-x, чтобы широкая таблица скроллилась, а не ломала
+   ширину тела. */
+.ds-prose table {
+  display: block; max-width: 100%; overflow-x: auto;
+  border-collapse: collapse; font-size: var(--ds-fs-sm);
+}
+.ds-prose th,
+.ds-prose td {
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border: 1px solid var(--ds-border); text-align: left;
+}
+.ds-prose th { background: var(--ds-surface-subtle); font-weight: 600; }
+
+.ds-prose img { max-width: 100%; height: auto; }

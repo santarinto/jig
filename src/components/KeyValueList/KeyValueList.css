@@ -1,0 +1,49 @@
+.ds-kv {
+  display: grid; margin: 0; font-family: var(--ds-font-ui); font-size: var(--ds-fs-base);
+  column-gap: var(--ds-space-6);
+}
+/* Колонка ограничена по мере, а не растянута на контейнер. Список пар — это
+   структура для ЧТЕНИЯ, и ряд в 2052px разносит метку и значение так, что
+   связать их взглядом нельзя: замерено «Limit, per role» и «1» на расстоянии
+   1946px друг от друга (DS-136). Потребитель, у которого есть ширина,
+   тратит её на `columns`, а не на растягивание одной колонки — для этого
+   колонки и заведены.
+
+   `em`, а не `rem` и не пиксели: единица считается от шрифта самой `dl`, а он —
+   `--ds-fs-base`, то есть умножен на `--ds-ui-scale`. При масштабе 1.25 в ту же
+   меру влезает меньше знаков, и предел обязан уехать вместе с ним. Ровно та же
+   причина, по которой в `DataTable` пороги заданы в `em`. */
+.ds-kv--cols-1 { grid-template-columns: minmax(0, 44em); }
+.ds-kv--cols-2 { grid-template-columns: repeat(2, minmax(0, 44em)); }
+
+.ds-kv__row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-3) 0;
+  min-width: 0;
+}
+.ds-kv--dense .ds-kv__row { padding: var(--ds-space-1) 0; }
+.ds-kv--dividers .ds-kv__row + .ds-kv__row,
+.ds-kv--dividers.ds-kv--cols-2 .ds-kv__row { border-top: 1px solid var(--ds-border); }
+.ds-kv--dividers.ds-kv--cols-2 .ds-kv__row:nth-child(-n+2) { border-top: none; }
+
+.ds-kv__label {
+  color: var(--ds-text-muted); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+/* `max-width` здесь работает не как ограничение картинки, а как ограничение
+   ФЛЕКС-БАЗЫ. При `flex-basis: auto` база равна max-content, и значение в 1109
+   знаков приходит в ряд с базой в тысячи пикселей. Сжатие флекс распределяет
+   пропорционально базам — значит вместе со значением он сжимает и метку, у
+   которой автоминимум разрешён в ноль своим же `overflow: hidden`. Метка
+   «Project description» получала 31px из нужных 133 и печаталась как «Pr…»,
+   на 1024px — 14px (DS-136).
+
+   Проверено правкой в живой странице: `flex: 0 0 auto` на метке НЕ помогает,
+   ограничение меры значения возвращает метке все 133px без единой правки самой
+   метки. Лечится значение, а не метка. */
+.ds-kv__value {
+  margin: 0; text-align: right; color: var(--ds-text-primary);
+  font-variant-numeric: tabular-nums;
+  min-width: 0; max-width: 32em; overflow-wrap: anywhere;
+}

@@ -1,0 +1,16 @@
+/* Поверхность — в `src/styles/field-surface.css`; обёртка `.ds-field` и
+   `.ds-field--block` — в общем `src/styles/field-frame.css`. Здесь только то,
+   чем текстовая область отличается от однострочного поля. */
+.ds-textarea {
+  width: 100%;
+  min-height: calc(var(--ds-h-default) * 1.6);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  font-size: var(--ds-fs-base); line-height: 1.4;
+  resize: vertical;
+}
+.ds-textarea--sm { font-size: var(--ds-fs-sm); padding: var(--ds-space-2) var(--ds-space-3); }
+.ds-textarea:disabled { resize: none; }
+
+.ds-textarea__footer { display: flex; justify-content: space-between; align-items: baseline; gap: var(--ds-space-4); }
+.ds-textarea__msg { min-width: 0; }
+.ds-textarea__counter { margin-left: auto; font-size: var(--ds-fs-sm); color: var(--ds-text-muted); white-space: nowrap; }

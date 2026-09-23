@@ -1,0 +1,27 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px;display:flex;gap:16px;align-items:flex-start">
+  <!-- Светлая тема сейчас — кнопка предлагает тёмную, aria-pressed=false. -->
+  <button type="button" class="ds-theme-toggle" aria-pressed="false" aria-label="Тёмная тема" title="Тёмная тема">
+    <span class="ds-theme-toggle__icon" aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <path d="M13.5 9.2A5.5 5.5 0 0 1 6.8 2.5 5.5 5.5 0 1 0 13.5 9.2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    <span class="ds-theme-toggle__label">Тёмная тема</span>
+  </button>
+
+  <!-- Нажатое состояние: тот же узел под тёмной темой, чтобы обе иконки и оба
+       фона попали на одну страницу замера. -->
+  <span data-theme="dark" style="background:var(--ds-bg-app);padding:8px;border-radius:var(--ds-radius);display:inline-flex">
+    <button type="button" class="ds-theme-toggle" aria-pressed="true" aria-label="Светлая тема" title="Светлая тема">
+      <span class="ds-theme-toggle__icon" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="ds-theme-toggle__label">Светлая тема</span>
+    </button>
+  </span>
+</div></body></html>

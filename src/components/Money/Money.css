@@ -1,0 +1,36 @@
+/* Сумма как компонент. Моношрифт и tabular-nums — одним правилом вместо четырёх
+   инлайновых свойств, разъезжавшихся между страницами. */
+.ds-money {
+  font-family: var(--ds-font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ds-text-primary);
+}
+.ds-money--sm { font-size: var(--ds-fs-sm); }
+.ds-money--md { font-size: var(--ds-fs-base); }
+.ds-money--lg { font-size: var(--ds-fs-lg); font-weight: 600; }
+
+/* Цвет по знаку — состояние, не величина. `-fg`-варианты рассчитаны на текст
+   (контраст в обеих темах); держится measure-инвариантом. `default` — базовый
+   `text-primary`, модификатора не имеет вовсе. */
+.ds-money--positive { color: var(--ds-success-fg); }
+.ds-money--negative { color: var(--ds-error-fg); }
+.ds-money--muted    { color: var(--ds-text-muted); }
+
+/* Прочерк «данных нет»: приглушён, без знака валюты (решается в компоненте —
+   «— ₽» читалось бы как сумма). */
+.ds-money--empty { color: var(--ds-text-muted); }
+.ds-money__hint {
+  color: var(--ds-text-muted); font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-sm); white-space: normal;
+}
+
+/* Знак оценочности своего листа не имеет: он уехал в `EstimateMark`, потому что
+   оценочными бывают не только деньги (у потребителя — ещё и процентные ставки). */
+
+/* Эквивалент второй строкой: мельче, приглушён, обычным шрифтом. */
+.ds-money__secondary {
+  display: block; font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-sm); color: var(--ds-text-secondary); white-space: normal;
+}
+.ds-money__sec-none { color: var(--ds-text-muted); font-style: italic; }

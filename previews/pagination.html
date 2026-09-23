@@ -1,0 +1,38 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px">
+<nav class="ds-pager" aria-label="Постраничная навигация">
+  <button class="ds-pager__btn" disabled>Назад</button>
+  <button class="ds-pager__btn ds-pager__btn--page is-active" aria-current="page">1</button>
+  <button class="ds-pager__btn ds-pager__btn--page">2</button>
+  <button class="ds-pager__btn ds-pager__btn--page">3</button>
+  <button class="ds-pager__btn">Вперёд</button>
+</nav>
+
+<!-- Компактная полоса (DS-149): ниже 31em содержимого номера сняты, слово
+     в стрелке уступило знаку, между знаками стоит указатель позиции. Рамка
+     задана 320px намеренно — порог решает ширина, и без узкой обёртки превью
+     показывало бы обычную полосу. -->
+<div style="width:320px;margin-top:24px">
+<nav class="ds-pager ds-pager--bar ds-pager--pages" aria-label="Постраничная навигация">
+  <div class="ds-pager__size">
+    <span class="ds-pager__sizelabel" id="pv-pager-size">На странице</span>
+    <select class="ds-pager__select" aria-labelledby="pv-pager-size"><option>20</option></select>
+  </div>
+  <span class="ds-pager__range">1921–1940 из 4000</span>
+  <div class="ds-pager__nav">
+    <button class="ds-pager__btn">
+      <span class="ds-pager__word">Назад</span><span class="ds-pager__arrow" aria-hidden="true">‹</span>
+    </button>
+    <button class="ds-pager__btn ds-pager__btn--page">1</button>
+    <span class="ds-pager__jump"><span class="ds-pager__gap">…</span><button class="ds-pager__btn ds-pager__btn--page">96</button></span>
+    <button class="ds-pager__btn ds-pager__btn--page is-active" aria-current="page">97</button>
+    <button class="ds-pager__btn ds-pager__btn--page">98</button>
+    <span class="ds-pager__jump"><span class="ds-pager__gap">…</span><button class="ds-pager__btn ds-pager__btn--page">200</button></span>
+    <span class="ds-pager__pos">Стр. 97 из 200</span>
+    <button class="ds-pager__btn">
+      <span class="ds-pager__word">Вперёд</span><span class="ds-pager__arrow" aria-hidden="true">›</span>
+    </button>
+  </div>
+</nav>
+</div></div></body></html>

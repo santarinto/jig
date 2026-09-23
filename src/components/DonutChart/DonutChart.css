@@ -1,0 +1,30 @@
+/* ПЕРЕНОС, А НЕ СРЕЗ (DS-304): когда кольцу и легенде не хватает одной
+   строки, легенда уходит ПОД кольцо, а значение не режется. Было: ряд без
+   переноса, кольцо `flex: 0 0 auto`, значение `nowrap` — на кадре 360 при шкале
+   1.5 документ уезжал на +59…71. У кольца потолок — контейнер: номинал `size`
+   остаётся предпочтительным. */
+.ds-donut { display: flex; flex-wrap: wrap; gap: var(--ds-space-5); font-family: var(--ds-font-ui); align-items: center; }
+.ds-donut--bottom { flex-direction: column; }
+.ds-donut--none { justify-content: center; }
+
+.ds-donut__ring { position: relative; flex: 0 0 auto; max-width: 100%; }
+.ds-donut__svg { display: block; width: 100%; height: auto; }
+.ds-donut__slice { stroke: var(--ds-surface); stroke-width: 0.5; }
+
+.ds-donut__center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; pointer-events: none; text-align: center;
+}
+.ds-donut__center-label { color: var(--ds-text-muted); font-size: var(--ds-fs-sm); }
+.ds-donut__center-value {
+  color: var(--ds-text-primary); font-size: var(--ds-fs-lg);
+  font-weight: 600; font-feature-settings: "tnum";
+}
+
+.ds-donut__legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--ds-space-2); min-width: 0; }
+.ds-donut--bottom .ds-donut__legend { flex-direction: row; flex-wrap: wrap; gap: var(--ds-space-2) var(--ds-space-4); }
+.ds-donut__row { display: flex; align-items: center; gap: var(--ds-space-2); font-size: var(--ds-fs-sm); min-width: 0; }
+.ds-donut__dot { width: calc(0.625rem * var(--ds-ui-scale)); height: calc(0.625rem * var(--ds-ui-scale)); border-radius: 2px; flex: 0 0 auto; }
+.ds-donut__label { color: var(--ds-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-donut__value { margin-left: auto; padding-left: var(--ds-space-3); color: var(--ds-text-primary); font-feature-settings: "tnum"; white-space: nowrap; }
+.ds-donut--bottom .ds-donut__value { margin-left: 0; }

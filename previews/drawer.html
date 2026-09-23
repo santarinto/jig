@@ -1,0 +1,23 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="height:360px;position:relative">
+  <!-- Панель показана открытой: закрытый Drawer не рендерит ничего, и мерить
+       было бы нечего. Оверлей оставлен — он и есть клик «мимо». -->
+  <div class="ds-drawer__overlay" style="position:absolute;inset:0">
+    <div class="ds-drawer ds-drawer--right" role="dialog" aria-modal="true" aria-labelledby="dw-title" tabindex="-1">
+      <div class="ds-drawer__header">
+        <span class="ds-drawer__title" id="dw-title">Реализация №142</span>
+        <button type="button" class="ds-drawer__close" aria-label="Закрыть">×</button>
+      </div>
+      <div class="ds-drawer__body">
+        <div class="ds-field"><label class="ds-field__label" for="dw-org">Организация</label>
+          <input id="dw-org" class="ds-input ds-input--md" value="ООО «Ромашка»"></div>
+        <p>Проведён 25.08.2026, сумма 128 400 ₽.</p>
+      </div>
+      <div class="ds-drawer__footer">
+        <button type="button" class="ds-btn ds-btn--secondary ds-btn--md">Отмена</button>
+        <button type="button" class="ds-btn ds-btn--primary ds-btn--md">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div></body></html>

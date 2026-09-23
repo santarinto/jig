@@ -1,0 +1,44 @@
+/* Страница-справка «что с чем ставят» (DS-181).
+   Своя раскладка, потому что предмет здесь — таблица, а не компоненты. */
+
+.pl {
+  font-family: var(--ds-font-ui);
+  color: var(--ds-text-primary);
+  background: var(--ds-bg-app);
+  min-height: 100vh;
+  padding: var(--ds-space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-8);
+}
+.pl__head { max-width: 60rem; display: flex; flex-direction: column; gap: var(--ds-space-4); }
+.pl h1 { font-size: var(--ds-fs-2xl); margin: 0; }
+.pl h2 { font-size: var(--ds-fs-xl); margin: 0 0 var(--ds-space-4); }
+.pl h3 { font-size: var(--ds-fs-lg); margin: var(--ds-space-6) 0 var(--ds-space-3); }
+.pl p { margin: 0; font-size: var(--ds-fs-base); line-height: 1.55; color: var(--ds-text-secondary); }
+.pl__card {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  padding: var(--ds-space-6);
+}
+.pl__scroll { overflow-x: auto; }
+.pl__matrix { border-collapse: collapse; font-size: var(--ds-fs-sm); font-feature-settings: "tnum"; }
+.pl__matrix th, .pl__matrix td { border: 1px solid var(--ds-table-grid); padding: 2px 4px; white-space: nowrap; }
+.pl__matrix th { font-weight: 500; text-align: left; color: var(--ds-text-secondary); }
+.pl__matrix th.pl__rot { writing-mode: vertical-rl; text-align: right; height: 8rem; }
+.pl__matrix td { text-align: right; }
+.pl__legal { background: color-mix(in srgb, var(--ds-success) 14%, var(--ds-surface)); color: var(--ds-success-fg); }
+.pl__unintended { color: var(--ds-text-faint); }
+.pl__fail { color: var(--ds-text-disabled); }
+.pl__legend { display: flex; gap: var(--ds-space-6); flex-wrap: wrap; font-size: var(--ds-fs-sm); margin-bottom: var(--ds-space-4); }
+.pl__legend b { font-weight: 500; }
+.pl__list { margin: 0; padding-left: var(--ds-space-7); font-size: var(--ds-fs-base); line-height: 1.6; color: var(--ds-text-secondary); }
+.pl__list li { margin-bottom: var(--ds-space-3); }
+.pl__probe { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; overflow: hidden; }
+.pl__tone { border-collapse: collapse; font-size: var(--ds-fs-sm); font-feature-settings: "tnum"; }
+.pl__tone th, .pl__tone td { border: 1px solid var(--ds-table-grid); padding: 3px 8px; text-align: right; white-space: nowrap; }
+.pl__tone th { text-align: left; font-weight: 500; color: var(--ds-text-secondary); }
+.pl__swatch { display: inline-block; width: var(--ds-size-swatch); height: var(--ds-size-swatch); border: 1px solid var(--ds-border); border-radius: var(--ds-radius-sm); vertical-align: middle; }
+.pl__warn { color: var(--ds-error); font-weight: 500; }
+.pl__mismatch { border: 2px solid var(--ds-error); padding: var(--ds-space-4); border-radius: var(--ds-radius-md); }

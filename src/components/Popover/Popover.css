@@ -1,0 +1,33 @@
+.ds-popover { position: relative; display: inline-block; }
+/* Обёртки-якоря больше нет: триггер потребителя сам несёт onClick и
+   aria-expanded (см. Popover.tsx). Прежний `<span onClick>` был кликабелен,
+   но не фокусируем и ничего не объявлял — а обернуть чужую кнопку в свою
+   значило бы завести `<button><button>`. */
+
+/* Ширина — по содержимому между полом и потолком, как у меню действий
+   (DS-159): с одной `min-width` панель ужималась по якорю и выходила
+   180px, перенося абзац при объявленном у содержимого `max-width: 20rem`. */
+.ds-popover__panel {
+  position: absolute; z-index: var(--ds-z-popup);
+  width: max-content;
+  min-width: calc(11.25rem * var(--ds-ui-scale)); max-width: var(--ds-w-popup-max);
+  padding: var(--ds-space-4);
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border-overlay); border-radius: var(--ds-radius);
+  box-shadow: var(--ds-shadow-md);
+  font-family: var(--ds-font-ui); font-size: var(--ds-fs-base); color: var(--ds-text-primary);
+}
+
+/* Зазор от якоря и поджим от края экрана — токенами здесь, читает их JS
+   (`useAnchoredPosition`). В компоненте числами они перестали бы умножаться на
+   `--ds-ui-scale`. */
+.ds-popover__panel { --ds-anchor-gap: var(--ds-space-1); --ds-anchor-inset: var(--ds-space-2); }
+
+/* СТАТИЧЕСКИЙ ФОЛБЭК, а не второй источник правды: позицию считает компонент и
+   перекрывает эти правила инлайном. Они остаются ради РУЧНОЙ вёрстки по
+   классам — превью и случаи `measure` рисуют разметку без JS, и на ней держится
+   утверждение про ширину и направление роста (DS-159). */
+.ds-popover__panel--bottom-start { top: calc(100% + var(--ds-space-1)); left: 0; }
+.ds-popover__panel--bottom-end { top: calc(100% + var(--ds-space-1)); right: 0; }
+.ds-popover__panel--top-start { bottom: calc(100% + var(--ds-space-1)); left: 0; }
+.ds-popover__panel--top-end { bottom: calc(100% + var(--ds-space-1)); right: 0; }

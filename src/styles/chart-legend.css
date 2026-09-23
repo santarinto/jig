@@ -1,0 +1,66 @@
+/* Легенда графика — один набор правил на два префикса.
+
+   До 1.42.0 `LineChart.css` и `BarChart.css` держали её побайтно одинаковой,
+   расходясь только именем блока: одиннадцать деклараций у чипа, три у точки,
+   три у ряда. Разметку рисует `src/internal/ChartLegend.tsx`.
+
+   Списком селекторов, а не общим блоком `.ds-chart-legend`: имена `ds-bar__*`
+   и `ds-chart__*` потребитель уже видит, и переименование стоило бы ему правок
+   ради нашей внутренней чистоты. Здесь разметка не меняется вовсе.
+*/
+.ds-chart__legend,
+.ds-bar__legend,
+.ds-eventcal__legend {
+  display: flex; flex-wrap: wrap; gap: var(--ds-space-3);
+}
+
+.ds-chart__chip,
+.ds-bar__chip,
+.ds-eventcal__chip {
+  display: inline-flex; align-items: center; gap: var(--ds-space-2);
+  /* Пол цели 24×24 (SC 2.5.8). Высоту давал только текст: 12px строкой плюс
+     4px отступов = 22.2, и это держалось годы, потому что ни одно превью
+     графика легенду не показывает — чип не мерился ни разу. Вскрыто превью
+     EventCalendar (DS-29). Правка общая: элемент один, и разной высоты у
+     графика и календаря он быть не должен.
+
+     `max()`, а не одна из двух величин (DS-155). `calc(1.5rem * scale)`
+     даёт на шкале 1 РОВНО 24 — то есть чип стоял на полу без запаса, и любая
+     шкала меньше единицы его пробивала: 20.992 при 0.875, 17.989 при 0.75.
+     0.875 — рабочая шкала потребителя (CHANGELOG 4.0.1), а не край диапазона.
+     `--ds-target-min` объявлен пикселями мимо `--ds-ui-scale` намеренно
+     (`tokens/tokens.css:202`) — пол ехать не должен, размер должен.
+
+     Двумя строками `min-height` подряд это НЕ пишется, хотя так и просится:
+     вторая декларация перебила бы первую целиком, и на 1.5 чип сжался бы с 36
+     до 24 — потолок вместо пола, ровно наоборот. Пара работает у соседей
+     (`Alert.css` — `width: calc(…)` плюс `min-width: var(--ds-target-min)`)
+     только потому, что там это РАЗНЫЕ свойства. Здесь свойство одно, и обе
+     величины обязаны жить внутри него — как в `DataTable.css:251`. */
+  min-height: max(var(--ds-target-min), calc(1.5rem * var(--ds-ui-scale)));
+  padding: var(--ds-space-1) var(--ds-space-2); font: inherit; font-size: var(--ds-fs-sm);
+  color: var(--ds-text-primary); background: transparent;
+  border: 1px solid transparent; border-radius: var(--ds-radius); cursor: pointer;
+}
+
+.ds-chart__chip:hover,
+.ds-bar__chip:hover,
+.ds-eventcal__chip:hover {
+  background: var(--ds-surface-subtle);
+}
+
+.ds-chart__chip-dot,
+.ds-bar__chip-dot,
+.ds-eventcal__chip-dot {
+  width: calc(0.625rem * var(--ds-ui-scale)); height: calc(0.625rem * var(--ds-ui-scale)); border-radius: 2px;
+}
+
+.ds-chart__chip.is-off,
+.ds-bar__chip.is-off {
+  color: var(--ds-text-muted);
+}
+
+.ds-chart__chip.is-off .ds-chart__chip-dot,
+.ds-bar__chip.is-off .ds-bar__chip-dot {
+  opacity: 0.3;
+}

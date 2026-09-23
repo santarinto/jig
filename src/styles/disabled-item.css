@@ -1,0 +1,17 @@
+/* Выключенный элемент полосы — один вид на три компонента с roving-навигацией.
+
+   Именно вид, а не поведение: пропуск стрелками живёт в
+   `src/internal/roving.ts`. Список селекторов по той же причине, что и у
+   поверхности поля: имена блоков потребитель уже видит.
+
+   `Tabs` добавляет к этому свой фон (`--ds-section-bar`) — он про вкладку в
+   рамке, а не про выключенность, и остаётся в `Tabs.css`.
+*/
+.ds-tabs__tab[aria-disabled='true'],
+.ds-sections__item[aria-disabled='true'],
+.ds-formtabs__label[aria-disabled='true'],
+.ds-togglegroup__item[aria-disabled='true'] {
+  color: var(--ds-text-muted);
+  cursor: not-allowed;
+  opacity: 0.65;
+}

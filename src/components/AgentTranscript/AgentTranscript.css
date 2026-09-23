@@ -1,0 +1,394 @@
+/* AgentTranscript: виртуализированный вывод диалога агента.
+
+   Контейнер/окно/распорки/«к последним» — те же идеи, что у LogViewer (общий
+   примитив virtualWindow). Анатомия реплики — своя: дорожка с автором/временем,
+   тело (thinking/text/toolCalls), отдельные карточки события и сырых строк. */
+
+.ds-transcript {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+  color: var(--ds-text-primary);
+}
+
+.ds-transcript__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--ds-space-3) 0;
+}
+
+/* Распорки, держащие полную высоту списка вместо неотрисованных реплик.
+   Высота из измерения — пиксели здесь законны и в масштабировании не участвуют. */
+.ds-transcript__pad {
+  flex: 0 0 auto;
+}
+
+.ds-transcript__turn {
+  padding: var(--ds-space-2) var(--ds-space-5);
+}
+
+/* dense — тесные строки для длинных прогонов, читаемых сканированием. */
+.ds-transcript--dense .ds-transcript__turn {
+  padding-top: var(--ds-space-1);
+  padding-bottom: var(--ds-space-1);
+}
+
+/* Разделитель дня — инлайн на первой реплике нового дня, не отдельная строка окна
+   (решение 7): кэш высот остаётся по turn-id, prependShift не ломается. */
+.ds-transcript__day {
+  margin: var(--ds-space-3) 0 var(--ds-space-1);
+  padding-top: var(--ds-space-2);
+  border-top: 1px solid var(--ds-border);
+  color: var(--ds-text-muted);
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+}
+.ds-transcript__turn:first-child .ds-transcript__day {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+/* ── message ── */
+.ds-transcript__msg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+}
+
+.ds-transcript__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-sm);
+}
+
+/* Заголовок-кнопка — когда задан onTurnClick. Тело реплики с его интерактивами
+   остаётся сиблингом, а не потомком: никаких вложенных интерактивов. */
+.ds-transcript__head--btn {
+  appearance: none;
+  width: 100%;
+  /* Пол цели (DS-327). Высоту строке задаёт аватар `sm`
+     (`1.375rem * шкала`): 19.25 на 0.875, 22 на 1 — ниже пола, и места рядом
+     нет, ряд и есть аватар. Поэтому ряд РАСТЁТ: +4.75 px на 0.875, +2 на 1,
+     на 1.15 и 1.5 аватар выше пола и прибавки нет. Пол на самой кнопке, а не
+     выступом псевдоэлемента: заливка наведения обязана совпадать с тем, куда
+     попадает клик. Только кликабельная ветка — у `div`-заголовка цели нет. */
+  min-height: var(--ds-target-min);
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--ds-radius-sm);
+}
+.ds-transcript__head--btn:hover { background: var(--ds-section-bar); }
+.ds-transcript__head--btn:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+
+.ds-transcript__author {
+  font-weight: 600;
+  color: var(--ds-text-primary);
+}
+
+/* Время — `--ds-text-secondary`, а НЕ `--ds-text-muted` (DS-204, попутно
+   с подписью шапки карточки). Токен приглушения выбран против `--ds-surface`
+   (5.33), а строка реплики, когда она кликабельна, под наведением заливается
+   `--ds-section-bar`: на #EBEBEB та же пара даёт 4.47 при поле 4.5 для мелкого
+   текста, а мелкий он здесь по построению — `--ds-fs-sm` от `__head`. Наведение
+   не оправдание: под курсором строку как раз и читают, отметка времени в ней
+   содержательна, а не декоративна. `--ds-text-secondary` даёт 4.82 на полосе и
+   5.74 на поверхности — вторым уровнем относительно автора (`--ds-text-primary`)
+   остаётся с запасом. Правится ПАРА, а не токен: значения общие. */
+.ds-transcript__time {
+  margin-left: auto;
+  color: var(--ds-text-secondary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.ds-transcript__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  padding-left: calc(20px * var(--ds-ui-scale, 1) + var(--ds-space-3));
+}
+
+/* `padding-right` — запас на переносе, не декорация (DS-375, живая
+   регрессия). Живой курсор (`.ds-transcript__streaming`) — атомарный
+   inline-block ПОСЛЕ этого текста: не влезающий в остаток строки целиком
+   переезжает на новую, а на фикстуре 420px длинная реплика (`AgentTranscript`,
+   `npm run measure`) заполняла последнюю строку до края с запасом 0.05px —
+   `.ds-transcript__text` перешла с `--ds-fs-md` (14px, ступень удалена) на
+   `--ds-fs-lg` (16px), и курсору перестало хватать долей пикселя. Причина НЕ
+   в кегле шеврона `.ds-caret` (`src/styles/caret.css`, файл эту разметку не
+   трогает) и не в подъёме `--ds-fs-base` 13→14 — оба проверены пересчётом
+   фикстуры при разных кеглях, геометрия не двигается ни на пиксель.
+
+   Отрицательный `margin-right` на самом курсоре (первая версия правки) не
+   держит: Chromium решает перенос атомарного inline-block не по нулевому
+   внешнему вкладу от отрицательного поля, а с запасом в несколько пикселей —
+   на этой же фикстуре нужно было near +5px зазора, а не +0, что и проверено
+   отдельно. `padding-right` у ТЕКСТА, наоборот, резервирует место ДО решения
+   о переносе: последняя строка обрывается настолько раньше, чтобы курсору
+   было куда встать, и держит это устойчиво, а не на грани случайного
+   успеха, как было с исходным `0.05px`. Ширина курсора — 6px; здесь 2px за
+   глаза (замерено: 1px уже достаточно на этой фикстуре, второй — на
+   субпиксельное дрожание округления canvas-метрики в других браузерах). */
+.ds-transcript__plain {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding-right: calc(2px * var(--ds-ui-scale, 1));
+}
+
+.ds-transcript__text {
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-lg);
+  line-height: 1.55;
+  color: var(--ds-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.ds-transcript__thinking {
+  color: var(--ds-text-secondary);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.5;
+}
+
+/* Свёртываемый блок: thinking / параметры инструмента. */
+.ds-transcript__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+}
+
+.ds-transcript__block-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--ds-text-muted);
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-sm);
+  cursor: pointer;
+  align-self: flex-start;
+  /* Заголовок свёрнутого блока был 14px высотой — высота своей строки текста,
+     ниже пола 24px (SC 2.5.8). Каждый свёртываемый блок от этого выше на 10px;
+     в стенограмме их несколько, и это заметно — но заголовок здесь именно
+     кнопка, а не подпись, и попадать в него мышью надо было и раньше. */
+  min-height: var(--ds-target-min);
+}
+.ds-transcript__block-toggle:hover { color: var(--ds-text-primary); }
+.ds-transcript__block-toggle:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); border-radius: var(--ds-radius-sm); }
+
+
+.ds-transcript__block-label {
+  font-weight: 600;
+}
+
+.ds-transcript__block-summary {
+  color: var(--ds-text-muted);
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-fs-sm);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-transcript__block-body {
+  padding-top: var(--ds-space-1);
+}
+
+/* ── toolCalls ── */
+.ds-transcript__tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+}
+
+.ds-transcript__tool {
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface-subtle);
+  padding: var(--ds-space-2) var(--ds-space-3);
+}
+
+.ds-transcript__tool-head {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+.ds-transcript__tool-summary {
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-fs-sm);
+  color: var(--ds-text-secondary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-transcript__tool-result {
+  margin-top: var(--ds-space-2);
+}
+.ds-transcript__tool-result--error {
+  border-left: 3px solid var(--ds-error-fg);
+  padding-left: var(--ds-space-3);
+}
+
+.ds-transcript__pending {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-fs-sm);
+}
+
+/* Спиннер. reduced-motion — без вращения, просто точка. */
+.ds-transcript__spinner {
+  width: calc(12px * var(--ds-ui-scale, 1));
+  height: calc(12px * var(--ds-ui-scale, 1));
+  border: 2px solid var(--ds-border-strong);
+  border-top-color: var(--ds-accent);
+  border-radius: 50%;
+  display: inline-block;
+  animation: ds-transcript-spin 0.7s linear infinite;
+}
+@keyframes ds-transcript-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-transcript__spinner { animation: none; }
+}
+
+/* live-хвост: пульсирующий курсор на дописываемой реплике. Запас на перенос
+   строки под этот курсор — у `.ds-transcript__plain`, а не здесь (см. её
+   комментарий, DS-375): пробовался отрицательный `margin-right` на
+   самом курсоре, но Chromium решает перенос атомарного inline-block не по
+   нулевому внешнему вкладу от отрицательного поля, и приём держал не всегда. */
+.ds-transcript__streaming {
+  display: inline-block;
+  width: calc(6px * var(--ds-ui-scale, 1));
+  height: calc(1em * var(--ds-ui-scale, 1));
+  background: var(--ds-accent);
+  animation: ds-transcript-blink 1s steps(2, start) infinite;
+}
+@keyframes ds-transcript-blink {
+  50% { opacity: 0; }
+}
+/* Только `animation: none`, БЕЗ `opacity` (DS-209). Прозрачность 0.6 здесь
+   стояла, чтобы остановленный курсор не кричал, — и стоила ему видимости: замер
+   дал 2.46 в свете и 3.13 в темноте при пороге 3 для нетекстового. Довод против
+   не в числе, а в направлении: этот курсор — единственный признак, что реплику
+   ещё дописывают, и читатель, попросивший погасить движение, — ровно тот,
+   кто не может опереться на моргание. При полной непрозрачности это 5.01 и
+   6.20, то есть та же фаза, которую он и так видит полсекунды из каждой. */
+@media (prefers-reduced-motion: reduce) {
+  .ds-transcript__streaming { animation: none; }
+}
+
+/* ── event (карточка результата / системное событие) ── */
+.ds-transcript__event {
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface-subtle);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+}
+
+.ds-transcript__event-head {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+.ds-transcript__event-text {
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-sm);
+  color: var(--ds-text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── raw (терминальные строки) ── */
+.ds-transcript__raw {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-space-3);
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-fs-sm);
+}
+
+.ds-transcript__raw-text {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--ds-text-secondary);
+}
+
+/* ── пустое состояние ── */
+.ds-transcript--empty {
+  justify-content: center;
+}
+.ds-transcript__empty {
+  margin: auto;
+}
+
+/* ── возврат к последним репликам (над содержимым, не в потоке) ── */
+.ds-transcript__tail {
+  /* Пол цели, а не размер (DS-207). Высота кнопки здесь НЕ написана
+     вовсе — она складывается из `padding` и межстрочного своего кегля, и на
+     0.875 давала 85.6×21.0. Поэтому `max()` тут нечему помогать: складывать
+     внутри одного свойства не с чем, масштабируемой величины в нём нет. Пол
+     ставится отдельными `min-*` и на 1.5 ни во что не упирается — там кнопка
+     и так выше. `min-width` не декорация: подпись приходит из словаря и
+     переопределяется потребителем, односимвольная стрелка уронила бы ширину. */
+  min-width: var(--ds-target-min); min-height: var(--ds-target-min);
+  position: absolute;
+  left: 50%;
+  bottom: var(--ds-space-5);
+  transform: translateX(-50%);
+  box-shadow: var(--ds-shadow-md);
+  padding: var(--ds-space-2) var(--ds-space-5);
+  border: 1px solid var(--ds-border-overlay);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface-subtle);
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-sm);
+  cursor: pointer;
+}
+.ds-transcript__tail:hover { background: var(--ds-section-bar); }
+.ds-transcript__tail:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+
+/* Подсветка вхождения. Фон, а не цвет: реплика и так раскрашена ролями/тонами. */
+.ds-transcript__hit {
+  background: var(--ds-highlight);
+  color: inherit;
+  border-radius: var(--ds-radius-sm);
+}
+
+/* ── кольцо фокуса прокручиваемой области (DS-192) ──
+   Область стала фокусируемой, значит обязана показывать, что фокус в ней:
+   иначе клавиатурный пользователь получил бы остановку, о которой не
+   догадывается. Токен `--ds-focus-ring-inset`: кольцо снаружи легло бы на рамку панели и
+   на плавающие кнопки, а сама область занимает панель целиком. */
+.ds-transcript__scroll:focus-visible { outline: none; box-shadow: var(--ds-focus-ring-inset); }

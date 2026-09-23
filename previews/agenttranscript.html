@@ -1,0 +1,91 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px;max-width:760px">
+<div class="ds-transcript" style="height: calc(420px * var(--ds-ui-scale, 1))">
+  <div class="ds-transcript__scroll" tabindex="0" role="log" aria-label="Диалог агента" aria-live="polite" aria-relevant="additions">
+    <div class="ds-transcript__pad" style="height:0" aria-hidden="true"></div>
+
+    <div class="ds-transcript__turn">
+      <div class="ds-transcript__day" role="heading" aria-level="3">09 августа 2026</div>
+      <article class="ds-transcript__msg">
+        <div class="ds-transcript__head" aria-label="Ассистент, 12:04:31">
+          <span class="ds-avatar ds-avatar--sm ds-avatar--accent">А</span>
+          <span class="ds-transcript__author">Ассистент</span>
+          <span class="ds-badge ds-badge--accent">assistant</span>
+          <time class="ds-transcript__time" datetime="2026-08-09T12:04:31+03:00">12:04:31</time>
+        </div>
+        <div class="ds-transcript__body">
+          <div class="ds-transcript__block">
+            <button type="button" class="ds-transcript__block-toggle" aria-expanded="false">
+              <svg class="ds-caret ds-caret--branch" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+              <span class="ds-transcript__block-label">Размышления</span>
+            </button>
+          </div>
+          <div class="ds-transcript__text">
+            Читаю файл <mark class="ds-transcript__hit">src/components</mark>/LogViewer/LogViewer.tsx, затем сверяю инвариант раскладки окна. Реплики добавляются снизу, окно держит позицию.
+          </div>
+          <div class="ds-transcript__tools">
+            <div class="ds-transcript__tool">
+              <div class="ds-transcript__tool-head">
+                <span class="ds-badge ds-badge--info">Read</span>
+                <code class="ds-transcript__tool-summary">src/components/LogViewer/LogViewer.tsx</code>
+              </div>
+              <div class="ds-transcript__block">
+                <button type="button" class="ds-transcript__block-toggle" aria-expanded="true">
+                  <svg class="ds-caret ds-caret--branch is-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+                  <span class="ds-transcript__block-label">Параметры</span>
+                </button>
+                <div class="ds-transcript__block-body">
+                  <div class="ds-codeblock"><pre class="ds-codeblock__pre" tabindex="0" role="group" aria-label="Параметры" style="max-height:calc(120px * var(--ds-ui-scale,1));overflow-y:auto"><code class="ds-codeblock__code">{ "path": "src/components/LogViewer/LogViewer.tsx" }</code></pre></div>
+                </div>
+              </div>
+              <div class="ds-transcript__tool-result">
+                <div class="ds-codeblock"><pre class="ds-codeblock__pre" tabindex="0" role="group" aria-label="Результат"><code class="ds-codeblock__code">303 строки, окно по строкам, prependShift</code></pre></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="ds-transcript__turn">
+      <article class="ds-transcript__msg">
+        <div class="ds-transcript__head" aria-label="Илья, 12:04:40">
+          <span class="ds-avatar ds-avatar--sm ds-avatar--neutral">И</span>
+          <span class="ds-transcript__author">Илья</span>
+          <span class="ds-badge ds-badge--neutral">user</span>
+          <time class="ds-transcript__time" datetime="2026-08-09T12:04:40+03:00">12:04:40</time>
+        </div>
+        <div class="ds-transcript__body">
+          <div class="ds-transcript__text">Ок, глянул. Печатает <span class="ds-transcript__streaming" aria-hidden="true"></span></div>
+        </div>
+      </article>
+    </div>
+
+    <div class="ds-transcript__turn">
+      <article class="ds-transcript__event" data-variant="result">
+        <div class="ds-transcript__event-head">
+          <span class="ds-badge ds-badge--success">Готово</span>
+          <time class="ds-transcript__time" datetime="2026-08-09T12:05:02+03:00">12:05:02</time>
+        </div>
+        <ul class="ds-metrics ds-metrics--cols-4">
+          <li class="ds-metrics__cell"><div class="ds-metrics__label">exit</div><div class="ds-metrics__value">0</div></li>
+          <li class="ds-metrics__cell"><div class="ds-metrics__label">длительность</div><div class="ds-metrics__value">31 с</div></li>
+          <li class="ds-metrics__cell"><div class="ds-metrics__label">токены in/out</div><div class="ds-metrics__value">4 210 / 1 038</div></li>
+          <li class="ds-metrics__cell"><div class="ds-metrics__label">cost</div><div class="ds-metrics__value">0,07 $</div></li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="ds-transcript__turn">
+      <div class="ds-transcript__raw">
+        <time class="ds-transcript__time" datetime="2026-08-09T12:05:02+03:00">12:05:02</time>
+        <pre class="ds-transcript__raw-text">run 8c1f2a finished in 31s · cost 0.07 USD</pre>
+      </div>
+    </div>
+
+    <div class="ds-transcript__pad" style="height:0" aria-hidden="true"></div>
+  </div>
+  <button type="button" class="ds-transcript__tail">К последним</button>
+</div>
+</div></body></html>

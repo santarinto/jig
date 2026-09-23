@@ -1,0 +1,38 @@
+.ds-filedrop { display: flex; flex-direction: column; gap: var(--ds-space-3); font-family: var(--ds-font-ui); }
+
+.ds-filedrop__zone {
+  display: flex; flex-direction: column; align-items: center; gap: var(--ds-space-2);
+  padding: var(--ds-space-6); text-align: center;
+  color: var(--ds-text-secondary);
+  background: var(--ds-surface-subtle);
+  /* Зона сброса — интерактивна, значит её граница под 1.4.11 (DS-267). */
+  border: 1px dashed var(--ds-control-border); border-radius: var(--ds-radius);
+  cursor: pointer; transition: border-color .12s, background .12s;
+}
+.ds-filedrop__zone:hover:not(.is-disabled) { border-color: var(--ds-accent); }
+.ds-filedrop__zone:focus-visible { outline: none; border-color: var(--ds-accent); box-shadow: var(--ds-focus-ring); }
+.ds-filedrop__zone.is-dragover { border-color: var(--ds-accent); background: var(--ds-table-hover); color: var(--ds-text-primary); }
+.ds-filedrop__zone.is-disabled { opacity: 0.55; cursor: default; }
+
+.ds-filedrop__icon { color: var(--ds-text-muted); }
+.ds-filedrop__text { font-size: var(--ds-fs-base); }
+.ds-filedrop__link { color: var(--ds-accent); }
+.ds-filedrop__hint { font-size: var(--ds-fs-sm); color: var(--ds-text-muted); }
+.ds-filedrop__input { display: none; }
+
+.ds-filedrop__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--ds-space-2); }
+.ds-filedrop__item {
+  display: flex; align-items: center; gap: var(--ds-space-3);
+  padding: var(--ds-space-2) var(--ds-space-3);
+  font-size: var(--ds-fs-sm); color: var(--ds-text-primary);
+  background: var(--ds-surface); border: 1px solid var(--ds-border); border-radius: var(--ds-radius);
+}
+.ds-filedrop__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-filedrop__size { flex: 0 0 auto; color: var(--ds-text-muted); font-feature-settings: "tnum"; }
+.ds-filedrop__remove {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: calc(1.5rem * var(--ds-ui-scale)); height: calc(1.5rem * var(--ds-ui-scale));
+  min-width: var(--ds-target-min); min-height: var(--ds-target-min); padding: 0; font-size: var(--ds-fs-lg); line-height: 1;
+  color: var(--ds-text-muted); background: transparent; border: none; border-radius: 50%; cursor: pointer;
+}
+.ds-filedrop__remove:hover:not(:disabled) { color: var(--ds-error); background: var(--ds-surface-subtle); }

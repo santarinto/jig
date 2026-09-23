@@ -1,0 +1,59 @@
+/**
+ * Хром развёртки (DS-219). Палитра — лестница оболочки `--wb-*` из
+ * `shell.css`: прибор не красится системой, которую меряет (гейт
+ * `wb-chrome-tokens`). Кадр — предмет, и он на странице ВИДИМ: скрытый зонд
+ * врёт на ширине текста.
+ */
+@import './shell.css';
+
+.sw {
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 1rem;
+  background: var(--wb-bg-app);
+  color: var(--wb-text-primary);
+  font-family: var(--wb-font-ui);
+  font-size: var(--wb-fs);
+}
+
+.sw__usage {
+  margin: 0 0 1rem;
+  padding: 0.5rem;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-border);
+  font-family: var(--wb-font-mono);
+  white-space: pre-wrap;
+}
+
+.sw__summary {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+
+.sw__summary--sleep {
+  color: var(--wb-warning-fg);
+}
+
+.sw__stage {
+  overflow: visible;
+  margin-bottom: 1rem;
+}
+
+.sw__frame {
+  display: block;
+  width: 321px;
+  border: 1px solid var(--wb-border);
+  background: var(--wb-surface);
+}
+
+.sw__table {
+  border-collapse: collapse;
+  font-family: var(--wb-font-mono);
+}
+
+.sw__table td,
+.sw__table th {
+  padding: 0.125rem 0.5rem;
+  border-bottom: 1px solid var(--wb-border);
+  text-align: left;
+}

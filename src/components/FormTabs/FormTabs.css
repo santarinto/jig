@@ -1,0 +1,106 @@
+/* A dozen open forms is normal in an accounting system, so the strip scrolls instead of clipping
+   the tabs that do not fit. The scrollbar itself is hidden: it would sit on the
+   1px seam with the content below and read as a rendering artefact. */
+.ds-formtabs {
+  display: flex; gap: var(--ds-space-1);
+  background: var(--ds-section-bar); border-bottom: 1px solid var(--ds-border); padding: 0;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+}
+.ds-formtabs::-webkit-scrollbar { display: none; }
+
+/* Таблист — ребёнок полосы, а не сама полоса (DS-175): у `role="tablist"`
+   могут быть только вкладки, а кнопка «домой» лежала внутри и валила axe
+   правилом `aria-required-children`. Прокрутка при этом ОСТАЛАСЬ на внешнем
+   узле — иначе кнопка перестала бы липнуть.
+
+   `flex-shrink: 0` здесь несущий, а не на всякий случай. У флекс-элемента
+   `min-width: auto`, но min-content ряда-флексбокса — это ширина САМОГО
+   ШИРОКОГО ребёнка, а не сумма: со `shrink: 1` таблист ужался бы до одной
+   вкладки, полоса перестала бы прокручиваться, и одиннадцать форм из двенадцати
+   стали бы недостижимы. */
+.ds-formtabs__list { display: flex; gap: var(--ds-space-1); flex: 0 0 auto; }
+
+/* Липкая кнопка не участвует в раскладке (`position: sticky` выводит её из
+   потока для расчёта прокрутки), и `scrollIntoView` про неё не знает: он
+   равняет цель по краю ПОРТА, а порт начинается там же, где стоит кнопка.
+   Отсюда «встала вплотную к левому краю» и «спряталась под кнопку» — одно и то
+   же положение, и замерено это было как 27 px съеденной подписи из 139.
+
+   Токеном, а не числом: ширина кнопки едет по `--ds-ui-scale`, и отступ обязан
+   ехать вместе с ней. Тем же закрывается и перекрытие в 1 px, вылезавшее на
+   360 × 1.5 в случае `base`.
+
+   Модификатор, а не `:has(.ds-formtabs__home)`: `:has()` заявил бы зависимость
+   от разметки, которой у полосы нет — кнопка появляется от НАЛИЧИЯ `onHome`, и
+   про это знает компонент, а не таблица стилей. Без кнопки отступ отъел бы у
+   первой вкладки место ни за чем. */
+.ds-formtabs--with-home { scroll-padding-left: var(--ds-h-comfortable); }
+.ds-formtabs__home {
+  position: sticky; left: 0; z-index: 1;
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--ds-h-comfortable); height: var(--ds-h-comfortable);
+  background: var(--ds-section-bar); border: none; cursor: pointer; color: var(--ds-text-secondary);
+}
+.ds-formtabs__home:hover { background: var(--ds-surface-subtle); color: var(--ds-text-primary); }
+.ds-formtabs__home:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); border-radius: var(--ds-radius-sm); }
+.ds-formtabs__tab {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; height: var(--ds-h-comfortable);
+  padding: 0 var(--ds-space-2) 0 var(--ds-space-4);
+  border: 1px solid transparent; border-bottom: none; border-radius: var(--ds-radius) var(--ds-radius) 0 0;
+}
+.ds-formtabs__tab.is-active { background: var(--ds-surface); box-shadow: inset 0 -2px 0 var(--ds-success); }
+/* Метка занимает вкладку по высоте, а не высоту своего текста. Цель клика у
+   вкладки учётной системы — вся вкладка, и пол 24px (SC 2.5.8) достаётся здесь
+   даром: вкладка уже 36px. `align-self` перебивает `align-items: center`
+   родителя, а текст кнопка центрирует сама — вид не меняется ни на пиксель,
+   растёт только то, во что можно попасть. Было 17.55px, то есть высота
+   строки текста, и это единственный случай в системе, где цель нарушала ещё
+   и spacing: до соседней цели было 10px при нужных 24. */
+.ds-formtabs__label { align-self: stretch; display: inline-flex; align-items: center; background: none; border: none; padding: 0; font: inherit; font-size: var(--ds-fs-base); color: var(--ds-text-secondary); cursor: pointer; white-space: nowrap; }
+.ds-formtabs__tab.is-active .ds-formtabs__label { color: var(--ds-text-primary); font-weight: 500; }
+
+/* Значок типа документа перед подписью — по образцу `.ds-tabs__icon`, тот же
+   зазор и то же выравнивание. Декоративен (`aria-hidden` в разметке), цвет
+   наследует тон покоя ряда, а не акцент: акцент здесь несёт активность
+   вкладки целиком (фон, полоса снизу, вес подписи), а не отдельный узел. */
+.ds-formtabs__icon {
+  display: flex; align-items: center; justify-content: center;
+  margin-right: var(--ds-space-2);
+}
+
+/* Знак «не записано» — суффикс подписи, только зазор слева. Цвета нет и не
+   будет намеренно: знак наследует цвет подписи, а состояние несёт `title`
+   рядом (объявлен на кнопке вкладки) — цвет системным законом не может быть
+   единственным носителем состояния, а здесь и вовсе не носитель. */
+.ds-formtabs__modified { margin-left: var(--ds-space-1); }
+.ds-formtabs__close {
+  /* 1.5rem вместо 1.125rem: крестик был 18×18 при поле 24 (SC 2.5.8).
+     `min-*` рядом с `width` не дублирует его, а страхует от шкалы < 1 —
+     размер едет по плотности, пол не едет. Пол остаётся, хотя крестик больше
+     не контрол: SC 2.5.8 меряет МИШЕНЬ УКАЗАТЕЛЯ, а мишенью он быть не
+     перестал — перестал быть таб-стопом. */
+  margin-left: var(--ds-space-2); width: calc(1.5rem * var(--ds-ui-scale)); height: calc(1.5rem * var(--ds-ui-scale));
+  min-width: var(--ds-target-min); min-height: var(--ds-target-min); line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  border-radius: var(--ds-radius-sm); color: var(--ds-text-muted); font-size: var(--ds-fs-lg);
+}
+.ds-formtabs__close:hover { background: var(--ds-surface-subtle); color: var(--ds-text-primary); }
+
+/* Like an accounting system: the × shows on the active tab and on hover, so a row of ten open
+   forms is not a row of ten crosses. Quietened with opacity, never removed.
+
+   Таб-стопа у крестика больше нет вовсе (DS-175): он не кнопка, а
+   мишень для мыши внутри вкладки, и с клавиатуры форма закрывается `Delete`
+   на самой вкладке. Поэтому и правило `:focus` ушло — фокусироваться теперь
+   нечему. Вместо него показ по фокусу ВКЛАДКИ: клавиатурный пользователь
+   обязан видеть, что у неё есть крестик, даже если жать будет `Delete`. */
+.ds-formtabs__close { opacity: 0; transition: opacity .1s; }
+.ds-formtabs__tab.is-active .ds-formtabs__close,
+.ds-formtabs__tab:hover .ds-formtabs__close,
+.ds-formtabs__label:focus .ds-formtabs__close { opacity: 1; }
+@media (hover: none) {
+  /* No hover on touch — showing them all beats an unreachable control. */
+  .ds-formtabs__close { opacity: 1; }
+}

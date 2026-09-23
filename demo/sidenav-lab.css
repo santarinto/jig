@@ -1,0 +1,138 @@
+/* SideNav lab — dev-only playground. The nav below is a PROTOTYPE: it is not a
+   DS component yet (that is task C1). It is built only from --ds-* tokens so the
+   numbers you settle on here transfer straight into the real component. */
+
+.lab {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  min-height: 100vh;
+  background: var(--ds-bg-app);
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-base);
+}
+
+/* ---- controls ---- */
+.lab__panel {
+  padding: var(--ds-space-6);
+  background: var(--ds-surface);
+  border-right: 1px solid var(--ds-border);
+  overflow: auto;
+  max-height: 100vh;
+}
+.lab__title { font-size: var(--ds-fs-lg); font-weight: 600; margin: 0 0 var(--ds-space-2); }
+.lab__hint { font-size: var(--ds-fs-sm); color: var(--ds-text-muted); margin: 0 0 var(--ds-space-6); line-height: 1.4; }
+.lab__group { margin-bottom: var(--ds-space-6); }
+.lab__group-title {
+  font-size: var(--ds-fs-sm); text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ds-text-muted); margin-bottom: var(--ds-space-4);
+  padding-bottom: var(--ds-space-2); border-bottom: 1px solid var(--ds-border);
+}
+.lab__row { display: grid; gap: var(--ds-space-3); margin-bottom: var(--ds-space-4); }
+.lab__toggles { display: grid; gap: var(--ds-space-3); }
+
+.lab__readout {
+  margin-top: var(--ds-space-6); padding: var(--ds-space-4);
+  background: var(--ds-surface-subtle); border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: var(--ds-fs-sm); line-height: 1.6; white-space: pre; overflow-x: auto;
+  color: var(--ds-text-secondary);
+}
+
+/* ---- stage ---- */
+.lab__stage { padding: var(--ds-space-6); overflow: auto; max-height: 100vh; }
+.lab__stage-head {
+  display: flex; align-items: center; gap: var(--ds-space-4);
+  margin-bottom: var(--ds-space-5);
+}
+.lab__panes { display: grid; gap: var(--ds-space-6); }
+.lab__panes--split { grid-template-columns: 1fr 1fr; }
+
+/* Re-resolve the text colour inside the theme scope: a colour inherited from an
+   ancestor outside [data-theme] arrives as an already-computed literal, so the
+   dark pane would render light-theme text on a dark surface. */
+.pane {
+  background: var(--ds-bg-app); color: var(--ds-text-primary);
+  border: 1px solid var(--ds-border); border-radius: var(--ds-radius); overflow: hidden;
+}
+.pane__label {
+  font-size: var(--ds-fs-sm); text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ds-text-muted); padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-surface-subtle); border-bottom: 1px solid var(--ds-border);
+}
+.app { display: grid; grid-template-columns: auto 1fr; min-height: 420px; }
+.app__right { display: flex; flex-direction: column; min-width: 0; }
+/* The accounting-system open-form strip sits above the content, right of the nav. */
+.app__tabs { background: var(--ds-section-bar); }
+.app__main { flex: 1 1 auto; padding: var(--ds-space-6); background: var(--ds-bg-app); min-width: 0; }
+.app__crumb { font-size: var(--ds-fs-sm); color: var(--ds-text-muted); margin-bottom: var(--ds-space-4); }
+.app__h1 { font-size: var(--ds-fs-xl); font-weight: 600; margin: 0 0 var(--ds-space-5); }
+
+/* ---- the prototype nav ---- */
+.nav {
+  width: var(--nav-w);
+  padding: var(--ds-space-4) var(--nav-pad-out);
+  background: var(--nav-bg);
+  border-right: 1px solid var(--ds-border);
+  display: flex; flex-direction: column; gap: var(--nav-gap);
+  transition: width .12s ease;
+}
+.nav__brand {
+  display: flex; align-items: center; gap: var(--ds-space-3);
+  height: var(--ds-h-default); padding: 0 var(--nav-pad-in);
+  font-weight: 600; color: var(--ds-text-primary);
+  margin-bottom: var(--ds-space-3); white-space: nowrap; overflow: hidden;
+}
+.nav__brand-mark {
+  flex: 0 0 auto; width: 18px; height: 18px; border-radius: var(--ds-radius-sm);
+  background: var(--ds-accent); color: var(--ds-text-on-accent);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+}
+.nav__section {
+  font-size: var(--ds-fs-sm); text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ds-text-muted); padding: var(--ds-space-4) var(--nav-pad-in) var(--ds-space-2);
+  white-space: nowrap; overflow: hidden;
+}
+.nav__sep { height: 1px; background: var(--ds-border); margin: var(--ds-space-3) 0; }
+
+.nav__item {
+  display: flex; align-items: center; gap: var(--ds-space-3);
+  height: var(--nav-item-h); padding: 0 var(--nav-pad-in);
+  border-radius: var(--nav-radius);
+  color: var(--ds-text-secondary); background: transparent;
+  border: none; width: 100%; text-align: left; cursor: pointer;
+  font: inherit; font-size: var(--nav-fs); white-space: nowrap; overflow: hidden;
+}
+.nav__item:hover { background: var(--ds-surface-subtle); color: var(--ds-text-primary); }
+.nav__item:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+.nav__item--child { padding-left: calc(var(--nav-pad-in) + 18px); font-size: var(--ds-fs-sm); }
+
+.nav__icon { flex: 0 0 auto; width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; opacity: .9; }
+.nav__label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.nav__count {
+  flex: 0 0 auto; min-width: 18px; height: 16px; padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--ds-fs-sm); font-weight: 500; border-radius: 8px;
+  background: color-mix(in srgb, var(--ds-text-primary) 10%, transparent);
+  color: var(--ds-text-secondary);
+}
+
+/* active variants */
+.nav__item--active.is-fill { background: var(--ds-accent); color: var(--ds-text-on-accent); font-weight: 600; }
+.nav__item--active.is-fill .nav__count { background: color-mix(in srgb, var(--ds-text-on-accent) 22%, transparent); color: var(--ds-text-on-accent); }
+.nav__item--active.is-tint { background: var(--ds-table-selected); color: var(--ds-accent-active); font-weight: 600; }
+.nav__item--active.is-bar {
+  background: var(--ds-surface-subtle); color: var(--ds-text-primary); font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--ds-accent);
+}
+.nav__item--active.is-text { color: var(--ds-accent); font-weight: 600; }
+
+/* collapsed */
+.nav--collapsed .nav__label,
+.nav--collapsed .nav__count,
+.nav--collapsed .nav__section,
+.nav--collapsed .nav__brand span { display: none; }
+.nav--collapsed .nav__item { justify-content: center; padding: 0; }
+.nav--collapsed .nav__brand { justify-content: center; padding: 0; }

@@ -1,0 +1,53 @@
+/* Каркас поля: обёртка `.ds-field*` (раскладка подписи, контрола, подсказки и
+   ошибки вокруг поля) и геометрия канонического `.ds-input` (рост, паддинги,
+   кегль). Это СТРУКТУРА поля, а не его кожа: фон, рамка, скругление и состояния
+   (`:hover`/`:focus`/`:disabled`/`.is-error`) однострочных элементов лежат в
+   `field-surface.css`.
+
+   ПОЧЕМУ ОБЩИЙ ЛИСТ, А НЕ КОМПОНЕНТНЫЙ.
+   До него `.ds-field`, `.ds-field--inline`, `.ds-field__label`, `.ds-field__hint`,
+   `.ds-field__error` и геометрия `.ds-input` жили в `TextField.css`, а
+   `.ds-field--block` — в `Textarea.css`. Их ставят семь компонентов (`TextField`,
+   `Textarea`, `NumberField`, `Select`, `DatePicker`, `Combobox`, `GlobalSearch`),
+   и каждый чинился импортом чужого компонентного листа — работало, но это та же
+   семья, что поверхность поля. Вынесено сюда по образцу `field-surface.css`
+   (DS-11). Семью и отсутствие гонки с компонентными листами стережёт
+   `src/__guards__/shared-sheets.test.ts`.
+
+   ПОЧЕМУ ГЕОМЕТРИЯ `.ds-input` ЗДЕСЬ, А КОЖА — В `field-surface.css`.
+   Кожа `.ds-input` (фон/рамка/фокус/состояния) — в `field-surface.css` наравне с
+   `.ds-textarea`, `.ds-select` и прочими; геометрия — здесь, потому что её несёт
+   один канонический элемент (однострочный ввод), переиспользуемый `TextField`
+   (владелец), `DatePicker` (поле даты), `Combobox` (поиск в поповере) и
+   `GlobalSearch` (строка поиска). Свойства двух листов не пересекаются — гонки
+   порядка загрузки нет; это и проверяет `shared-sheets.test.ts` (утверждение #2).
+
+   ИМЕНА КЛАССОВ В РАЗМЕТКЕ НЕ МЕНЯЮТСЯ ВОВСЕ — как и у `field-surface.css`, общий
+   класс-основа `.ds-field-base` не вводился: он переименовал бы то, что
+   потребители уже видят в своём CSS. */
+
+/* --- Обёртка ----------------------------------------------------------- */
+/* Потолок — контейнер (DS-304): `inline-flex` считает ширину по
+   содержимому и без потолка отдавал номинал поля мимо узкой строки —
+   `GlobalSearch` с подписью на кадре 360 при шкале 1.5 уводил документ на
+   +150, хотя сама строка поиска зажата. Номинал контрола при этом цел: потолок
+   срабатывает только там, где номиналу нет места. */
+.ds-field { display: inline-flex; flex-direction: column; gap: var(--ds-space-2); max-width: 100%; min-width: 0; }
+/* Метка в строку с контролом: поле не выше соседей в тулбаре, единая линия
+   (DS-24). Метка над контролом делала поле выше — тулбар лечили
+   align-items: flex-end на всю строку. */
+.ds-field--inline { flex-direction: row; align-items: center; }
+/* Полная ширина: блок-раскладка для `Textarea` и `DatePicker`. */
+.ds-field--block { display: flex; flex-direction: column; gap: var(--ds-space-2); width: 100%; }
+.ds-field__label { font-size: var(--ds-fs-sm); color: var(--ds-text-secondary); }
+.ds-field__hint { font-size: var(--ds-fs-sm); color: var(--ds-text-muted); }
+.ds-field__error { font-size: var(--ds-fs-sm); color: var(--ds-error); }
+
+/* --- Геометрия канонического `.ds-input` ------------------------------- */
+/* Поверхность и состояния `.ds-input` — в `field-surface.css`. Здесь только
+   размеры; их носит любой компонент, рисующий однострочный ввод. */
+.ds-input {
+  height: var(--ds-h-default); padding: 0 var(--ds-space-4);
+  font-size: var(--ds-fs-base);
+}
+.ds-input--sm { height: var(--ds-h-compact); font-size: var(--ds-fs-sm); }

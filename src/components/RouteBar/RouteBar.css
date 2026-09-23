@@ -1,0 +1,72 @@
+/* Полоса разделов. Вид намеренно совпадает с `Tabs` варианта `plain` —
+   акцентное подчёркивание активного, — но правила свои: это другой блок, и
+   общего листа тут быть не может (у вкладки состояния завязаны на
+   `aria-disabled` и роль, у ссылки — на `aria-current`). */
+.ds-routebar {
+  border-bottom: 1px solid var(--ds-border);
+}
+
+/* Полоса внутри чужой шапки: разделительная линия там уже есть, и своя даёт
+   вторую подряд. Признак называет раскладку, а не действие («убрать рамку»),
+   потому что убирать её осмысленно ровно в одном случае — этом.
+   До признака гасить было нечем: `className` правило компонента не перебивает
+   без повышения специфичности, и потребитель лез в `.ds-routebar` руками. */
+.ds-routebar--embedded {
+  border-bottom: none;
+}
+
+.ds-routebar__list {
+  display: flex; gap: var(--ds-space-1);
+  margin: 0; padding: 0 0 0 var(--ds-space-4); list-style: none;
+  overflow: auto; scrollbar-width: none;
+}
+.ds-routebar__list::-webkit-scrollbar { display: none; }
+
+.ds-routebar__item { display: flex; }
+
+.ds-routebar__link {
+  display: inline-flex; align-items: center; gap: var(--ds-space-2);
+  height: var(--ds-h-default); padding: 0 var(--ds-space-4);
+  font-family: var(--ds-font-ui); font-size: var(--ds-fs-base);
+  color: var(--ds-text-secondary); text-decoration: none; white-space: nowrap;
+  border-radius: var(--ds-radius) var(--ds-radius) 0 0;
+  box-shadow: inset 0 -2px 0 transparent;
+  transition: color .12s, background .12s, box-shadow .12s;
+}
+
+/* `:not(.is-active)` обязателен: без него наведение перекрашивало бы текущий
+   раздел обратно в фон наведения, то есть «где курсор» победило бы «где я». */
+.ds-routebar__link:hover:not(.is-active) {
+  background: var(--ds-surface-subtle); color: var(--ds-text-primary);
+}
+
+.ds-routebar__link:focus-visible {
+  outline: none; box-shadow: var(--ds-focus-ring); border-radius: var(--ds-radius);
+}
+
+/* Текущий раздел помечен цветом И подчёркиванием. Одного цвета мало: полоса
+   читается и в монохроме, и при дальтонизме. */
+.ds-routebar__link.is-active {
+  color: var(--ds-accent); box-shadow: inset 0 -2px 0 var(--ds-accent);
+}
+.ds-routebar__link.is-active:focus-visible {
+  box-shadow: var(--ds-focus-ring), inset 0 -2px 0 var(--ds-accent);
+}
+
+.ds-routebar__icon { display: inline-flex; }
+
+.ds-routebar__count {
+  min-width: calc(1.25rem * var(--ds-ui-scale));
+  padding: 0 var(--ds-space-2);
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-surface-subtle);
+  font-size: var(--ds-fs-sm); font-variant-numeric: tabular-nums; text-align: center;
+}
+/* Цвет назван ЯВНО, а не унаследован от `.is-active`: наследовался `--ds-accent`,
+   и на собственной плашке он давал 4.15 — тот же дефект, что у `Tabs`
+   (DS-130). Наследование и было причиной, по которой дефект приехал
+   сюда сам, без единой строки про счётчик. */
+.ds-routebar__link.is-active .ds-routebar__count {
+  background: color-mix(in srgb, var(--ds-accent) 14%, var(--ds-surface));
+  color: var(--ds-accent-fg);
+}

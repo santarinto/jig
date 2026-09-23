@@ -1,0 +1,27 @@
+.ds-code { display: inline-flex; flex-direction: column; gap: var(--ds-space-2); max-width: 100%; min-width: 0; }
+.ds-code__label { font-size: var(--ds-fs-sm); color: var(--ds-text-secondary); }
+/* СЕТКА С НОМИНАЛОМ И ПОТОЛКОМ (DS-304). Трек ячейки —
+   `minmax(0, 2.25rem*scale)`: пока места хватает, ячейка ровно номинальная, в
+   узкой строке все ячейки сжимаются РАВНОМЕРНО. Было: шесть ячеек по
+   `calc(2.25rem*scale)` в `inline-flex` на кадре 360 при шкале 1.5 уводили
+   документ на +39. Столбцы автоматические, а не `repeat(N, …)`: длина кода —
+   проп, и число треков лист знать не обязан. Цель клика не страдает: 300 px на
+   шесть ячеек с зазорами — около 41 на ячейку. */
+.ds-code__cells {
+  display: inline-grid; grid-auto-flow: column;
+  grid-auto-columns: minmax(0, calc(2.25rem * var(--ds-ui-scale)));
+  gap: var(--ds-space-3); max-width: 100%;
+}
+
+/* Поверхность и состояния — в `src/styles/field-surface.css`. Здесь остаётся
+   `font-size`: у ячейки он свой, и общей строкой он бы выиграл у локальной
+   порядком загрузки, а не весом. */
+.ds-code__cell {
+  /* Ширину даёт трек сетки: `100%` от трека, `min-width: 0` снимает
+     внутреннюю ширину поля ввода, иначе ячейка не уже своего `size`. */
+  width: 100%; min-width: 0; height: calc(2.75rem * var(--ds-ui-scale)); padding: 0;
+  font-size: var(--ds-fs-lg); text-align: center;
+  font-feature-settings: "tnum"; caret-color: var(--ds-accent);
+}
+
+.ds-code__error { font-size: var(--ds-fs-sm); color: var(--ds-error); }

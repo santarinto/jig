@@ -1,0 +1,23 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px;display:flex;gap:16px;flex-wrap:wrap;max-width:720px">
+  <div class="ds-field ds-field--block" style="max-width:320px">
+    <label class="ds-field__label" for="ta-1">Комментарий</label>
+    <textarea id="ta-1" class="ds-textarea ds-textarea--md" rows="3" maxlength="120" aria-describedby="ta-1-hint">Проведено по расчётному счёту</textarea>
+    <div class="ds-textarea__footer">
+      <span class="ds-textarea__msg"><span id="ta-1-hint" class="ds-field__hint">Виден в печатной форме</span></span>
+      <span class="ds-textarea__counter">29 / 120</span>
+    </div>
+  </div>
+
+  <!-- Счётчик и текст ошибки живут в одном подвале: он и был той точкой, где
+       корневая метка ловила клик до DS-109. -->
+  <div class="ds-field ds-field--block" style="max-width:320px">
+    <label class="ds-field__label" for="ta-2">Основание</label>
+    <textarea id="ta-2" class="ds-textarea ds-textarea--sm is-error" rows="2" maxlength="60" aria-invalid="true" aria-describedby="ta-2-err"></textarea>
+    <div class="ds-textarea__footer">
+      <span class="ds-textarea__msg"><span id="ta-2-err" class="ds-field__error">Обязательное поле</span></span>
+      <span class="ds-textarea__counter">0 / 60</span>
+    </div>
+  </div>
+</div></body></html>

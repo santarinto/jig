@@ -1,0 +1,40 @@
+.ds-combobox { position: relative; display: inline-block; min-width: calc(12.5rem * var(--ds-ui-scale)); }
+/* Поверхность и состояния триггера — в `src/styles/field-surface.css`. */
+.ds-combobox__trigger {
+  display: inline-flex; align-items: center; gap: var(--ds-space-3); width: 100%;
+  height: var(--ds-h-default); padding: 0 var(--ds-space-3) 0 var(--ds-space-4);
+  font-size: var(--ds-fs-base); cursor: pointer;
+}
+.ds-combobox--sm .ds-combobox__trigger { height: var(--ds-h-compact); font-size: var(--ds-fs-sm); }
+.ds-combobox__value { flex: 1 1 auto; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-combobox__value.is-placeholder { color: var(--ds-text-muted); }
+.ds-combobox__icon { display: inline-flex; align-items: center; color: var(--ds-text-secondary); }
+.ds-combobox__popover {
+  position: absolute; z-index: var(--ds-z-popup); left: 0; right: 0; top: calc(100% + var(--ds-space-1));
+  padding: var(--ds-space-2);
+  background: var(--ds-surface); border: 1px solid var(--ds-border-overlay); border-radius: var(--ds-radius); box-shadow: var(--ds-shadow-md);
+}
+.ds-combobox__search { width: 100%; margin-bottom: var(--ds-space-2); }
+.ds-combobox__list { list-style: none; margin: 0; padding: 0; max-height: calc(15rem * var(--ds-ui-scale)); overflow-y: auto; }
+/* Строка списка сама кликабельна: фокусируемой кнопки внутри опции нет —
+   навигация одна, через aria-activedescendant на инпуте поиска. */
+.ds-combobox__option {
+  display: flex; align-items: center; gap: var(--ds-space-3); width: 100%;
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border-radius: var(--ds-radius-sm); cursor: pointer; text-align: left; color: var(--ds-text-primary);
+}
+/* Кольцо, а не один фон — тот же указатель, что у `GlobalSearch`, и по той же
+   причине (DS-160): фокус остаётся в поле поиска, строка активна через
+   `aria-activedescendant`, `:focus-visible` на ней не сработает никогда, а один
+   `--ds-table-hover` давал 1.09 : 1 в свете при поле 3 : 1. Два поиска системы
+   обязаны показывать выбор одинаково — иначе пользователь учит их порознь. */
+.ds-combobox__option.is-active {
+  background: var(--ds-table-hover);
+  box-shadow: var(--ds-focus-ring-inset);
+}
+.ds-combobox__option.is-selected { color: var(--ds-accent-active); font-weight: 500; }
+.ds-combobox__empty { padding: var(--ds-space-3) var(--ds-space-4); color: var(--ds-text-muted); font-size: var(--ds-fs-sm); }
+
+/* onCreate row */
+.ds-combobox__create { color: var(--ds-accent); }
+.ds-combobox__create .ds-combobox__icon { color: var(--ds-accent); font-weight: 600; }

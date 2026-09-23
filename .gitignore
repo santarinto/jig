@@ -1,0 +1,69 @@
+node_modules
+*.log
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+
+# `/dist/` игнорируется СНОВА (JIG-28, было иначе на DS-244): git больше
+# не транспорт поставки. GitHub Actions на push тега `v*` собирает `dist/` сам
+# и прикладывает `santarinto-jig-X.Y.Z.tgz` к GitHub Release — потребитель
+# ставит тарбол по URL, а не git-зависимость, для которой npm игнорировал бы
+# `files` и брал репозиторий целиком. Держит это гейт `make dist-untracked`:
+# красный, если `dist/` всё же попал в индекс (`git add -f` его туда занесёт
+# несмотря на игнор).
+#
+# Якорь `/` — на корне, а не голое имя: голое `dist` ловит каталог на ЛЮБОМ
+# уровне и накрыло бы demo/dist и workbench/dist заодно, которые игнорируются
+# отдельными строками ниже намеренно по другому доводу.
+/dist/
+
+# Сборка ДЕМО в git не нужна — это не поставка, а локальный просмотр.
+/demo/dist/
+# То же и для верстака: `root` его конфига — `workbench/`, поэтому
+# `vite build --config vite.workbench.config.ts` кладёт вывод в workbench/dist.
+# Под голым `dist` он игнорировался заодно; теперь его надо назвать, иначе он
+# станет грудой неотслеженного, которую сметёт первый же `git add -A`.
+/workbench/dist/
+
+# Playwright MCP screenshot artifacts
+.playwright-mcp/
+
+# packed tarballs (build output)
+*.tgz
+
+# JIG-28: prepack/postpack (scripts/strip-manifest.mjs) бэкапит package.json на
+# время npm pack и восстанавливает после — если pack упал посреди, этот файл
+# остаётся на диске, и он не посторонний, а состояние отказа.
+/.package.json.prepack-backup
+
+.idea
+
+# рабочий inbox межагентного чата
+.ai-chat/
+
+# Локальная конфигурация Claude Code. Не в составе репозитория: плагин
+# ui-ux-pro-max поставлен на этот проект, но включать его всем, кто склонирует
+# пакет, — не решение дизайн-системы. Захотите наоборот — снимите строку
+# settings.json.
+/.claude/settings.json
+/.claude/settings.local.json
+/.claude/scheduled_tasks.lock
+
+# Serena: кэш LSP-символов и локальные переопределения проекта.
+# Сам .serena/project.yml коммитится — он часть настройки поиска по коду.
+/.serena/cache/
+/.serena/project.local.yml
+
+# рабочий каталог subagent-driven-development (ledger, брифы, пакеты ревью)
+.superpowers/
+
+# Частная половина рабочего порядка владельца (JIG-1, 23.09.2026). Файлы живут
+# локально и нужны его сессиям, но в публичное дерево не идут: в них пути его
+# машины, адрес его трекера и чата, грамматика приватного MCP.
+/CLAUDE.local.md
+/.mcp.json
+/.claude/skills/
+/docs/tracker.md
+/docs/code-search.md

@@ -1,0 +1,38 @@
+.ds-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; overflow: hidden;
+  border-radius: 50%;
+  font-family: var(--ds-font-ui); font-weight: 600; line-height: 1;
+  user-select: none;
+}
+.ds-avatar--sm { width: calc(1.375rem * var(--ds-ui-scale)); height: calc(1.375rem * var(--ds-ui-scale)); font-size: var(--ds-fs-sm); }
+.ds-avatar--md { width: var(--ds-h-compact); height: var(--ds-h-compact); font-size: var(--ds-fs-sm); }
+.ds-avatar--lg { width: var(--ds-h-comfortable); height: var(--ds-h-comfortable); font-size: var(--ds-fs-base); }
+
+.ds-avatar--neutral { background: var(--ds-surface-subtle); color: var(--ds-text-secondary); border: 1px solid var(--ds-border); }
+.ds-avatar--accent { background: var(--ds-accent); color: var(--ds-text-on-accent); }
+
+.ds-avatar__img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ds-avatar__initials { letter-spacing: .02em; }
+
+/* Кольцо присутствия.
+
+   Тень, а не рамка. Внешний размер рамка не изменит — в системе
+   `box-sizing: border-box`, — но она съедает содержимое: при кольце 4px
+   фотография ужимается с 26×26 до 20×20, то есть теряет почти четверть площади
+   лица, а сам аватар выглядит прежним. Замерено, не выведено.
+
+   `overflow: hidden` на аватаре её не срезает: overflow отсекает детей, а
+   собственная тень элемента ему не ребёнок. Проверено замером, а не спекой.
+
+   Два слоя: первый — просвет цветом поверхности, чтобы кольцо не слипалось с
+   самим аватаром и читалось на любом фоне; второй — сам цвет состояния. */
+.ds-avatar[class*="ds-avatar--presence-"] {
+  box-shadow: 0 0 0 2px var(--ds-surface), 0 0 0 4px var(--ds-presence, transparent);
+}
+.ds-avatar--presence-online  { --ds-presence: var(--ds-success); }
+.ds-avatar--presence-busy    { --ds-presence: var(--ds-error); }
+.ds-avatar--presence-away    { --ds-presence: var(--ds-warning); }
+/* «Не в сети» — не отсутствие кольца, а кольцо нейтральное: пустое место
+   означало бы «состояние неизвестно», а это другое утверждение. */
+.ds-avatar--presence-offline { --ds-presence: var(--ds-border-strong); }

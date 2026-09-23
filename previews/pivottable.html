@@ -1,0 +1,103 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px">
+<div class="ds-pivot">
+<table class="ds-pivot__table">
+  <caption class="ds-pivot__caption">Средний чек по паркам и дням недели</caption>
+  <thead>
+    <tr style="--ds-pivot-level:0">
+      <th class="ds-pivot__corner" scope="col" rowspan="1">Парк / Водитель</th>
+      <th class="ds-pivot__colhead ds-pivot__colhead--leaf" scope="col" colspan="1" rowspan="1">пн</th>
+      <th class="ds-pivot__colhead ds-pivot__colhead--leaf" scope="col" colspan="1" rowspan="1">вт</th>
+      <th class="ds-pivot__colhead ds-pivot__colhead--leaf" scope="col" colspan="1" rowspan="1">ср</th>
+      <th class="ds-pivot__colhead ds-pivot__colhead--leaf" scope="col" colspan="1" rowspan="1">чт</th>
+      <th class="ds-pivot__colhead ds-pivot__colhead--leaf" scope="col" colspan="1" rowspan="1">пт</th>
+      <th class="ds-pivot__colhead ds-pivot__colhead--leaf ds-pivot__colhead--total" scope="col" colspan="1" rowspan="1">Итого</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="ds-pivot__row ds-pivot__row--group">
+      <th class="ds-pivot__rowhead" scope="row" style="--ds-pivot-depth:0">
+        <button type="button" class="ds-pivot__fold" aria-expanded="true"><svg class="ds-caret ds-caret--branch is-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>Северный</button>
+      </th>
+      <td class="ds-pivot__cell">1&nbsp;440,00</td>
+      <td class="ds-pivot__cell">520,00</td>
+      <td class="ds-pivot__cell">1&nbsp;100,00</td>
+      <td class="ds-pivot__cell">610,00</td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell ds-pivot__cell--total">1&nbsp;022,00</td>
+    </tr>
+    <tr class="ds-pivot__row">
+      <th class="ds-pivot__rowhead" scope="row" style="--ds-pivot-depth:1">Иванов И. И.</th>
+      <td class="ds-pivot__cell">480,00</td>
+      <td class="ds-pivot__cell">520,00</td>
+      <td class="ds-pivot__cell">1&nbsp;100,00</td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell ds-pivot__cell--total">700,00</td>
+    </tr>
+    <tr class="ds-pivot__row">
+      <th class="ds-pivot__rowhead" scope="row" style="--ds-pivot-depth:1">Петров П. П.</th>
+      <td class="ds-pivot__cell">2&nbsp;400,00</td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell">610,00</td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell ds-pivot__cell--total">1&nbsp;505,00</td>
+    </tr>
+    <tr class="ds-pivot__row ds-pivot__row--group">
+      <th class="ds-pivot__rowhead" scope="row" style="--ds-pivot-depth:0">
+        <button type="button" class="ds-pivot__fold" aria-expanded="true"><svg class="ds-caret ds-caret--branch is-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>Южный</button>
+      </th>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell">390,00</td>
+      <td class="ds-pivot__cell">450,00</td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell">2&nbsp;325,00</td>
+      <td class="ds-pivot__cell ds-pivot__cell--total">1&nbsp;372,50</td>
+    </tr>
+    <tr class="ds-pivot__row">
+      <th class="ds-pivot__rowhead" scope="row" style="--ds-pivot-depth:1">Сидоров С. С.</th>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell">390,00</td>
+      <td class="ds-pivot__cell">450,00</td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell ds-pivot__cell--total">420,00</td>
+    </tr>
+    <tr class="ds-pivot__row">
+      <th class="ds-pivot__rowhead" scope="row" style="--ds-pivot-depth:1">Кузнецов К. К.</th>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell">2&nbsp;325,00</td>
+      <td class="ds-pivot__cell ds-pivot__cell--total">2&nbsp;325,00</td>
+    </tr>
+    <!-- Свёрнутая группа: строка остаётся со своими числами, дети скрыты. -->
+    <tr class="ds-pivot__row ds-pivot__row--group">
+      <th class="ds-pivot__rowhead" scope="row" style="--ds-pivot-depth:0">
+        <button type="button" class="ds-pivot__fold" aria-expanded="false"><svg class="ds-caret ds-caret--branch" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>Западный</button>
+      </th>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell">505,00</td>
+      <td class="ds-pivot__cell"><span class="ds-pivot__blank" aria-hidden="true">—</span></td>
+      <td class="ds-pivot__cell ds-pivot__cell--total">505,00</td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr class="ds-pivot__row ds-pivot__row--total">
+      <th class="ds-pivot__rowhead ds-pivot__rowhead--total" scope="row">Итого</th>
+      <td class="ds-pivot__cell">1&nbsp;440,00</td>
+      <td class="ds-pivot__cell">455,00</td>
+      <td class="ds-pivot__cell">775,00</td>
+      <td class="ds-pivot__cell">557,50</td>
+      <td class="ds-pivot__cell">2&nbsp;325,00</td>
+      <td class="ds-pivot__cell ds-pivot__cell--total">1&nbsp;110,50</td>
+    </tr>
+  </tfoot>
+</table>
+</div>
+</div></body></html>

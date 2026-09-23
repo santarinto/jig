@@ -1,0 +1,20 @@
+/* JetBrains Mono — моноширинное семейство для LogViewer.
+   OFL 1.1 (© 2020 The JetBrains Mono Project Authors), редистрибуция разрешена.
+
+   Веса ровно два и оба используются: 400 — текст строки лога, 600 — подпись
+   вида события. Третьего не берём: каждый вес это ~92 КБ, а лог не нуждается
+   ни в курсиве, ни в промежуточных начертаниях. */
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./JetBrainsMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./JetBrainsMono-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}

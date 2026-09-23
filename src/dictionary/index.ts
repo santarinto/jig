@@ -1,0 +1,5 @@
+export { DsText, useDsText, useDsLocale, DS_LOCALE_DEFAULT } from './DsText.js'
+export type { DsTextProps } from './DsText.js'
+export { DS_TEXT_RU } from './text.js'
+export { DS_TEXT_PSEUDO, PSEUDO_OPEN, PSEUDO_CLOSE } from './pseudo.js'
+export type { DsTextDict, DsTextOverrides } from './text.js'

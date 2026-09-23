@@ -1,0 +1,28 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px;display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+  <div class="ds-code">
+    <!-- Подпись — настоящий `<label htmlFor>` на первую ячейку (DS-109);
+         имя при этом нужно ГРУППЕ, у ячейки своё («Цифра 1»). -->
+    <label class="ds-code__label" id="ci-1-label" for="ci-1-0">Код из СМС</label>
+    <div class="ds-code__cells" role="group" aria-labelledby="ci-1-label">
+      <input id="ci-1-0" class="ds-code__cell" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" value="4" aria-label="Цифра 1">
+      <input id="ci-1-1" class="ds-code__cell" type="text" inputmode="numeric" autocomplete="off" maxlength="1" value="7" aria-label="Цифра 2">
+      <input id="ci-1-2" class="ds-code__cell" type="text" inputmode="numeric" autocomplete="off" maxlength="1" value="2" aria-label="Цифра 3">
+      <input id="ci-1-3" class="ds-code__cell" type="text" inputmode="numeric" autocomplete="off" maxlength="1" value="" aria-label="Цифра 4">
+      <input id="ci-1-4" class="ds-code__cell" type="text" inputmode="numeric" autocomplete="off" maxlength="1" value="" aria-label="Цифра 5">
+      <input id="ci-1-5" class="ds-code__cell" type="text" inputmode="numeric" autocomplete="off" maxlength="1" value="" aria-label="Цифра 6">
+    </div>
+  </div>
+
+  <div class="ds-code">
+    <label class="ds-code__label" id="ci-2-label" for="ci-2-0">Код подтверждения</label>
+    <div class="ds-code__cells" role="group" aria-labelledby="ci-2-label" aria-invalid="true">
+      <input id="ci-2-0" class="ds-code__cell is-error" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" value="1" aria-label="Цифра 1">
+      <input id="ci-2-1" class="ds-code__cell is-error" type="text" inputmode="numeric" autocomplete="off" maxlength="1" value="1" aria-label="Цифра 2">
+      <input id="ci-2-2" class="ds-code__cell is-error" type="text" inputmode="numeric" autocomplete="off" maxlength="1" value="1" aria-label="Цифра 3">
+      <input id="ci-2-3" class="ds-code__cell is-error" type="text" inputmode="numeric" autocomplete="off" maxlength="1" value="1" aria-label="Цифра 4">
+    </div>
+    <span class="ds-code__error">Код не подошёл</span>
+  </div>
+</div></body></html>

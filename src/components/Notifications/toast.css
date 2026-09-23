@@ -1,0 +1,31 @@
+.ds-toaster {
+  position: fixed; z-index: var(--ds-z-toast);
+  display: flex; flex-direction: column; gap: var(--ds-space-3);
+  /* The viewport gutter was 32px, not 24px — --ds-space-8 is 24px. */
+  max-width: min(calc(22.5rem * var(--ds-ui-scale)), calc(100vw - calc(2rem * var(--ds-ui-scale))));
+  pointer-events: none;
+}
+.ds-toaster > * { pointer-events: auto; }
+
+.ds-toaster--top-right { top: var(--ds-space-6); right: var(--ds-space-6); }
+.ds-toaster--top-left { top: var(--ds-space-6); left: var(--ds-space-6); }
+.ds-toaster--top-center { top: var(--ds-space-6); left: 50%; transform: translateX(-50%); align-items: center; }
+.ds-toaster--bottom-right { bottom: var(--ds-space-6); right: var(--ds-space-6); }
+.ds-toaster--bottom-left { bottom: var(--ds-space-6); left: var(--ds-space-6); }
+.ds-toaster--bottom-center { bottom: var(--ds-space-6); left: 50%; transform: translateX(-50%); align-items: center; }
+/* Нижние положения укладываются в ОБРАТНОМ порядке (DS-162). Контейнер
+   прибит к нижнему краю и растёт вверх; при `column` новая карточка дописывалась
+   вниз и уносила уже читаемую на 47px с каждым сообщением (454 → 407 → 359 на
+   `case=live`). С `column-reverse` новая встаёт СВЕРХУ стопки, показанные
+   остаются у угла. DOM-порядок прежний — живая область объявляет в порядке
+   появления. Верхние положения растут вниз от своего края и правильны как есть. */
+.ds-toaster--bottom-right,
+.ds-toaster--bottom-left,
+.ds-toaster--bottom-center { flex-direction: column-reverse; }
+
+.ds-toaster .ds-toast { box-shadow: var(--ds-shadow-md); animation: ds-toast-in .18s ease; }
+
+@keyframes ds-toast-in { from { opacity: 0; transform: translateY(var(--ds-space-3)); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ds-toaster .ds-toast { animation: none; }
+}

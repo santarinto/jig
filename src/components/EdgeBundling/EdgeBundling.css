@@ -1,0 +1,54 @@
+/* Потолок — контейнер (DS-304). Номинал `size × шкала` приходит
+   инлайном и остаётся предпочтительным; в узкой колонке корень ужимается, а
+   SVG с `width: 100%` берёт высоту из `viewBox` — граф пересчитывается целиком,
+   подписи вместе с ним, ничего не режется. Было: на кадре 360 уже при шкале 1
+   `base` уводил документ на +170. */
+.ds-edge-bundle {
+  display: inline-block;
+  max-width: 100%;
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-sm);
+  color: var(--ds-text-primary);
+}
+
+.ds-edge-bundle__svg {
+  display: block;
+  overflow: visible;
+}
+
+.ds-edge-bundle__link {
+  fill: none;
+  stroke: var(--ds-chart-3);
+  stroke-opacity: 0.35;
+  stroke-width: 1;
+  mix-blend-mode: multiply;
+  pointer-events: stroke;
+  transition: stroke-opacity 0.15s ease, stroke-width 0.15s ease;
+}
+
+[data-theme="dark"] .ds-edge-bundle__link {
+  mix-blend-mode: normal;
+  stroke-opacity: 0.45;
+}
+
+.ds-edge-bundle__link.is-highlight {
+  stroke-opacity: 0.95;
+  stroke-width: 1.5;
+}
+
+.ds-edge-bundle__link.is-dim {
+  stroke-opacity: 0.06;
+}
+
+.ds-edge-bundle__label {
+  font-size: var(--ds-fs-sm);
+  fill: var(--ds-text-muted);
+  cursor: default;
+  user-select: none;
+}
+
+.ds-edge-bundle__label.is-hover,
+.ds-edge-bundle__label:hover {
+  fill: var(--ds-text-primary);
+  font-weight: 600;
+}

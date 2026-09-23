@@ -1,0 +1,423 @@
+/* EventCalendar — календарь-планировщик.
+
+   Геометрия событий приходит из `layout.ts` ПРОЦЕНТАМИ и живёт в инлайновом
+   стиле: высота суток задана здесь, а положение внутри них — долей. Поэтому
+   раскладка не зависит ни от `--ds-ui-scale`, ни от того, посчитал ли кто-то
+   пиксели, и проверяется в jsdom по `style.top`.
+
+   Цвет календаря приходит в `--ds-eventcal-tone` и НЕ становится фоном под
+   текстом: белым по `--ds-chart-2` (олива) контраст не проходит, и это не
+   чинится подбором оттенка. Тон — полоса слева и полупрозрачная заливка. */
+
+.ds-eventcal {
+  --ds-eventcal-hour: calc(2.5rem * var(--ds-ui-scale));
+  /* Строка пояса. 24px, а не 20: полоса `allDay` — интерактивная цель, и пол
+     2.5.8 держится ею, а не «на глаз достаточно».
+
+     `max()`, а не одна `calc(1.5rem * scale)` (DS-156). Одна величина
+     даёт на шкале 1 РОВНО 24 — пол без запаса, — и любая шкала меньше единицы
+     его пробивает: 21.0 при 0.875, рабочей шкале потребителя. Ровно та же
+     ошибка, что чинили у чипа легенды (DS-155,
+     `src/styles/chart-legend.css:40`), и держалась она здесь потому, что
+     превью писали руками и полосе `allDay` там стояло `height:24px` прямым
+     числом — то есть страница показывала пол, которого у компонента нет.
+     `--ds-target-min` объявлен пикселями мимо `--ds-ui-scale` намеренно: пол
+     ехать не должен, размер должен. */
+  --ds-eventcal-lane: max(var(--ds-target-min), calc(1.5rem * var(--ds-ui-scale)));
+  --ds-eventcal-gutter: calc(3.5rem * var(--ds-ui-scale));
+  /* Минимум ширины события. Держит его НЕ само событие, а трек дня: трек не
+     уже `N × min-w`, где N — колонки самого плотного кластера дня, и события
+     стоят рядом долей 1/N (DS-328). Прежняя лесенка — наезд с z-index —
+     клала угол каждого события под соседа: клик по нижнему краю открывал
+     другое. 3rem, а не прежние 2.5: без наезда это вся ширина события, и в
+     2.5rem за полосой и отступами оставалось две буквы названия. */
+  --ds-eventcal-min-w: calc(3rem * var(--ds-ui-scale));
+  /* Минимум трека дня, пустого или с одним событием (DS-334). 5.625rem —
+     90 px на шкале 1, решение владельца на приёмке 19.09.2026 вместо прежних
+     5rem (80): «пн 14» в шапке и начало названия в событии. Число куплено
+     СОДЕРЖИМЫМ, а не тем, сколько дней влезает; сколько влезает — следствие, и
+     оно пересчитано под объявленный пол 440 (DS-380): на полу это ТРИ
+     полных дня — порт 350 px видимой части (365 по кромке, полоса 15) при
+     колонке часов 56 и треке 90, то есть 3.3 трека (замер 22.09.2026 на HEAD,
+     chromium, dpr 1, `EventCalendar/week`).
+     На прежних 360 было около двух с половиной. Остальное листается вбок, как
+     у мобильных календарей. До этого семь дней делили 250 px поровну, и в
+     36 px не читалось ни одно событие. */
+  --ds-eventcal-col-min: calc(5.625rem * var(--ds-ui-scale));
+  /* Шаблон треков и сумма их минимумов. Неделя присылает их инлайном по дням;
+     здесь — значения для месяца, где семь клеток равны и ничего не листается. */
+  --ds-eventcal-cols: repeat(7, minmax(0, 1fr));
+  --ds-eventcal-min-total: 0px;
+  /* Высота липкой шапки порта; неделя присылает её инлайном. */
+  --ds-eventcal-top: 0px;
+  /* Строка шапки дней. Не цель — текст, поэтому без пола --ds-target-min. */
+  --ds-eventcal-dayhead: calc(2rem * var(--ds-ui-scale));
+  /* Тон события. Обычно приходит инлайном из палитры календарей; объявление
+     здесь — значение для события без календаря, а не заглушка: без него
+     браузер молча отбросил бы всё правило с var(). */
+  --ds-eventcal-tone: var(--ds-accent);
+  /* Ширина события в кластере. Приходит инлайном долей колонки; здесь —
+     значение для события без соседей. Объявление обязательно: запасное
+     значение внутри var() гейт не считает объявлением, и справедливо — оно
+     прячет опечатку в имени вместо того, чтобы её показать. */
+  --ds-eventcal-w: 100%;
+  display: flex; flex-direction: column; gap: var(--ds-space-3);
+  color: var(--ds-text-primary);
+}
+
+.ds-eventcal__head {
+  display: flex; align-items: center; gap: var(--ds-space-2); flex-wrap: wrap;
+}
+
+/* Пояс — грид на шаблоне треков: полоса встаёт от дня до дня `grid-column`,
+   счётчик — своей строкой под полосами, а не поверх последней (DS-328).
+   Отступа под часы больше нет: в неделе пояс лежит в шапке ПРАВЕЕ угла над
+   часами, в месяце часов нет вовсе. */
+.ds-eventcal__band {
+  display: grid; grid-template-columns: var(--ds-eventcal-cols);
+  grid-auto-rows: var(--ds-eventcal-lane);
+  min-height: var(--ds-eventcal-lane);
+}
+
+/* Линия под поясом — НЕ его рамка: у грида рамка прибавлялась к строкам, и
+   пояс в три строки мерил 73 при строке 24 (инвариант `measure` «три к
+   одному»). В неделе линию несёт шапка целиком, в месяце — пояс внутри недели. */
+.ds-eventcal__heads { border-bottom: 1px solid var(--ds-border); }
+.ds-eventcal__week > .ds-eventcal__band { border-bottom: 1px solid var(--ds-border); }
+
+.ds-eventcal__bar {
+  min-width: 0;
+  display: flex; align-items: center; gap: var(--ds-space-2);
+  padding: 0 var(--ds-space-2); font: inherit; font-size: var(--ds-fs-sm);
+  text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--ds-text-primary); cursor: pointer;
+  background: color-mix(in srgb, var(--ds-eventcal-tone) 16%, var(--ds-surface));
+  border: none; border-left: 3px solid var(--ds-eventcal-tone);
+  border-radius: var(--ds-radius);
+}
+
+/* Счётчик пояса стоит В ПОСЛЕДНЕЙ строке — той самой, которую потолок у полос
+   и отнял, и это СВОЯ строка грида, не поверх полосы. Пол цели 24×24 держится
+   высотой строки. */
+.ds-eventcal__band-more {
+  min-width: 0; justify-self: start;
+  display: flex; align-items: center; padding: 0 var(--ds-space-2);
+  /* В одну строку: «+3 ещё» ломался в две в узком треке и вылезал из своей
+     строки пояса на полосу над ней. Трек теперь не уже --ds-eventcal-col-min,
+     и строка в него влезает. */
+  white-space: nowrap;
+  font: inherit; font-size: var(--ds-fs-sm); color: var(--ds-text-secondary);
+  background: none; border: none;
+}
+
+button.ds-eventcal__band-more { cursor: pointer; text-decoration: underline; }
+
+/* Сетка — СКРОЛЛ-ПОРТ, и высота у него своя, меньше содержимого. Раньше высота
+   равнялась суткам целиком, поэтому scrollHeight === clientHeight: прокручивать
+   было нечего, и автопрокрутка при переносе не делала ровно ничего. Заодно
+   сетка перестала уходить ниже экрана — тащить к её нижнему краю можно было
+   только за пределами вьюпорта. */
+.ds-eventcal__grid {
+  position: relative;
+  /* Двенадцать часов — ровно рабочий день по умолчанию (08:00–20:00) — плюс
+     шапка, которая лежит в том же порте; `max-height` приходит инлайном, потому
+     что высота пояса зависит от числа его строк. На одиннадцати часах последний
+     всегда оставался под сгибом; тринадцатый добавил бы пустую ночную полосу.
+     Обе оси (DS-334): треки, не влезшие в контейнер, листаются вбок
+     ВМЕСТЕ с шапкой, а часы и шапка липнут. */
+  overflow: auto;
+}
+
+/* Липкие шапка и часы накрывают край порта, и прокрутка к цели
+   (`scrollIntoView`, фокус стрелками) ставила её ПОД них — угол лежал под
+   часами, клик уходил мимо. Отступ — у ЦЕЛЕЙ (`scroll-margin`), а не у порта
+   (`scroll-padding`): отступ порта сверху действует и на полосы внутри самой
+   липкой шапки, а их вниз не сдвинуть — прокрутка уходила вкось, и на 1.5
+   матрица целей не доставала ни одного угла полосы. Полосам шапки нужен только
+   левый — под липкий угол над часами. */
+.ds-eventcal__canvas .ds-eventcal__event,
+.ds-eventcal__slot {
+  scroll-margin-top: var(--ds-eventcal-top);
+  scroll-margin-left: var(--ds-eventcal-gutter);
+}
+
+.ds-eventcal__heads .ds-eventcal__bar,
+.ds-eventcal__heads .ds-eventcal__band-more { scroll-margin-left: var(--ds-eventcal-gutter); }
+
+/* Шапка порта: угол над часами и справа шапка дней с поясом. Липнет сверху;
+   ширина — не меньше полотна, иначе фон шапки кончался бы на ширине порта, а
+   дни за ним ехали бы по прозрачному. */
+.ds-eventcal__top {
+  position: sticky; top: 0; z-index: 70;
+  display: flex;
+  min-width: calc(var(--ds-eventcal-gutter) + var(--ds-eventcal-min-total));
+  background: var(--ds-surface);
+}
+
+.ds-eventcal__corner {
+  position: sticky; left: 0; z-index: 1;
+  flex: 0 0 var(--ds-eventcal-gutter);
+  background: var(--ds-surface);
+  border-bottom: 1px solid var(--ds-border);
+}
+
+.ds-eventcal__heads { flex: 1 1 auto; min-width: 0; }
+
+
+/* Шапка дней — на том же шаблоне треков, что колонки. Текст, не цель. */
+.ds-eventcal__dayhead {
+  display: grid; grid-template-columns: var(--ds-eventcal-cols);
+  height: var(--ds-eventcal-dayhead);
+  font-size: var(--ds-fs-sm);
+}
+
+.ds-eventcal__dayhead-cell {
+  display: flex; align-items: center; justify-content: center; gap: var(--ds-space-1);
+  min-width: 0; overflow: hidden; white-space: nowrap;
+}
+
+.ds-eventcal__weekday { color: var(--ds-text-secondary); }
+.ds-eventcal__date { font-weight: 600; }
+
+/* Полотно суток внутри порта. Не уже суммы минимумов треков — по той же
+   причине, что шапка: иначе грид колонок вылезал бы из своей коробки. */
+.ds-eventcal__canvas {
+  position: relative; display: flex;
+  min-width: calc(var(--ds-eventcal-gutter) + var(--ds-eventcal-min-total));
+  height: calc(24 * var(--ds-eventcal-hour));
+}
+
+/* Часы липнут слева: при прокрутке недели вбок без них не понять, какое время
+   на экране. Выше событий (у раскрытого z-index 50), ниже шапки. */
+.ds-eventcal__hours {
+  position: sticky; left: 0; z-index: 60; flex: 0 0 var(--ds-eventcal-gutter);
+  height: 100%; min-height: 100%; font-size: var(--ds-fs-sm); color: var(--ds-text-secondary);
+  background: var(--ds-surface);
+}
+
+/* Подпись стоит ПОД своей линией, без центрирующего сдвига. Со сдвигом верхняя
+   видимая метка всегда наполовину срезана клипом скролл-порта — и это не
+   зависит от положения прокрутки: половина подписи просто выше верха порта. */
+.ds-eventcal__hour {
+  position: absolute; right: var(--ds-space-2); padding-top: 1px;
+}
+
+.ds-eventcal__cols {
+  position: relative; flex: 1 1 auto; min-width: 0; height: 100%;
+  display: grid; grid-template-columns: var(--ds-eventcal-cols);
+}
+
+.ds-eventcal__col {
+  position: relative; min-width: 0;
+  border-left: 1px solid var(--ds-border);
+  /* Часовые линии фоном, а не узлами: 24 строки на семь колонок — это 168
+     пустых элементов, которые ничего не значат ни для чтения, ни для клика. */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--ds-border) 0, var(--ds-border) 1px,
+    transparent 1px, transparent var(--ds-eventcal-hour));
+}
+
+/* Нерабочие часы не прячутся — приглушается ФОН рабочих. Сетка всегда полные
+   сутки, поэтому ночное событие видно, а не выпадает из окна. */
+.ds-eventcal__work {
+  position: absolute; left: 0; right: 0;
+  background: var(--ds-surface-subtle);
+  pointer-events: none;
+}
+
+/* Слой слотов лежит ПОД событиями: они выше по z-index, поэтому клик и наведение
+   достаются событию, а пустое место — сетке. */
+.ds-eventcal__slots { position: absolute; inset: 0; display: flex; flex-direction: column; }
+
+.ds-eventcal__slot-row {
+  display: grid; flex: 1 1 0; grid-template-columns: var(--ds-eventcal-cols);
+}
+
+.ds-eventcal__slot { min-width: 0; }
+
+/* Кольцо внутрь: ячейка слота вплотную примыкает к соседям, и наружное кольцо
+   съедалось бы ими. Геометрию всех трёх колец сверяет guard focus-ring. */
+.ds-eventcal__slot:focus-visible { outline: none; box-shadow: var(--ds-focus-ring-inset); }
+
+.ds-eventcal__events { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
+
+.ds-eventcal__event {
+  position: absolute; z-index: 1;
+  width: var(--ds-eventcal-w);
+  /* Отступ сбоку — space-1: в событии шириной min-w каждый пиксель отступа
+     отнимается у названия. */
+  display: block; overflow: hidden; padding: var(--ds-space-1);
+  font: inherit; font-size: var(--ds-fs-sm); text-align: left;
+  color: var(--ds-text-primary); cursor: pointer;
+  background: color-mix(in srgb, var(--ds-eventcal-tone) 16%, var(--ds-surface));
+  border: none; border-left: 3px solid var(--ds-eventcal-tone);
+  border-radius: var(--ds-radius);
+}
+
+/* Под курсором и под фокусом событие раскрывается ВПРАВО по названию и встаёт
+   поверх соседей: в колонке шириной min-w название обрезано, и раскрытие — то,
+   что делает его читаемым целиком. Не уже своей доли (`min-width`): короткое
+   название иначе СЖИМАЛО бы событие под курсором.
+   Вправо, а не на всю колонку: у левого края каждого события его цвет, и
+   раскрытое влево накрыло бы соседа слева.
+   Раскрытое может выйти за колонку: у последнего в кластере справа ничего,
+   кроме края дня, и упрись оно в него, раскрытие не дало бы ему ни пикселя.
+   Потолок — колонка плюс два минимума: хватает названию, но не даёт уехать на
+   пол-недели при длинном заголовке. */
+.ds-eventcal__event:hover,
+.ds-eventcal__event:focus-visible {
+  right: auto; width: max-content; min-width: var(--ds-eventcal-w);
+  max-width: calc(100% + 2 * var(--ds-eventcal-min-w));
+  z-index: 50;
+}
+
+.ds-eventcal__event:hover { box-shadow: var(--ds-shadow-sm); }
+.ds-eventcal__event:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+
+/* Событие, которое сейчас ведут: оно уехало, здесь его больше нет. */
+.ds-eventcal__event.is-moving { opacity: 0.35; }
+
+/* Событие «в полёте»: изменение ушло на сервер и ещё не вернулось. Приглушено и
+   не берётся жестом — но остаётся читаемым: это не запрет, а ожидание. */
+/* 0.7, а не 0.6 (DS-209). «Остаётся читаемым» выше — это обещание, и
+   до замера оно было неверным: при 0.6 видимый контраст текста на своей
+   подложке — 3.91 в свете (худший тон из шести), при поле 4.5. Номинальный
+   при этом 13.31, то есть ни один замер, читающий `color` против
+   `backgroundColor`, об этом не сказал бы. 0.65 даёт 4.49 — ровно тот случай
+   «легло на 4.50», на котором система уже обожглась с тоном бейджа; 0.7 даёт
+   5.17 в свете и 5.70 в темноте. Приглушение при этом читается: 30 % — это
+   видимая разница с соседним событием, а «взято ожиданием» несёт ещё и
+   `cursor: progress`. */
+.ds-eventcal__event.is-pending { opacity: 0.7; cursor: progress; }
+
+/* Контур на исходном месте, пока событие едет за курсором. Отпустив вне
+   допустимой зоны, по нему видно, куда всё вернётся. */
+/* Событие в клавиатурном захвате. Кольцо остаётся фокусным (событие всё ещё
+   сфокусировано), поэтому «взято» показывается тенью и штрихом — иначе два
+   состояния рисовались бы одним и тем же. */
+.ds-eventcal__event.is-grabbed {
+  box-shadow: var(--ds-shadow-md);
+  outline: 2px dashed var(--ds-accent); outline-offset: 1px;
+}
+
+.ds-eventcal__ghost {
+  position: absolute; pointer-events: none;
+  border: 1px dashed var(--ds-border-strong); border-radius: var(--ds-radius);
+}
+
+/* Заготовка создаваемого события. */
+.ds-eventcal__draft {
+  position: absolute; pointer-events: none;
+  background: color-mix(in srgb, var(--ds-accent) 16%, var(--ds-surface));
+  border-left: 3px solid var(--ds-accent); border-radius: var(--ds-radius);
+}
+
+.ds-eventcal__event-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Месяц. Клетка фиксированной высоты, и число чипов в ней задано числом, а не
+   замером: `ResizeObserver` в фоновой вкладке не приходит вовсе, оставляя
+   значения монтажными — то есть правдоподобными и неверными. */
+/* Линию, ЗАКРЫВАЮЩУЮ сетку, несёт контейнер, а не последняя неделя
+   (DS-232). Неделя — повторяющийся элемент, и «последняя» ей приписывать
+   незачем: кончился месяц, он про это и знает. Без этой линии пять недель
+   давали пять границ СВЕРХУ и ни одной снизу, а вертикальные разделители
+   колонок обрывались в пустоту — сетка выглядела недорисованной.
+
+   Почему не полная рамка, как у `DataTable` (там `border` на обёртке, а
+   клетка закрывает низ и правый край): у месяца нет обёртки с рамкой, он
+   лежит вровень с краем компонента, и вертикаль по бокам стала бы рамкой
+   ВОКРУГ EventCalendar, которой у него нигде больше нет. Верх и низ закрыты,
+   бока открыты — это таблица на линейках, а не в рамке.
+
+   Почему тогда у недели остаётся `border-top`, а не переехал весь низ на
+   клетку: в месяце линия разделяет ряды, и принадлежит она тому, что
+   начинается. Ровно так же устроена неделя (`.ds-eventcal__col` — только
+   `border-left`) и сутки (часовые линии фоном, от начала часа). Здесь
+   меняется не идиома, а её конец. */
+.ds-eventcal__month {
+  display: flex; flex-direction: column;
+  border-bottom: 1px solid var(--ds-border);
+  /* Контейнер для узкой раскладки клетки — см. @container ниже. */
+  container-type: inline-size;
+}
+
+/* В месяце шапка — только дни недели, над первой неделей. */
+.ds-eventcal__month > .ds-eventcal__dayhead { height: auto; padding: var(--ds-space-1) 0; }
+
+.ds-eventcal__week {
+  position: relative; display: flex; flex-direction: column;
+  border-top: 1px solid var(--ds-border);
+}
+
+.ds-eventcal__cells { display: flex; }
+
+.ds-eventcal__cell {
+  flex: 1 1 0; min-width: 0; min-height: calc(6rem * var(--ds-ui-scale));
+  padding: var(--ds-space-2); border-left: 1px solid var(--ds-border);
+}
+
+.ds-eventcal__cell:first-child { border-left: none; }
+
+/* День чужого месяца остаётся ЧИТАЕМЫМ, просто приглушённым: он часть недели,
+   и события в нём настоящие. */
+.ds-eventcal__cell.is-out { color: var(--ds-text-secondary); background: var(--ds-surface-subtle); }
+
+.ds-eventcal__daynum { font-size: var(--ds-fs-sm); }
+
+/* `minmax(0, 1fr)`, а не `1fr`: трек грида по умолчанию не уже min-content, и
+   чип с длинным названием раздувал колонку — «Приём смены» наезжал на соседний
+   день. Обрезка живёт в чипе, но действует только если трек ей это позволит. */
+.ds-eventcal__chips {
+  margin: var(--ds-space-1) 0 0; padding: 0; list-style: none;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px;
+}
+
+/* Чип месяца — ТА ЖЕ одна кликабельная строка события, что и полоса пояса,
+   поэтому и высота у него та же строка: `--ds-eventcal-lane`. Без неё высоту
+   давал только текст — 16.2 на шкале 1 и 14.2 на 0.875, — а чип открывает
+   событие, то есть является целью указателя по SC 2.5.8 (DS-156). Год
+   этого никто не мерил: месяца не было ни в одном превью, а jsdom проверяет
+   чип ролью, не геометрией. Клетка от этого растёт, и это цена честного пола:
+   три чипа со счётчиком больше не влезают в 6rem, клетка тянется под них. */
+.ds-eventcal__chip-event {
+  display: flex; align-items: center; gap: var(--ds-space-2); width: 100%;
+  min-height: var(--ds-eventcal-lane);
+  padding: 0 var(--ds-space-1); font: inherit; font-size: var(--ds-fs-sm);
+  text-align: left; white-space: nowrap; overflow: hidden;
+  color: var(--ds-text-primary); cursor: pointer; background: transparent;
+  border: none; border-left: 3px solid var(--ds-eventcal-tone); border-radius: var(--ds-radius-sm);
+}
+
+.ds-eventcal__chip-event:hover { background: color-mix(in srgb, var(--ds-eventcal-tone) 12%, var(--ds-surface)); }
+
+.ds-eventcal__chip-time { color: var(--ds-text-secondary); flex: 0 0 auto; }
+
+/* Многоточие живёт на СПАНЕ, а не на чипе: чип — флекс-контейнер, а на нём
+   text-overflow не рисуется вовсе, и длинное название просто обрывалось. */
+.ds-eventcal__chip-title { overflow: hidden; text-overflow: ellipsis; }
+
+/* Счётчик клетки — цель того же класса, что и чип над ним, и пол у него тот
+   же. `inline-flex` вместо `inline-block`: на блочном `min-height` растит
+   коробку, но текст остаётся у её верхнего края, и цель ощущается смещённой
+   вверх относительно того, что видно. */
+.ds-eventcal__more {
+  display: inline-flex; align-items: center;
+  min-height: var(--ds-eventcal-lane);
+  margin-top: var(--ds-space-1); padding: 0;
+  font: inherit; font-size: var(--ds-fs-sm); color: var(--ds-text-secondary);
+  background: none; border: none;
+}
+
+button.ds-eventcal__more { cursor: pointer; text-decoration: underline; }
+
+/* Узкий месяц (DS-334). В клетке ~40 px чип показывал «08:0» — время без
+   названия, то есть ничего. На узком контейнере время снимается: название
+   отличает событие, время есть в его имени и в виде дня, куда ведёт клетка.
+   40rem месяца — клетка около 90 px, ниже неё время и название вместе уже не
+   помещаются. Отступ клетки ужимается туда же: в 40 px два space-2 съедали
+   треть ширины. */
+@container (max-width: 40rem) {
+  .ds-eventcal__cell { padding: var(--ds-space-1); }
+  .ds-eventcal__chip-time { display: none; }
+}

@@ -1,0 +1,86 @@
+/* Лаборатория DS-55. Классы lab-* — леса самой лаборатории.
+   Классы, изображающие чужие tk-*, помечены отдельно: они НЕ образец. */
+
+.lab {
+  min-height: 100vh;
+  padding: var(--ds-space-6);
+  background: var(--ds-bg-app);
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-ui);
+  font-size: var(--ds-fs-base);
+}
+
+.lab__head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--ds-space-6); margin-bottom: var(--ds-space-7);
+}
+.lab__title { margin: 0 0 var(--ds-space-2); font-size: var(--ds-fs-xl); }
+.lab__hint { margin: 0; max-width: 60ch; color: var(--ds-text-muted); }
+.lab__h2 { margin: 0 0 var(--ds-space-4); font-size: var(--ds-fs-lg); color: var(--ds-text-secondary); }
+
+/* Варианты идут ДРУГ ПОД ДРУГОМ на всю ширину: у них карточка «Project
+   constraints» стоит `col-span-full`, и поставить варианты рядом значит
+   отдать каждому половину ширины — внутренние колонки схлопнутся, и
+   лаборатория соврёт про перенос текста. Проверено: при 350px на колонку
+   DataTable рвёт правило на пять строк, при 700px — на одну. */
+.lab__row {
+  display: flex; flex-direction: column; gap: var(--ds-space-7);
+  margin-bottom: var(--ds-space-8);
+}
+.lab__col { min-width: 0; }
+.lab-card { min-width: 0; }
+
+/* --- Ниже: изображение чужого листа tk-*, не образец для подражания --- */
+
+/* их tk-panel-h — свой заголовок секции внутри нашей карточки */
+.lab-panel-h {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: var(--ds-space-3);
+  margin-bottom: var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-border);
+  font-weight: 500;
+}
+
+.lab-grid2 {
+  display: grid; gap: var(--ds-space-4); align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 60rem) { .lab-grid2 { grid-template-columns: 1fr; } }
+
+.lab-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lab-list__item {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-3);
+  font-size: var(--ds-fs-sm);
+}
+
+/* их ConstraintBadge на color-mix */
+.lab-badge {
+  padding: 1px var(--ds-space-3); border-radius: var(--ds-radius-pill); font-size: var(--ds-fs-sm);
+  border: 1px solid transparent;
+}
+.lab-badge--deny {
+  background: color-mix(in srgb, var(--ds-error) 14%, transparent);
+  color: var(--ds-error-fg);
+  border-color: color-mix(in srgb, var(--ds-error) 35%, transparent);
+}
+.lab-badge--advise {
+  background: color-mix(in srgb, var(--ds-warning) 14%, transparent);
+  color: var(--ds-warning-fg);
+  border-color: color-mix(in srgb, var(--ds-warning) 35%, transparent);
+}
+
+.lab-faint { font-family: var(--ds-font-mono); font-size: 0.72rem; color: var(--ds-text-muted); }
+
+/* их tk-card вокруг формы — третий уровень рамок */
+.lab-inner-card {
+  display: flex; flex-direction: column; gap: var(--ds-space-3);
+  padding: var(--ds-space-3);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+}
+
+.lab-details { font-size: var(--ds-fs-sm); color: var(--ds-text-muted); }
+.lab-details > summary { cursor: pointer; font-weight: 500; }
+.lab-details > div { margin-top: 6px; display: flex; flex-direction: column; gap: 6px; }
+.lab-details ul { margin: 0; padding-left: var(--ds-space-6); }

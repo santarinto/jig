@@ -1,0 +1,42 @@
+/* ГРУППЫ ПЕРЕНОСЯТСЯ (DS-305). Каждый пункт панели надо видеть, поэтому
+   на нехватке строки группа уходит на следующий ряд, а не за край и не под
+   обрезку. Пол группы — `min(10rem·шкала, 100%)`: номинал, пока колонке есть
+   место, и ширина панели, когда нет. Было: ряд без переноса с полом 10rem на
+   группу уводил документ на +214 уже при шкале 1 на кадре 360. */
+.ds-fnpanel { display: flex; flex-wrap: wrap; gap: var(--ds-space-8); padding: var(--ds-space-6); background: var(--ds-surface); }
+.ds-fnpanel__group { min-width: min(calc(10rem * var(--ds-ui-scale)), 100%); }
+.ds-fnpanel__title {
+  font-size: var(--ds-fs-sm); font-weight: 600; color: var(--ds-text-secondary);
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: var(--ds-space-4);
+}
+.ds-fnpanel__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--ds-space-2); }
+/* Ссылка панели функций была 19px высотой — текст плюс 2px padding, ниже пола
+   24px (SC 2.5.8). Шаг списка растёт с 23px до 28px, то есть панель становится
+   выше; это видимая правка, и она осознанная: меню разделов читают и по нему
+   попадают, плотность здесь не главная ценность.
+
+   `inline-flex`, а не `flex`: на всю ширину колонки цель растягивать нельзя —
+   подчёркивание при наведении принадлежит тексту, и ссылка шириной в колонку
+   читалась бы как строка таблицы.
+
+   `text-decoration: none` в покое — ради шва `renderItem` (DS-273): тот же
+   класс ложится на `<a>` потребителя, а UA подчёркивает ссылку по умолчанию, и
+   панель со швом читалась бы иначе, чем без него. Подчёркивание остаётся знаком
+   наведения у обеих форм. Цвет UA у `<a>` не пробивается — `color` задан здесь
+   же классом. Равенство формы кнопки и формы ссылки держит `make measure`,
+   случай «FunctionPanel: ссылка как кнопка». */
+.ds-fnpanel__link {
+  display: inline-flex; align-items: center;
+  min-height: var(--ds-target-min); min-width: var(--ds-target-min);
+  background: none; border: none; padding: var(--ds-space-1) 0; cursor: pointer;
+  font-family: var(--ds-font-ui); font-size: var(--ds-fs-base); color: var(--ds-info); text-align: left;
+  text-decoration: none;
+  /* `inherit`, иначе у `<button>` интерлиньяж браузерный: кнопка не наследует
+     текст страницы, и её `normal` расходился с 1.35 системы, который `<a>`
+     наследует. У однострочного пункта это прятал `min-height`, у пункта в две
+     строки — нет: 35.3 px против 39.1 px, и всё ниже в колонке съезжало.
+     Найдено приёмкой глазами (DS-276, З-4). Приём Tile из d7498f0:
+     чинится кнопка, а не ссылка. */
+  line-height: inherit;
+}
+.ds-fnpanel__link:hover { color: var(--ds-accent-active); text-decoration: underline; }

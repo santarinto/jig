@@ -1,0 +1,19 @@
+.split { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+.pane { padding: 24px; background: var(--ds-bg-app); color: var(--ds-text-primary); }
+.pane__label { font-size: var(--ds-fs-sm); text-transform: uppercase; letter-spacing: .06em; color: var(--ds-text-muted); margin-bottom: 16px; }
+.case { margin-bottom: 28px; }
+.case__title { font-size: var(--ds-fs-lg); margin: 0 0 10px; color: var(--ds-text-secondary); }
+.case__sub { font-size: var(--ds-fs-sm); margin: 0 0 6px; color: var(--ds-text-muted); }
+.skelcard { padding: 14px; background: var(--ds-surface); border: 1px solid var(--ds-border); border-radius: var(--ds-radius); }
+.skelcard__tag { font-size: var(--ds-fs-sm); text-transform: uppercase; letter-spacing: .06em; color: var(--ds-text-muted); margin-bottom: 10px; }
+.skelcard__row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+.drow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 4px 4px 10px; background: var(--ds-surface); border: 1px solid var(--ds-border); border-radius: var(--ds-radius); font-size: var(--ds-fs-base); }
+
+/* DEMO ONLY: force skeleton animation even when the OS has "reduce motion" on,
+   so the shimmer can be evaluated here. The shipped component still respects
+   prefers-reduced-motion and goes static for such users. */
+@media (prefers-reduced-motion: reduce) {
+  .ds-skel--sweep { animation: ds-skel-sweep 1.15s ease-in-out infinite !important; }
+  .ds-skel--pulse { animation: ds-skel-pulse 1.4s ease-in-out infinite !important; }
+  .ds-skel--retro { animation: ds-skel-sweep 1s steps(9) infinite !important; }
+}

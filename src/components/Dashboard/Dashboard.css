@@ -1,0 +1,37 @@
+.ds-dashboard { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(11.25rem * var(--ds-ui-scale)), 1fr)); gap: var(--ds-space-5); padding: var(--ds-space-6); background: var(--ds-bg-app); }
+.ds-tile {
+  display: flex; flex-direction: column; gap: var(--ds-space-3); align-items: flex-start;
+  padding: var(--ds-space-6); text-align: left; cursor: pointer;
+  /* `font: inherit`, иначе у кнопки шрифт браузерный. `<button>` не
+     наследует шрифт страницы: нажимаемая плитка рисовалась Arial 13.33px с
+     `line-height: normal`, и этого не было видно, пока плитка была кнопкой
+     ВСЕГДА. Когда рядом встала статичная `<div>` в Inter системы, одна и та
+     же плитка в двух формах разошлась гарнитурой и кеглем (DS-272,
+     замер в верстаке). Приём тот же, что у `.ds-cal__day`. */
+  font: inherit; color: inherit;
+  /* У `Tile` ДВЕ формы, и рамка у них разная намеренно (DS-272).
+     Базовое правило — нажимаемая: `<button>`, то есть контрол, и лежит он
+     на `--ds-bg-app` (заливка `.ds-dashboard` строкой выше). Отсюда
+     `--ds-control-border`: на этой подложке `--ds-border` давал 1.27, а у
+     контрола граница — единственное, что отличает мишень от фона
+     (DS-267). Правило живёт здесь, а не в `src/components/Tile/` —
+     такой директории нет, плитку рисует лист Dashboard. */
+  background: var(--ds-surface); border: 1px solid var(--ds-control-border); border-radius: var(--ds-radius-md);
+}
+/* Статичная (`<div>`, без `onClick`) — не контрол, а показатель, и 267
+   переводила плитки на `--ds-control-border` ТОЛЬКО потому, что они тогда были
+   кнопками всегда. Порог 3:1 — про границу мишени; поверхности, которую не
+   нажимают, он не нужен, и 1.27 на `--ds-bg-app` для неё то же, что для
+   `.ds-card`. Тёмная рамка на показателе обещала бы нажатие — ровно тот
+   дефект, ради которого формы и разведены. Палец снят той же логикой. */
+.ds-tile--static { cursor: auto; border-color: var(--ds-border); }
+/* Наведение — только у кнопки, и сужено ТЕГОМ, а не `:not(.ds-tile--static)`.
+   Тег назван самим компонентом (форма выбирается присутствием `onClick`), а
+   модификатор — вторым именем того же факта: разметка, где класс забыли
+   поставить на `<div>`, получила бы подсветку при отрицании и не получает её
+   при теге. Держит замер `measure` «Tile: две формы». */
+button.ds-tile:hover { border-color: var(--ds-accent); }
+.ds-tile__icon { font-size: var(--ds-fs-lg); color: var(--ds-accent); }
+.ds-tile__title { font-size: var(--ds-fs-sm); color: var(--ds-text-secondary); }
+.ds-tile__value { font-size: var(--ds-fs-xl); font-weight: 600; color: var(--ds-text-primary); font-feature-settings: "tnum"; }
+.ds-tile--accent { border-top: 2px solid var(--ds-accent); }

@@ -1,0 +1,47 @@
+/* Palette lab (DS-122). Раскладка берётся из charts-lab.css — здесь
+   только то, чего там нет. */
+
+/* Фильтры живут в документе, но ничего не занимают. display:none убрал бы их
+   вместе с <defs>: в Chromium скрытый корень SVG выключает и фильтры, которые
+   на него ссылаются, — фильтр молча перестаёт применяться, а картинка
+   выглядит как «симуляция не отличается от нормы». */
+.pl__defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+.pl__pane { min-width: 0; }
+.pl__stage { display: flex; flex-direction: column; gap: 16px; }
+
+.pl__ok { color: var(--ds-success); font-weight: 600; }
+.pl__bad { color: var(--ds-error); font-weight: 600; }
+
+.pl__nums {
+  margin-top: 10px; font-size: var(--ds-fs-sm); line-height: 1.5;
+  color: var(--ds-text-secondary);
+}
+.pl__nums b { color: var(--ds-text-primary); }
+.pl__bench { margin-top: 4px; color: var(--ds-text-muted); }
+
+.pl__sparks { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+.pl__spark { display: flex; align-items: center; gap: 8px; }
+.pl__spark > :first-child { flex: 1; min-width: 0; }
+.pl__spark > span { font-size: var(--ds-fs-sm); color: var(--ds-text-secondary); white-space: nowrap; }
+
+.pl__sizes { display: flex; flex-direction: column; gap: 10px; }
+
+.pl__swatches { display: flex; gap: 4px; }
+.pl__swatches > i { flex: 1; height: 18px; border-radius: var(--ds-radius-sm); }
+.pl__swatches--big > i { height: 44px; }
+
+/* Полоса в 2px — та же величина, что stroke-width у LineChart. Не «тонкая
+   линия вообще», а ровно то, что рисует компонент. */
+.pl__rules { display: flex; flex-direction: column; gap: 9px; }
+.pl__rules > i { display: block; height: 2px; width: 100%; }
+
+.pl__selftest {
+  margin-top: 16px; padding: 10px 12px;
+  border: 1px dashed var(--ds-border); border-radius: var(--ds-radius-md);
+}
+.pl__selftest-title {
+  font-size: var(--ds-fs-sm); color: var(--ds-text-muted);
+  margin-bottom: 8px; line-height: 1.45;
+}
+.pl__selftest .pl__swatches + .pl__swatches { margin-top: 3px; }

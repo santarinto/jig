@@ -1,0 +1,47 @@
+/* УМОЛЧАНИЕ ЗАЗОРА — В ЛИСТЕ, А НЕ В КОМПОНЕНТЕ (DS-179).
+
+   Раскладочный примитив без зазора и есть сломанное состояние: потребитель
+   ставит два компонента рядом, они слипаются, и он тянется за своим `margin` —
+   ровно те «хаки», о которых пришла жалоба. Причём тянется правильно со своей
+   стороны: система не дала ему шага, она дала пустоту. При этом `0` в
+   `StackGap` есть ЯВНО, то есть «хочу вплотную» и «не подумал про зазор» давали
+   один результат и не различались ни глазом, ни грепом.
+
+   ШАГ ВЗЯТ ЗАМЕРОМ, А НЕ НАЗНАЧЕН КРАСИВЫМ. Посчитаны все наши вызовы `Stack` и
+   `Grid` разбором ТЕГА (не строки: JSX многострочен), без тестов: явных
+   числовых 38, из них `3` — 16, `2` — 14, `4` — 5, `5` — 2, `1` — 1. То есть
+   `--ds-space-3` (0.375rem × шкала, 6px на шкале 1) — самое частое значение,
+   которое мы передаём руками.
+
+   ОДИН ШАГ НА ДВА ПРИМИТИВА, хотя мода у них разная: у `Grid` это 3 (9 из 12), у
+   `Stack` — 2 (14 из 26). Два разных молчаливых умолчания были бы двумя ответами
+   на один вопрос «сколько занимает шаг между детьми», и переезд `Stack` → `Grid`
+   менял бы ритм, не тронув ни одного пропа. Те вызовы `Stack`, которым нужно
+   теснее, уже говорят это явно — умолчание меняет только те, что молчали.
+
+   В ЛИСТЕ, потому что инлайновый стиль перебил бы правило потребителя: пока
+   значение живёт здесь, его можно переопределить своим классом, а `gap={n}`
+   остаётся сильнее и того, и другого. `gap={0}` при этом честен: `--ds-space-0`
+   объявлен в шкале (нулевая ступень заведена именно для этого), и подставленный
+   компонентом `var(--ds-space-0)` даёт настоящий ноль, а не отброшенное
+   объявление, «работавшее» по совпадению.
+
+   Внешнего поля у компонентов как не было, так и нет: отступ — дело родителя.
+   Компонент со своим `margin` рядом с другим таким же даёт сумму двух чужих
+   решений, и отменить её нечем, кроме `!important`. */
+.ds-stack { display: flex; gap: var(--ds-space-3); }
+.ds-stack[data-inline='true'] { display: inline-flex; }
+.ds-stack[data-direction='row'] { flex-direction: row; }
+.ds-stack[data-direction='column'] { flex-direction: column; }
+.ds-stack[data-wrap='true'] { flex-wrap: wrap; }
+.ds-stack[data-align='start'] { align-items: flex-start; }
+.ds-stack[data-align='center'] { align-items: center; }
+.ds-stack[data-align='end'] { align-items: flex-end; }
+.ds-stack[data-align='stretch'] { align-items: stretch; }
+.ds-stack[data-align='baseline'] { align-items: baseline; }
+.ds-stack[data-justify='start'] { justify-content: flex-start; }
+.ds-stack[data-justify='center'] { justify-content: center; }
+.ds-stack[data-justify='end'] { justify-content: flex-end; }
+.ds-stack[data-justify='between'] { justify-content: space-between; }
+.ds-stack[data-justify='around'] { justify-content: space-around; }
+.ds-stack[data-justify='evenly'] { justify-content: space-evenly; }

@@ -1,0 +1,63 @@
+.ds-drawer__overlay {
+  position: fixed; inset: 0; z-index: var(--ds-z-drawer);
+  background: var(--ds-overlay);
+}
+
+.ds-drawer {
+  position: fixed; z-index: calc(var(--ds-z-drawer) + 1);
+  display: flex; flex-direction: column;
+  background: var(--ds-surface); color: var(--ds-text-primary);
+  box-shadow: var(--ds-shadow-md);
+  /* Граница у ящика САМЫЙ ОСТРЫЙ случай задачи (DS-161): её тут не было
+     вовсе, панель отделяла себя одной тенью. В светлой теме это работало, в
+     тёмной тень `rgba(0,0,0,0.5)` на почти чёрном не читается — то есть ящик
+     опирался на единственный носитель, которого нет.
+
+     Контур ставится ТОЛЬКО с открытой стороны: три остальных лежат за краем
+     экрана, и рисовать их значило бы платить пикселем ширины за линию,
+     которую никто не увидит. Сторона задаётся модификатором, потому что
+     `--left`, `--right` и `--bottom` открыты в разные стороны. */
+}
+.ds-drawer--left { border-right: 1px solid var(--ds-border-overlay); }
+.ds-drawer--right { border-left: 1px solid var(--ds-border-overlay); }
+.ds-drawer--bottom { border-top: 1px solid var(--ds-border-overlay); }
+.ds-drawer:focus { outline: none; }
+
+.ds-drawer--left { top: 0; left: 0; bottom: 0; width: min(calc(22.5rem * var(--ds-ui-scale)), 90vw); animation: ds-drawer-in-left .18s ease; }
+.ds-drawer--right { top: 0; right: 0; bottom: 0; width: min(calc(22.5rem * var(--ds-ui-scale)), 90vw); animation: ds-drawer-in-right .18s ease; }
+.ds-drawer--bottom { left: 0; right: 0; bottom: 0; max-height: 80vh; animation: ds-drawer-in-bottom .18s ease; }
+
+@keyframes ds-drawer-in-left { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes ds-drawer-in-right { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes ds-drawer-in-bottom { from { transform: translateY(100%); } to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-drawer--left, .ds-drawer--right, .ds-drawer--bottom { animation: none; }
+}
+
+.ds-drawer__header {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--ds-space-4);
+  padding: var(--ds-space-4) var(--ds-space-5);
+  border-bottom: 1px solid var(--ds-border);
+}
+.ds-drawer__title { font-size: var(--ds-fs-lg); font-weight: 600; }
+/* Пол цели РЯДОМ с масштабируемым размером, а не вместо него (DS-207).
+   `calc(1.5rem * scale)` даёт на шкале 1 ровно 24 — крестик стоял на полу без
+   запаса и пробивался любой шкалой ниже: 21.0×21.0 при 0.875, рабочей шкале
+   потребителя. Пара строк, а не `max()` внутри одного свойства, потому что
+   свойства РАЗНЫЕ: `width`/`height` несут размер, `min-*` несут пол, и на 1.5
+   побеждает размер — крестик остаётся 36, а не зажимается до 24. */
+.ds-drawer__close {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: calc(1.5rem * var(--ds-ui-scale)); height: calc(1.5rem * var(--ds-ui-scale)); padding: 0; font-size: var(--ds-fs-xl); line-height: 1;
+  min-width: var(--ds-target-min); min-height: var(--ds-target-min);
+  color: var(--ds-text-muted); background: transparent; border: none; border-radius: var(--ds-radius); cursor: pointer;
+}
+.ds-drawer__close:hover { color: var(--ds-text-primary); background: var(--ds-surface-subtle); }
+
+.ds-drawer__body { flex: 1 1 auto; overflow: auto; padding: var(--ds-space-5); }
+.ds-drawer__footer {
+  display: flex; align-items: center; justify-content: flex-end; gap: var(--ds-space-3);
+  padding: var(--ds-space-4) var(--ds-space-5);
+  border-top: 1px solid var(--ds-border);
+}

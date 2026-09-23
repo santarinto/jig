@@ -1,0 +1,53 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+  <div class="ds-field ds-numfield">
+    <label class="ds-field__label" for="nf-1">Количество</label>
+    <div class="ds-numfield__control ds-numfield__control--md">
+      <button type="button" class="ds-numfield__btn" aria-label="Уменьшить">−</button>
+      <input id="nf-1" class="ds-numfield__input" role="spinbutton" inputmode="decimal" value="12" aria-valuenow="12">
+      <span class="ds-numfield__suffix">шт</span>
+      <button type="button" class="ds-numfield__btn" aria-label="Увеличить">+</button>
+    </div>
+    <span class="ds-field__hint">Целое число</span>
+  </div>
+
+  <!-- Компактный размер В ОБЫЧНОМ СОСТОЯНИИ, и он тут не для полноты набора
+       (DS-207, приёмка). Компактный степпер — самая узкая цель клика у
+       этого поля, а единственный `--sm` образец в превью был `is-error` и с
+       погашенным минусом: гейт мерил цель только на ошибке. Сегодня геометрия
+       у двух состояний совпадает, но она СОВПАДАЕТ, а не обязана — своя
+       рамка у `is-error` сделала бы замер не о том поле, которое видит
+       потребитель, и молча. -->
+  <div class="ds-field ds-numfield">
+    <label class="ds-field__label" for="nf-4">Машин на линии</label>
+    <div class="ds-numfield__control ds-numfield__control--sm">
+      <button type="button" class="ds-numfield__btn" aria-label="Уменьшить">−</button>
+      <input id="nf-4" class="ds-numfield__input" role="spinbutton" inputmode="decimal" value="12" aria-valuenow="12">
+      <button type="button" class="ds-numfield__btn" aria-label="Увеличить">+</button>
+    </div>
+    <span class="ds-field__hint">Компактный размер</span>
+  </div>
+
+  <!-- Компактный размер: степперы — самые узкие цели клика у этого поля. -->
+  <div class="ds-field ds-numfield">
+    <label class="ds-field__label" for="nf-2">Ставка НДС</label>
+    <div class="ds-numfield__control ds-numfield__control--sm is-error">
+      <button type="button" class="ds-numfield__btn" aria-label="Уменьшить" disabled>−</button>
+      <input id="nf-2" class="ds-numfield__input" role="spinbutton" inputmode="decimal" value="0" aria-valuenow="0" aria-invalid="true" aria-describedby="nf-2-err">
+      <span class="ds-numfield__suffix">%</span>
+      <button type="button" class="ds-numfield__btn" aria-label="Увеличить">+</button>
+    </div>
+    <span id="nf-2-err" class="ds-field__error">Выберите ставку</span>
+  </div>
+
+  <!-- Выключенное: признак у обёртки — класс, `<div>` не принимает :disabled. -->
+  <div class="ds-field ds-numfield">
+    <label class="ds-field__label" for="nf-3">Скидка</label>
+    <div class="ds-numfield__control ds-numfield__control--md is-disabled">
+      <button type="button" class="ds-numfield__btn" aria-label="Уменьшить" disabled>−</button>
+      <input id="nf-3" class="ds-numfield__input" role="spinbutton" inputmode="decimal" value="0" aria-valuenow="0" disabled>
+      <button type="button" class="ds-numfield__btn" aria-label="Увеличить" disabled>+</button>
+    </div>
+  </div>
+</div></body></html>

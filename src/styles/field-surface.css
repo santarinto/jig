@@ -1,0 +1,166 @@
+/* Поверхность поля ввода: фон, рамка, скругление, переход и состояния —
+   один набор деклараций на все элементы системы, которые её носят.
+
+   ПОЧЕМУ СПИСОК СЕЛЕКТОРОВ, А НЕ ОБЩИЙ КЛАСС `.ds-field-base`.
+   Класс поменял бы разметку, которую потребители уже видят у себя в CSS, и —
+   главное — `.ds-input` перестал бы быть самодостаточным: кто скопировал имя
+   класса на свой `<input>`, получил бы голый элемент. Здесь разметка не
+   меняется вовсе. Цена — список дополняется руками, когда появляется новое
+   поле; это стережёт `src/__guards__/field-surface.test.ts`.
+
+   ПОЧЕМУ ФАЙЛ БЕЗОПАСЕН НЕЗАВИСИМО ОТ ПОРЯДКА ЗАГРУЗКИ.
+   Сюда попадает только то, что ни один компонентный лист не объявляет для того
+   же селектора. Это не пожелание, а условие: у потребителя со сборщиком
+   порядок CSS задаётся порядком импортов в JS, а не порядком в `styles.css`,
+   поэтому общая строка и локальная строка одного веса — гонка. Гейт
+   проверяет ровно это.
+
+   Отсюда же и то, чего здесь НЕТ: `font-size` — у `.ds-code__cell` он свой
+   (`--ds-fs-lg`), и общая строка выиграла бы у локальной по порядку, а не по
+   весу. Такое остаётся в компоненте.
+*/
+
+/* --- Поверхность: восемь элементов ------------------------------------- */
+.ds-input,
+.ds-textarea,
+.ds-select,
+.ds-pager__select,
+.ds-searchbar__input,
+.ds-combobox__trigger,
+.ds-code__cell,
+.ds-numfield__control {
+  background: var(--ds-surface);
+  /* `--ds-control-border`, а не `--ds-border-strong` (DS-267): у поля
+     ввода рамка — ЕДИНСТВЕННЫЙ носитель опознания. Заливка вторым носителем не
+     работает: белое поле на подвале `Modal` даёт 1.07, в тёмной 1.11. Пока
+     здесь стоял `--ds-border-strong`, опознание держалось на 1.49–1.78 при
+     пороге 3 (WCAG 1.4.11) — ни на одной подложке, ни в одной теме. */
+  border: 1px solid var(--ds-control-border);
+  border-radius: var(--ds-radius);
+  transition: border-color .12s, box-shadow .12s;
+}
+
+/* Текст — семь: у `.ds-numfield__control` его рисует вложенный `input`,
+   и цвет с гарнитурой на обёртке были бы инертны. */
+.ds-input,
+.ds-textarea,
+.ds-select,
+.ds-pager__select,
+.ds-searchbar__input,
+.ds-combobox__trigger,
+.ds-code__cell {
+  font-family: var(--ds-font-ui);
+  color: var(--ds-text-primary);
+}
+
+.ds-input::placeholder,
+.ds-textarea::placeholder,
+.ds-searchbar__input::placeholder {
+  color: var(--ds-text-muted);
+}
+
+/* --- Наведение ---------------------------------------------------------- */
+/* `:not(:disabled)` обязателен: без него выключенное поле подсвечивает рамку,
+   то есть врёт про то, что с ним можно работать. У обёртки
+   `.ds-numfield__control` признак другой — `.is-disabled`, потому что она
+   `<div>` и `:disabled` к ней не применим; с `:not(:disabled)` условие было бы
+   всегда истинно, и выключенное числовое поле подсвечивалось бы под курсором
+   (DS-108). */
+.ds-input:hover:not(:disabled),
+.ds-textarea:hover:not(:disabled),
+.ds-select:hover:not(:disabled),
+.ds-pager__select:hover:not(:disabled),
+.ds-searchbar__input:hover:not(:disabled),
+.ds-combobox__trigger:hover:not(:disabled),
+.ds-code__cell:hover:not(:disabled),
+.ds-numfield__control:hover:not(.is-disabled) {
+  border-color: var(--ds-accent);
+}
+
+/* --- Фокус -------------------------------------------------------------- */
+/* `.ds-numfield__control` — обёртка, фокус приходит на вложенный `input`,
+   поэтому у неё `:focus-within`; кольцо и рамка те же. */
+.ds-input:focus-visible,
+.ds-textarea:focus-visible,
+.ds-select:focus-visible,
+.ds-pager__select:focus-visible,
+.ds-searchbar__input:focus-visible,
+.ds-combobox__trigger:focus-visible,
+.ds-code__cell:focus-visible,
+.ds-numfield__control:focus-within {
+  outline: none;
+  border-color: var(--ds-accent);
+  box-shadow: var(--ds-focus-ring);
+}
+
+/* --- Выключено ---------------------------------------------------------- */
+/* Семь, а не восемь. `.ds-combobox__trigger` выключается с DS-36, а
+   `.ds-numfield__control` — с DS-108: у `NumberField` появился проп
+   `disabled`, и правило перестало быть мёртвым. Обёртка там `<div>`, `:disabled`
+   к нему не применим, поэтому признак классом — `.is-disabled`; это не второй
+   способ сказать то же самое, а единственный доступный на не-контроле.
+   Остаётся вне один: `.ds-pager__select` внутренний и выключается только вместе
+   со страницей. Правило на него было бы мёртвым — см. CLAUDE.md про выжившую
+   мутацию. */
+.ds-input:disabled,
+.ds-textarea:disabled,
+.ds-select:disabled,
+.ds-searchbar__input:disabled,
+.ds-combobox__trigger:disabled,
+.ds-numfield__control.is-disabled,
+.ds-code__cell:disabled {
+  background: var(--ds-surface-subtle);
+  color: var(--ds-text-muted);
+}
+
+/* --- Выключена кнопка ВНУТРИ поля --------------------------------------- */
+/* Отдельный список, потому что предмет другой: выше — поверхность самого ввода,
+   здесь — кнопки, живущие в той же рамке. До DS-133 правило было ровно
+   одно, локальное у `.ds-numfield__btn`, и остальные четыре кнопки не гасли
+   вовсе — вместе с тем, что до них не доезжал и сам `disabled`.
+   Лист общий, а не по копии в каждом компонентном: копий этого правила было бы
+   пять, и разъехались бы они так же, как разъехалась поверхность поля до
+   1.42.0 — см. шапку `shared-sheets`. */
+.ds-numfield__btn:disabled,
+.ds-searchbar__clear:disabled,
+.ds-searchbar__go:disabled,
+.ds-datepicker__clear:disabled,
+.ds-datepicker__btn:disabled,
+.ds-filedrop__remove:disabled {
+  color: var(--ds-text-muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* --- Ошибка ------------------------------------------------------------- */
+/* Семь: те же, что у «выключено», плюс `.ds-combobox__trigger` (проп `error`,
+   DS-36) и `.ds-numfield__control` (проп `error` у `NumberField`). */
+.ds-input.is-error,
+.ds-textarea.is-error,
+.ds-select.is-error,
+.ds-searchbar__input.is-error,
+.ds-combobox__trigger.is-error,
+.ds-code__cell.is-error,
+.ds-numfield__control.is-error {
+  border-color: var(--ds-error);
+}
+
+.ds-input.is-error:hover:not(:disabled),
+.ds-textarea.is-error:hover:not(:disabled),
+.ds-select.is-error:hover:not(:disabled),
+.ds-searchbar__input.is-error:hover:not(:disabled),
+.ds-combobox__trigger.is-error:hover:not(:disabled),
+.ds-code__cell.is-error:hover:not(:disabled),
+.ds-numfield__control.is-error:hover:not(.is-disabled) {
+  border-color: var(--ds-error);
+}
+
+.ds-input.is-error:focus-visible,
+.ds-textarea.is-error:focus-visible,
+.ds-select.is-error:focus-visible,
+.ds-searchbar__input.is-error:focus-visible,
+.ds-combobox__trigger.is-error:focus-visible,
+.ds-code__cell.is-error:focus-visible,
+.ds-numfield__control.is-error:focus-within {
+  box-shadow: var(--ds-focus-ring-error);
+}

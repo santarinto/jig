@@ -1,0 +1,3 @@
+.ds-example-ws { border: 1px solid var(--ds-border); border-radius: var(--ds-radius-md); overflow: hidden; background: var(--ds-bg-app); }
+.ds-example-ws__body { display: flex; min-height: 320px; }
+.ds-example-ws__main { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }

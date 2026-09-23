@@ -1,0 +1,492 @@
+/* ── Обёртка ───────────────────────────────────────────────────────────────
+   `.ds-tabs` — контейнер бара: держит список вкладок и, при переполнении,
+   контролы прокрутки/меню по краям. Направление зависит от `data-position`. */
+/* БАР НИКОГДА НЕ ОТДАЁТ ДОКУМЕНТУ БОКОВУЮ ПРОКРУТКУ (DS-284).
+
+   `overflow-x: clip` — граница, у которой кончается ответственность полосы.
+   Начинка слота может быть шире, чем ей выдали (DS-205: за это отвечает
+   содержимое слота, а не полоса), но «шире выданного» и «страница поехала
+   вбок» — разные беды: во второй виноват уже не слот, а то, что бар пустил
+   лишнее наружу. На кадре 360 при шкале 1.5 это давало документу до 57px хода
+   и `scrollLeft`, который реально доезжал, — то есть весь экран съезжал от
+   кнопки, которую никто не трогал. Теперь лишнее режет граница БАРА: кнопка
+   «Добавить» на телефоне остаётся срезанной, а документ стоит.
+
+   `clip`, а не `hidden`: `hidden` по оси X сделал бы бар прокручиваемым
+   контейнером и утянул бы `overflow-y` из `visible` в `auto` — меню «⋯»
+   (оно висит ПОД баром) оказалось бы внутри прокрутки. При `clip` вторая ось
+   остаётся `visible`, и всплывашка по-прежнему выходит за нижний край.
+
+   `min-width: 0` — чтобы бар, стоящий флекс-элементом в чужой раскладке, мог
+   ужаться до выданного, а не распирал её своим max-content. */
+.ds-tabs { display: flex; align-items: stretch; position: relative; min-width: 0; overflow-x: clip; }
+.ds-tabs[data-position='top'],
+.ds-tabs[data-position='bottom'] { flex-direction: row; }
+.ds-tabs[data-position='left'],
+.ds-tabs[data-position='right'] { flex-direction: column; align-items: stretch; }
+
+/* ── Список вкладок (tablist) ────────────────────────────────────────────────
+   Несёт «линию бара» (границу), на которую садятся вкладки. Скролл включается
+   только когда вкладки не влезают (класс `is-scrollable`): иначе `overflow:auto`
+   обрезал бы фокус-кольца в обычном, невытесняющем случае. */
+/* `flex: 1 1 auto` — список тянется на всю длину бара, даже когда вкладки не
+   заполняют её. Линию-полосу несёт его граница; без растяжения она обрывалась
+   на последней вкладке, а панель под ней шла на всю ширину — шов не доходил до
+   края. Вкладки и `trailing` («+») остаются прижаты к началу (justify-content по
+   умолчанию flex-start), пустой хвост списка просто продолжает полосу до края.
+   Скролл (`overflow`) включается отдельно, только когда вкладки не влезают. */
+.ds-tabs__list { display: flex; flex: 1 1 auto; gap: var(--ds-space-1); padding: 0; min-width: 0; min-height: 0; }
+.ds-tabs[data-position='top'] .ds-tabs__list,
+.ds-tabs[data-position='bottom'] .ds-tabs__list { flex-direction: row; }
+
+/* ── ПОЛ ЛЕНТЫ: у остатка есть дно, и уступает на пределе довесок ────────────
+   DS-236. DS-205 дала слоту резервировать ширину ПЕРВЫМ, а ленте —
+   брать остаток; чего она не решила, так это что делать, когда остатка почти
+   не осталось. На телефоне не осталось: кадр 360 при `--ds-ui-scale: 1.5`
+   (случай `?c=Tabs&case=trailing`) — лента 119.8 при первой вкладке 120.1,
+   видно 107.8 из 120.1. Полоса вкладок перестаёт читаться как полоса вкладок:
+   на экране обрезанное «Все 12», и это похоже на дефект отрисовки, а не на
+   «домотайте вбок». Замер владельца на настоящем кадре давал ещё хуже — 52.1,
+   потому что в прокрученном состоянии появляется ВТОРАЯ стрелка и забирает
+   ещё столько же; заодно лента дёргалась в ширине от каждого доскролла.
+
+   Пол — 6rem на шкале, и число не подобрано под фикстуру, а сложено из
+   токенов, которыми набрана сама вкладка:
+     `--ds-space-4` (0.5rem) — отступ ленты перед первой вкладкой,
+     2 × `--ds-space-5` (1.5rem) — боковые поля самой вкладки,
+     `--ds-w-col-min` (4rem) — заявленный системой пол читаемости текстовой
+       колонки, здесь он же меряет подпись со счётчиком.
+   Итого 6rem: ровно одна вкладка с короткой подписью, целиком. Проверено
+   замером, а не выведено: «Все 128» занимает 80.8 на шкале 1 и 120.1 на 1.5,
+   пол даёт 96 и 144.
+
+   Почему `flex-basis`, а не одна `min-width`. Базис, равный минимуму, — это
+   и есть «уступает довесок, а не предмет». При нехватке места флексбокс
+   ужимает соседей ПРОПОРЦИОНАЛЬНО их базисам: с `flex-basis: auto` базис
+   ленты равен сумме всех вкладок, она огромна, и слот начинал бы ужиматься
+   сразу, задолго до всякого предела — то есть ровно тот раздавленный контрол,
+   который DS-205 и запретила. С базисом, равным полу, лента упирается в
+   свой минимум в первом же проходе и замораживается, и весь дефицит достаётся
+   слоту. Пока места хватает, ничего не меняется: `flex-grow: 1` отдаёт ленте
+   остаток, как и раньше.
+
+   Только у горизонтального бара. У `left`/`right` лента — колонка, слот стоит
+   под ней, а не рядом, и теснота там меряется по высоте: `min-width` отвечал
+   бы не на тот вопрос, а `flex-basis` стал бы полом ВЫСОТЫ. */
+.ds-tabs { --ds-tabs-list-min: calc(6rem * var(--ds-ui-scale)); }
+.ds-tabs[data-position='top'] .ds-tabs__list,
+.ds-tabs[data-position='bottom'] .ds-tabs__list {
+  flex-basis: var(--ds-tabs-list-min);
+  min-width: var(--ds-tabs-list-min);
+}
+.ds-tabs[data-position='left'] .ds-tabs__list,
+.ds-tabs[data-position='right'] .ds-tabs__list { flex-direction: column; }
+
+/* Линия бара — внутренняя тень по кромке списка, а не его граница.
+   Разница не косметическая. Граница живёт снаружи content-box, поэтому вкладке,
+   чтобы сесть на линию, приходилось выезжать за него сдвигом отрисовки
+   (`top: 1px`). Из этого следовали два дефекта. Первый: сдвиг задан в CSS-px, а
+   ширина границы округляется до целого device-px — при дробном
+   `devicePixelRatio` (1.15, 1.25 — обычное дело на 125% масштабе) кромка вкладки
+   и линия попадали на разные ряды пикселей, и линия под вкладками шла на ряд
+   выше, чем в пустом хвосте: ступенька, читаемая как «вкладка перекрыла линию».
+   Второй: у прокручиваемой полосы (`overflow="scroll"` → `overflow: auto`) всё,
+   что вкладка рисовала за content-box, обрезалось, и активная не могла разомкнуть
+   линию в тело — шов оставался закрытым поперёк её устья.
+
+   Внутренняя тень рисуется по кромке padding-box, то есть внутри области
+   обрезки и от того же края, от которого считается нижняя граница вкладки:
+   совпадение теперь следствие раскладки, а не двух независимых округлений. */
+/* РАМОЧНАЯ СИСТЕМА ВКЛАДОК — ОДНА ФИГУРА, И ТОКЕН У НЕЁ ОДИН (DS-267).
+   Рельс полосы, контур вкладки, внешние края активной вкладки, хвост и край
+   панели рисуют единый контур: активная вкладка «врезается» в рельс, подменяя
+   стыковую грань на `--ds-surface`. Перевести на `--ds-control-border` только
+   вкладку (она контрол, а панель — контейнер) значило бы дать рельсу и контуру
+   разную силу и получить ВИДИМЫЙ ШОВ ровно в месте врезки. Поэтому граница
+   проведена по фигуре, а не по признаку интерактивности каждого узла.
+   Заливкой вкладка тоже не опознаётся: `--ds-section-bar` к `--ds-surface`
+   даёт 1.18. Было 1.33–1.45. */
+.ds-tabs[data-position='top'] .ds-tabs__list { box-shadow: inset 0 -1px 0 var(--ds-control-border); }
+.ds-tabs[data-position='bottom'] .ds-tabs__list { box-shadow: inset 0 1px 0 var(--ds-control-border); }
+.ds-tabs[data-position='left'] .ds-tabs__list { box-shadow: inset -1px 0 0 var(--ds-control-border); }
+.ds-tabs[data-position='right'] .ds-tabs__list { box-shadow: inset 1px 0 0 var(--ds-control-border); }
+
+/* Отступ перед первой вкладкой. «Папка» не должна упираться в край контейнера:
+   в карточке с `noPadding` (и вообще под любой рамкой) первая вкладка иначе
+   садится прямо в угол, и полоса читается как обрезанная, а не как начатая.
+   Отступ идёт по направлению бара — вбок у горизонтального, вниз у бокового.
+
+   Только для «папок»: у `plain` вкладка это сам текст без рамки и фона, и
+   сдвиг оторвал бы его от содержимого под баром — там выравнивание по левому
+   краю важнее, чем зазор. */
+.ds-tabs:not(.ds-tabs--plain)[data-position='top'] .ds-tabs__list,
+.ds-tabs:not(.ds-tabs--plain)[data-position='bottom'] .ds-tabs__list {
+  padding-inline-start: var(--ds-space-4);
+}
+.ds-tabs:not(.ds-tabs--plain)[data-position='left'] .ds-tabs__list,
+.ds-tabs:not(.ds-tabs--plain)[data-position='right'] .ds-tabs__list {
+  padding-block-start: var(--ds-space-4);
+}
+
+.ds-tabs__list.is-scrollable { overflow: auto; scrollbar-width: none; }
+.ds-tabs__list.is-scrollable::-webkit-scrollbar { display: none; }
+
+/* ── Ячейка вкладки ──────────────────────────────────────────────────────────
+   Обёртка вкладки и её крестика: крестик — отдельная кнопка-сосед (см. Tab.tsx),
+   позиционируется абсолютно над правым краем вкладки. */
+.ds-tabs__item { position: relative; display: inline-flex; flex: 0 0 auto; }
+
+/* `top`/`left` не сдвигают вкладку: линию она встречает своей нижней границей
+   в пределах content-box (см. блок про внутреннюю тень выше). `position:
+   relative` остаётся — на него опирается позиционирование крестика. */
+.ds-tabs__tab {
+  position: relative;
+  /* Ряд, а не поток: значок и подпись должны стоять на общей вертикали, а не
+     на базовой линии текста — значок редко имеет базовую линию вообще. */
+  display: inline-flex; align-items: center; white-space: nowrap;
+  height: var(--ds-h-comfortable); padding: 0 var(--ds-space-5);
+  font: inherit; font-size: var(--ds-fs-base); color: var(--ds-text-secondary); cursor: pointer;
+  background: var(--ds-section-bar); border: 1px solid var(--ds-control-border);
+  border-radius: var(--ds-radius) var(--ds-radius) 0 0;
+}
+.ds-tabs__tab:hover:not(.is-active):not([aria-disabled='true']) {
+  background: var(--ds-surface-subtle); color: var(--ds-text-primary);
+}
+.ds-tabs__tab.is-active {
+  background: var(--ds-surface); border-bottom-color: var(--ds-surface);
+  color: var(--ds-text-primary); font-weight: 500;
+}
+.ds-tabs__tab:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); border-radius: var(--ds-radius); }
+/* Цвет, курсор и прозрачность выключенного — в . */
+.ds-tabs__tab[aria-disabled='true'] { background: var(--ds-section-bar); }
+/* Место под крестик, чтобы он не наезжал на подпись. */
+.ds-tabs__tab--closable { padding-right: calc(var(--ds-space-5) + var(--ds-space-4)); }
+
+/* Позиции: куда «прирастает» вкладка и какую линию списка размыкает активная. */
+.ds-tabs[data-position='bottom'] .ds-tabs__tab {
+  border-radius: 0 0 var(--ds-radius) var(--ds-radius);
+}
+.ds-tabs[data-position='bottom'] .ds-tabs__tab.is-active {
+  border-bottom-color: var(--ds-control-border); border-top-color: var(--ds-surface);
+}
+.ds-tabs[data-position='left'] .ds-tabs__tab {
+  border-radius: var(--ds-radius) 0 0 var(--ds-radius);
+  width: 100%; justify-content: flex-start;
+}
+.ds-tabs[data-position='left'] .ds-tabs__tab.is-active {
+  border-bottom-color: var(--ds-control-border); border-right-color: var(--ds-surface);
+}
+.ds-tabs[data-position='right'] .ds-tabs__tab {
+  border-radius: 0 var(--ds-radius) var(--ds-radius) 0;
+  width: 100%; justify-content: flex-start;
+}
+.ds-tabs[data-position='right'] .ds-tabs__tab.is-active {
+  border-bottom-color: var(--ds-control-border); border-left-color: var(--ds-surface);
+}
+.ds-tabs[data-position='left'] .ds-tabs__item,
+.ds-tabs[data-position='right'] .ds-tabs__item { display: flex; }
+
+/* ── Крестик закрытия ────────────────────────────────────────────────────────
+   Отдельная кнопка над правым краем вкладки. Не выбирает вкладку (stopPropagation
+   в обработчике), несёт своё доступное имя «Закрыть вкладку …». */
+.ds-tabs__close {
+  position: absolute; top: 50%; right: var(--ds-space-2); transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: calc(1.5rem * var(--ds-ui-scale)); height: calc(1.5rem * var(--ds-ui-scale));
+  min-width: var(--ds-target-min); min-height: var(--ds-target-min); padding: 0;
+  border: none; border-radius: var(--ds-radius-sm);
+  /* Тот же тон, что у подписи вкладки и у значка статуса: один ряд — один
+     серый (DS-231). Раньше здесь стоял `--ds-text-muted` при подписи на
+     secondary. */
+  background: transparent; color: var(--ds-text-secondary); cursor: pointer;
+}
+.ds-tabs__close:hover { background: var(--ds-surface-subtle); color: var(--ds-text-primary); }
+.ds-tabs__close:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+.ds-tabs[data-position='left'] .ds-tabs__close,
+.ds-tabs[data-position='right'] .ds-tabs__close { top: 50%; }
+
+/* ── Слот в конце бара (кнопка «+») ──────────────────────────────────────────
+   СОСЕД `.ds-tabs__list`, а не его ребёнок (DS-205). Лежав внутри ленты,
+   слот попадал в её `scrollWidth` — то есть в тот самый замер, которым Tabs
+   решает «вкладок больше, чем места», — и защита от переполнения считала
+   начинку слота за вкладку. Хуже того, начинка ехала вместе с лентой: на кадре
+   360 кнопка стояла на 416..551 при правом крае бара 330, за экраном.
+
+   `flex: 0 0 auto` здесь — не оформление, а порядок: слот РЕЗЕРВИРУЕТ свою
+   ширину первым, лента (`flex: 1 1 auto; min-width: 0`) берёт остаток, и
+   переполнение считается против остатка. Сжимать слот нельзя: две кнопки,
+   ужатые до 81px из 135, — это не «уместились», это раздавленный контрол.
+   Если начинка шире всего бара, бар честно вылезет: удержать её без обрезки
+   или переноса нельзя, и отвечает за это содержимое слота, а не полоса.
+
+   НИЖЕ ПОЛА ЛЕНТЫ слот всё-таки уступает (DS-236), и это не отмена
+   решения выше, а ответ на вопрос, который оно оставило открытым. «Слот
+   резервирует первым» — правило приоритета, а не обещание неприкосновенности:
+   когда резервировать больше нечего, выбор сужается до двух, и оба плохи —
+   раздавить довесок или выродить предмет. Вырожденная полоса вкладок хуже:
+   довесок кладёт туда потребитель и он же решает, что в нём ужимается, а
+   вкладки — это сам компонент, и другого места у них нет. `min-width: 0`
+   снимает с коробки слота его собственный минимум; ужмётся ли НАЧИНКА —
+   по-прежнему дело начинки, и если она не умеет, она вылезет, как и сказано
+   абзацем выше.
+
+   Порог не выражен здесь ничем и выражен быть не может: его держит базис
+   ленты (см. «ПОЛ ЛЕНТЫ»). Пока лента выше пола, дефицита нет вовсе и
+   `flex-shrink` слота ни разу не срабатывает — проверено кейсом `measure` на
+   пяти ширинах: на 380…520 коробка слота держит свои 186.2 до пикселя. */
+.ds-tabs__trailing { display: inline-flex; align-items: center; flex: 0 0 auto; padding: 0 var(--ds-space-1); }
+.ds-tabs[data-position='top'] .ds-tabs__trailing,
+.ds-tabs[data-position='bottom'] .ds-tabs__trailing { flex-shrink: 1; min-width: 0; }
+
+/* Линия бара продолжается под слотом. Внутри ленты её давала внутренняя тень
+   списка; выйдя из ленты, слот оказался бы дыркой в линии ровно на своей
+   ширине — тот же довод, по которому границу несут стрелки и «⋯» ниже. */
+.ds-tabs[data-position='top'] .ds-tabs__trailing { border-bottom: 1px solid var(--ds-control-border); }
+.ds-tabs[data-position='bottom'] .ds-tabs__trailing { border-top: 1px solid var(--ds-control-border); }
+.ds-tabs[data-position='left'] .ds-tabs__trailing { border-right: 1px solid var(--ds-control-border); }
+.ds-tabs[data-position='right'] .ds-tabs__trailing { border-left: 1px solid var(--ds-control-border); }
+
+/* У бокового бара направление раскладки — блочная ось: отступ слота обязан
+   идти по ней же, иначе «зазор перед кнопкой» превращается в поля по бокам. */
+.ds-tabs[data-position='left'] .ds-tabs__trailing,
+.ds-tabs[data-position='right'] .ds-tabs__trailing { padding: var(--ds-space-1) 0; }
+
+/* ── Контролы переполнения: стрелки и «⋯» ────────────────────────────────────*/
+.ds-tabs__scroller,
+.ds-tabs__overflow-btn {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: var(--ds-h-comfortable); height: var(--ds-h-comfortable); padding: 0;
+  border: none; background: var(--ds-surface); color: var(--ds-text-secondary); cursor: pointer;
+}
+.ds-tabs[data-position='top'] .ds-tabs__scroller,
+.ds-tabs[data-position='top'] .ds-tabs__overflow-btn { border-bottom: 1px solid var(--ds-control-border); }
+.ds-tabs[data-position='bottom'] .ds-tabs__scroller,
+.ds-tabs[data-position='bottom'] .ds-tabs__overflow-btn { border-top: 1px solid var(--ds-control-border); }
+.ds-tabs__scroller:hover:not(:disabled),
+.ds-tabs__overflow-btn:hover { background: var(--ds-surface-subtle); color: var(--ds-text-primary); }
+/* Стрелка у достигнутого края ПРИГЛУШЕНА, а не убрана (DS-284): убранная
+   меняла ширину бара от положения прокрутки. Вид — тот же, что у выключенной
+   кнопки шага в `Pagination`: приглушённый тон плюс обычный курсор. Курсор
+   именно `default`, а не `not-allowed`: «дальше некуда» — это край списка, а
+   не запрет. */
+.ds-tabs__scroller:disabled { color: var(--ds-text-muted); cursor: default; opacity: 0.6; }
+.ds-tabs__scroller:focus-visible,
+.ds-tabs__overflow-btn:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); z-index: 1; }
+
+.ds-tabs__overflow { position: relative; display: inline-flex; align-items: stretch; }
+.ds-tabs__overflow-menu {
+  position: absolute; top: 100%; right: 0; z-index: var(--ds-z-popup); min-width: calc(11.25rem * var(--ds-ui-scale)); margin-top: var(--ds-space-1);
+  display: flex; flex-direction: column; padding: var(--ds-space-1);
+  background: var(--ds-surface); border: 1px solid var(--ds-border-overlay);
+  border-radius: var(--ds-radius); box-shadow: var(--ds-shadow-md);
+}
+.ds-tabs__overflow-item {
+  display: flex; align-items: center; gap: var(--ds-space-2);
+  padding: var(--ds-space-2) var(--ds-space-3); border: none; border-radius: var(--ds-radius-sm);
+  background: transparent; color: var(--ds-text-secondary); font: inherit; font-size: var(--ds-fs-base);
+  text-align: left; cursor: pointer;
+}
+.ds-tabs__overflow-item:hover:not(:disabled) { background: var(--ds-surface-subtle); color: var(--ds-text-primary); }
+.ds-tabs__overflow-item.is-active { color: var(--ds-accent); font-weight: 500; }
+.ds-tabs__overflow-item:disabled { color: var(--ds-text-muted); cursor: not-allowed; }
+.ds-tabs__overflow-item:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+
+/* ── Reorder: тянущаяся вкладка и маркер вставки ─────────────────────────────*/
+.ds-tabs.is-dragging { cursor: grabbing; }
+.ds-tabs__item.is-dragging .ds-tabs__tab { opacity: 0.5; }
+.ds-tabs__item.is-drop::before {
+  content: ''; position: absolute; z-index: 2; background: var(--ds-accent);
+}
+.ds-tabs[data-position='top'] .ds-tabs__item.is-drop::before,
+.ds-tabs[data-position='bottom'] .ds-tabs__item.is-drop::before {
+  left: calc(var(--ds-space-1) * -0.5); top: 4px; bottom: 4px; width: 2px;
+}
+.ds-tabs[data-position='left'] .ds-tabs__item.is-drop::before,
+.ds-tabs[data-position='right'] .ds-tabs__item.is-drop::before {
+  top: calc(var(--ds-space-1) * -0.5); left: 4px; right: 4px; height: 2px;
+}
+
+/* ── Значок статуса ──────────────────────────────────────────────────────────
+   Декоративен: `aria-hidden` стоит в разметке, здесь только размер и цвет.
+
+   Цвет — `--ds-text-secondary`, тот же, что у подписи вкладки рядом
+   (DS-231). `--ds-accent` ниже его перебивает, и это не исключение из
+   правила, а другое утверждение: тон покоя один на весь ряд, а акцент несёт
+   СОСТОЯНИЕ «вкладка выбрана» — ровно то, для чего цвет и предназначен. */
+.ds-tabs__icon {
+  display: flex; align-items: center; justify-content: center;
+  margin-right: var(--ds-space-2);
+  color: var(--ds-text-secondary);
+}
+.ds-tabs__tab.is-active .ds-tabs__icon,
+.ds-tabs__overflow-item.is-active .ds-tabs__icon { color: var(--ds-accent); }
+
+/* ── Счётчик записей ─────────────────────────────────────────────────────────
+   Внутри кнопки, а не рядом: так он попадает в доступное имя вкладки. */
+.ds-tabs__count {
+  margin-left: var(--ds-space-3);
+  padding: 0 var(--ds-space-2);
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface-subtle);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+/* Текст — `--ds-accent-fg`, а НЕ `--ds-accent`: тон на собственной плашке
+   давал 4.15 и не проходил AA (DS-130). Кегль здесь `--ds-fs-xs`, то
+   есть обычный текст, порог 4.5 без послаблений для крупного. Стало 6.55
+   светлая, 6.99 тёмная. Меряет `color-mix-contrast`. */
+.ds-tabs__tab.is-active .ds-tabs__count {
+  background: color-mix(in srgb, var(--ds-accent) 14%, var(--ds-surface));
+  color: var(--ds-accent-fg);
+}
+
+/* ── Вариант plain ───────────────────────────────────────────────────────────
+   Без «папок»: вкладки без рамки и фона, активная помечена акцентным
+   подчёркиванием. Показываем для позиции top. */
+.ds-tabs--plain .ds-tabs__tab {
+  background: transparent; border: none; border-radius: var(--ds-radius);
+  box-shadow: inset 0 -2px 0 transparent;
+}
+.ds-tabs--plain .ds-tabs__tab:hover:not(.is-active):not([aria-disabled='true']) {
+  background: var(--ds-surface-subtle);
+}
+.ds-tabs--plain .ds-tabs__tab.is-active {
+  background: transparent; color: var(--ds-accent);
+  box-shadow: inset 0 -2px 0 var(--ds-accent);
+}
+.ds-tabs--plain .ds-tabs__tab.is-active .ds-tabs__count {
+  background: color-mix(in srgb, var(--ds-accent) 14%, var(--ds-surface));
+}
+
+/* ── Тело вкладок ────────────────────────────────────────────────────────────
+   Верхней рамки нет: линию сверху уже даёт полоса, и вторая легла бы вплотную
+   двойной. Нижние углы скруглены под тот же токен, что верхние углы вкладок —
+   виджет читается как одна коробка. */
+.ds-tabs__panel {
+  border: 1px solid var(--ds-control-border); border-top: none;
+  border-radius: 0 0 var(--ds-radius) var(--ds-radius);
+  background: var(--ds-surface);
+  padding: var(--ds-space-5);
+}
+.ds-tabs__panel:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+/* Под содержимое со своими краями — таблица рисует строки от границы до границы. */
+.ds-tabs__panel--flush { padding: 0; }
+
+/* ── Раскладка бар↔панель для позиций ────────────────────────────────────────
+   Обёртка вокруг `Tabs` + `TabPanel`; направление задаёт модификатор. Панель
+   тянется, её рамки разворачиваются к бару нужной стороной. */
+.ds-tabs-layout { display: flex; min-width: 0; }
+.ds-tabs-layout--top { flex-direction: column; }
+.ds-tabs-layout--bottom { flex-direction: column-reverse; }
+.ds-tabs-layout > .ds-tabs { flex: 0 0 auto; }
+.ds-tabs-layout > .ds-tabs__panel { flex: 1 1 auto; min-width: 0; min-height: 0; }
+
+/* ── Бар сбоку: СЕТКА, а не ряд, и у неё есть порог ──────────────────────────
+   DS-285.
+
+   Почему сетка. Ниже порога боковой бар обязан прийти к верхнему, то есть
+   обёртка обязана переложить своих детей из ряда в столбец. Сделать это
+   запросом к контейнеру нельзя: `@container` красит ПОТОМКОВ контейнера, а не
+   его самого, — и `flex-direction` самой обёртки правилу внутри запроса
+   недоступен. Тот же тупик был у `Pagination` (DS-142), и выход тот же:
+   решает не направление контейнера, а МЕСТО детей в нём. У сетки место —
+   свойство ребёнка, поэтому под порогом обе ячейки просто занимают всю строку
+   и встают друг под друга.
+
+   `flex-wrap: wrap` вместо сетки не годится, и это проверено арифметикой, а не
+   вкусом: перенос во флексе решается по ГИПОТЕТИЧЕСКОМУ размеру, то есть по
+   max-content панели, — тело с длинным предложением спрыгивало бы под ленту
+   задолго до всякого порога и без всякой тесноты.
+
+   `auto` для ленты и `minmax(0, 1fr)` для тела — та же пара, что была
+   `flex: 0 0 auto` / `flex: 1 1 auto; min-width: 0`: лента берёт своё,
+   тело — остаток и умеет ужаться. Место обеих ячеек задано явно (`grid-area`),
+   а не автоплейсментом: у `--right` лента стоит во второй колонке, и курсор
+   автоплейсмента увёл бы тело на вторую СТРОКУ. */
+.ds-tabs-layout--left,
+.ds-tabs-layout--right {
+  display: grid;
+  align-items: stretch;
+  /* Контейнер запроса — сама обёртка: другого узла между полосой и телом нет,
+     а требовать от потребителя ещё одну обёртку значило бы менять контракт
+     ради порога. `container-type: inline-size` снимает с обёртки зависимость
+     ширины от содержимого — в потоке она и так растягивается, но в
+     ужимающемся родителе (inline-block, ячейка сетки по содержимому) теперь
+     займёт всю выданную ширину, а не сожмётся по вкладкам. */
+  container-type: inline-size;
+  /* Порог берётся в `em`, то есть от ЭТОГО font-size, и объявлен он явно, а не
+     унаследован: наследование сделало бы порог зависимым от чужой вёрстки, а
+     число тут — замер. Значение — базовый кегль системы, тот же, которым
+     набраны подписи вкладок. */
+  font-size: var(--ds-fs-base);
+}
+.ds-tabs-layout--left { grid-template-columns: auto minmax(0, 1fr); }
+.ds-tabs-layout--right { grid-template-columns: minmax(0, 1fr) auto; }
+.ds-tabs-layout--left > .ds-tabs { grid-area: 1 / 1; }
+.ds-tabs-layout--left > .ds-tabs__panel { grid-area: 1 / 2; }
+.ds-tabs-layout--right > .ds-tabs { grid-area: 1 / 2; }
+.ds-tabs-layout--right > .ds-tabs__panel { grid-area: 1 / 1; }
+.ds-tabs-layout--bottom > .ds-tabs__panel {
+  border-top: 1px solid var(--ds-control-border); border-bottom: none;
+  border-radius: var(--ds-radius) var(--ds-radius) 0 0;
+}
+.ds-tabs-layout--left > .ds-tabs__panel {
+  border-top: 1px solid var(--ds-control-border); border-left: none;
+  border-radius: 0 var(--ds-radius) var(--ds-radius) 0;
+}
+.ds-tabs-layout--right > .ds-tabs__panel {
+  border-top: 1px solid var(--ds-control-border); border-right: none;
+  border-radius: var(--ds-radius) 0 0 var(--ds-radius);
+}
+
+/* НИЖЕ ПОРОГА БОКОВОЙ БАР ПРИХОДИТ К ВЕРХНЕМУ.
+
+   Вертикальная лента на телефоне — не форма для телефона: на кадре 360
+   (контейнер 300, шкала 1.5) она забирала 194.7, телу оставалось 105.3, слово
+   «Содержимое» срезалось правым краем, а документ переполнялся на 9px. Боковой
+   бар отдаёт вкладкам больше половины ширины — и это не чинится раскладкой,
+   потому что ширина ленты приходит из ДЛИНЫ ПОДПИСЕЙ, а они не наши.
+
+   Решает ШИРИНА, а не проп. Тот же ответ, что у автопорога `Pagination`
+   (DS-149) и у `hideBelow` в `DataTable`, и по той же причине: ширину
+   своего контейнера в момент отрисовки потребитель не знает, а телефон — не
+   отдельная сборка, а тот же экран, сжатый рукой. Он видит не то, что просил,
+   но видит работающее.
+
+   17em — ЗАМЕР, сложенный из двух слагаемых, ровно как сказано в решении:
+   лента плюс `--ds-w-col-min` для тела.
+     лента (вкладка «В работе 12», самая длинная в наборе) — 126.4px на шкале 1
+       и 188.6px на 1.5;
+     тело — `--ds-w-col-min` (4rem, заявленный системой пол читаемости
+       текстовой колонки) плюс два `--ds-space-5` собственного паддинга плюс
+       две рамки: 64 + 24 + 2 = 90px на шкале 1 и 96 + 36 + 2 = 134px на 1.5.
+   Итого требование 216.4px на шкале 1 (кегль 13px → 16.65em) и 322.6px на 1.5
+   (кегль 19.5px → 16.54em). Худшая — единица, порог сразу над ней: запас
+   0.35em ≈ 4.6px. В `em`, а не в пикселях, именно потому, что оба слагаемых
+   едут со шкалой, а число — нет: один порог обслуживает все пять шкал.
+
+   ЧТО ТЕРЯЕТСЯ, и плата сознательная. Ширина ленты снята С НАБОРОМ ФИКСТУРЫ.
+   Потребитель с подписями длиннее получит тесное тело и выше порога (лента
+   заберёт своё, а порог не сработает), с подписями короче — сложится чуть
+   раньше, чем стало бы тесно. Одно число в CSS не обслужит два словаря — тот
+   же довод записан у обоих порогов `Pagination`, и по той же причине здесь не
+   заведён проп: проп означал бы, что каждый потребитель решает это заново и
+   вслепую.
+
+   Тело под порогом меняет рамки: верхней у него нет (её даёт полоса), боковые
+   появляются — то есть ровно форма `top`. Сам бар о пороге узнаёт из
+   `--ds-tabs-stack`: ему нужно не только выглядеть строкой, но и СЧИТАТЬ по
+   горизонтали (переполнение, стрелки, доскролл), а это JS — см. `Tabs.tsx`. */
+@container (max-width: 17em) {
+  .ds-tabs-layout--left > .ds-tabs,
+  .ds-tabs-layout--right > .ds-tabs { grid-area: 1 / 1 / 2 / -1; --ds-tabs-stack: 1; }
+  .ds-tabs-layout--left > .ds-tabs__panel,
+  .ds-tabs-layout--right > .ds-tabs__panel {
+    grid-area: 2 / 1 / 3 / -1;
+    border-top: none;
+    border-left: 1px solid var(--ds-control-border);
+    border-right: 1px solid var(--ds-control-border);
+    border-radius: 0 0 var(--ds-radius) var(--ds-radius);
+  }
+}

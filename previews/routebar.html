@@ -1,0 +1,26 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px;display:flex;flex-direction:column;gap:24px">
+  <!-- Обычная полоса: своя нижняя граница. -->
+  <nav class="ds-routebar" aria-label="Разделы">
+    <ul class="ds-routebar__list">
+      <li class="ds-routebar__item"><a class="ds-routebar__link is-active" href="#" aria-current="page">
+        <span class="ds-routebar__icon" aria-hidden="true">▤</span><span class="ds-routebar__label">Реализации</span><span class="ds-routebar__count">12</span></a></li>
+      <li class="ds-routebar__item"><a class="ds-routebar__link" href="#">
+        <span class="ds-routebar__label">Счета</span></a></li>
+      <li class="ds-routebar__item"><a class="ds-routebar__link" href="#">
+        <span class="ds-routebar__label">Контрагенты</span><span class="ds-routebar__count">148</span></a></li>
+    </ul>
+  </nav>
+
+  <!-- embedded: полоса стоит в шапке, у которой уже есть своя линия, и снимает
+       собственную границу — ровно тот случай, ради которого признак заведён. -->
+  <header style="border-bottom:1px solid var(--ds-border)">
+    <nav class="ds-routebar ds-routebar--embedded" aria-label="Разделы в шапке">
+      <ul class="ds-routebar__list">
+        <li class="ds-routebar__item"><a class="ds-routebar__link is-active" href="#" aria-current="page"><span class="ds-routebar__label">Обзор</span></a></li>
+        <li class="ds-routebar__item"><a class="ds-routebar__link" href="#"><span class="ds-routebar__label">Движения</span></a></li>
+      </ul>
+    </nav>
+  </header>
+</div></body></html>

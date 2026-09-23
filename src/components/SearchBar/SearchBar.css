@@ -1,0 +1,31 @@
+/* НОМИНАЛ ПРЕДПОЧТИТЕЛЕН, ПОТОЛОК — КОНТЕЙНЕР (DS-304). Поле держит
+   `calc(16.25rem*scale)`, пока строке хватает места; в узкой строке сжимается
+   поле, а кнопка «Найти» остаётся целой. Было: на кадре 360 при шкале 1.5
+   поле 390 плюс кнопка уводили документ на +114.
+   Длина в `width`, потолок в `max-width`, а не `width: min(номинал, 100%)`:
+   обёртки здесь `inline-flex`, их ширина считается по содержимому, и процент
+   внутри этого счёта берётся за `auto` — тот же капкан, что разобран в
+   `GlobalSearch.css`. `min-width: 0` снимает `min-width: auto` флекс-элемента,
+   без него обёртка и поле отказывались сжиматься ниже номинала. */
+.ds-searchbar { display: inline-flex; align-items: center; gap: var(--ds-space-2); max-width: 100%; }
+.ds-searchbar__field { position: relative; display: inline-flex; min-width: 0; }
+/* Поверхность и состояния — в `src/styles/field-surface.css`. */
+.ds-searchbar__input {
+  height: var(--ds-h-default); width: calc(16.25rem * var(--ds-ui-scale)); max-width: 100%; min-width: 0;
+  padding: 0 var(--ds-space-7) 0 var(--ds-space-4);
+  font-size: var(--ds-fs-base);
+}
+.ds-searchbar__clear {
+  position: absolute; right: var(--ds-space-2); top: 50%; transform: translateY(-50%);
+  width: calc(1.5rem * var(--ds-ui-scale)); height: calc(1.5rem * var(--ds-ui-scale));
+  min-width: var(--ds-target-min); min-height: var(--ds-target-min); line-height: 1; font-size: var(--ds-fs-lg);
+  background: none; border: none; border-radius: var(--ds-radius-sm); color: var(--ds-text-muted); cursor: pointer;
+}
+.ds-searchbar__clear:hover:not(:disabled) { background: var(--ds-surface-subtle); color: var(--ds-text-primary); }
+.ds-searchbar__go {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: var(--ds-h-default); width: var(--ds-h-default); flex: 0 0 auto;
+  color: var(--ds-text-secondary); cursor: pointer;
+}
+.ds-searchbar__go:hover:not(:disabled) { border-color: var(--ds-accent); color: var(--ds-accent); }
+.ds-searchbar__go:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }

@@ -1,0 +1,20 @@
+.ds-crumbs__list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; }
+.ds-crumbs__item { display: inline-flex; align-items: center; font-size: var(--ds-fs-base); }
+.ds-crumbs__item:not(:last-child)::after { content: "/"; margin: 0 var(--ds-space-3); color: var(--ds-text-muted); }
+/* Крошка — цель клика, а не просто цветной текст: до пола 24px (SC 2.5.8) её
+   доводит `min-height`, потому что своей высоты у голой кнопки ровно столько,
+   сколько у строки текста (17.55px). Полоса крошек от этого выше на 6px.
+
+   Исключение «inline» из того же критерия сюда НЕ натягивается, хотя соблазн
+   есть: крошки похожи на предложение. Но исключение сформулировано про цель
+   ВНУТРИ строки текста, где размер ограничен чужим межстрочным, а здесь строка
+   состоит из одних целей — ограничивать нечему. Исключение «spacing» тоже
+   держится сегодня (до соседа 67.5px), и опираться на него нельзя по общей
+   причине: расстояние до соседа задаёт раскладка потребителя, а не система. */
+.ds-crumbs__link {
+  display: inline-flex; align-items: center;
+  min-height: var(--ds-target-min); min-width: var(--ds-target-min); justify-content: center;
+  background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--ds-info);
+}
+.ds-crumbs__link:hover { color: var(--ds-accent-active); text-decoration: underline; }
+.ds-crumbs__current { color: var(--ds-text-secondary); }

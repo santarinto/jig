@@ -1,0 +1,64 @@
+.ds-numfield { display: inline-flex; flex-direction: column; align-items: flex-start; gap: var(--ds-space-2); }
+
+/* Поверхность и состояния — в `src/styles/field-surface.css`; там же объяснено,
+   почему у обёртки фокус читается через `:focus-within`. */
+/* `min-height`, а не `height` (DS-207). Рамка живёт на ОБЁРТКЕ, модель
+   коробки — border-box, поэтому дети всегда на 2px ниже неё: при `--sm` и
+   шкале 0.875 обёртка 24.5, а кнопка и поле внутри — 22.5, то есть ниже пола
+   цели. Пол ставится там, где цель (на кнопке и на поле, ниже), а обёртка
+   обязана уметь под него вырасти — с жёсткой `height` она бы его обрезала
+   своим `overflow: hidden`, и цель осталась бы 22.5 при зелёном на вид поле.
+   Токен остаётся полом обёртки: на шкале 1 и выше он больше 26 и решает он. */
+.ds-numfield__control {
+  display: inline-flex; align-items: stretch;
+  min-height: var(--ds-h-default);
+  overflow: hidden;
+}
+.ds-numfield__control--sm { min-height: var(--ds-h-compact); }
+
+/* Пол цели отдельными `min-*`, а не `max()`: ширина приходит из токена высоты
+   поля, а высота вообще не написана — её даёт растяжка по обёртке. Складывать
+   внутри одного свойства не с чем. На 1.5 пол ни во что не упирается: там
+   кнопка 48×46 (DS-207). */
+.ds-numfield__btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--ds-h-default); flex: 0 0 auto; padding: 0;
+  min-width: var(--ds-target-min); min-height: var(--ds-target-min);
+  font-size: var(--ds-fs-lg); line-height: 1; color: var(--ds-text-secondary);
+  background: var(--ds-surface-subtle); border: none; cursor: pointer;
+  user-select: none;
+}
+.ds-numfield__control--sm .ds-numfield__btn { width: var(--ds-h-compact); }
+/* Разделители шаговых кнопок: граница между двумя СОСЕДНИМИ контролами внутри
+   одной рамки поля — единственное, что говорит, где кончается «минус» и
+   начинается «плюс» (DS-267, было 1.19). */
+.ds-numfield__btn:first-child { border-right: 1px solid var(--ds-control-border); }
+.ds-numfield__btn:last-child { border-left: 1px solid var(--ds-control-border); }
+/* Знак `+`/`−` под курсором и нажатый — `--ds-accent-fg`, а не `--ds-accent`
+   (DS-181). Найдено матрицей сочетаемости: акцент на `--ds-section-bar`
+   даёт 4.20 в светлой теме при поле 4.5, а на нажатой заливке `--ds-border` —
+   3.45. Обе подложки здесь ТЕМНЕЕ обычной поверхности, для которой акцент и
+   считался; `--ds-accent-fg` заведён ровно как «акцент, который ТЕКСТ», и
+   держит 6.62/10.36 на полосе разделов и 5.43/6.63 на нажатой. */
+.ds-numfield__btn:hover:not(:disabled) { background: var(--ds-section-bar); color: var(--ds-accent-fg); }
+.ds-numfield__btn:active:not(:disabled) { background: var(--ds-border); }
+/* `:disabled` — в общем `field-surface.css`, вместе с четырьмя такими же
+   кнопками внутри полей (DS-133). */
+
+/* `min-width: 0` здесь НЕ пол цели, а разрешение флекс-элементу ужиматься —
+   поле и так шире 24 на любой шкале (49.0 при 0.875). Полом ему нужна только
+   высота, и по той же причине, что кнопкам: рамка на обёртке отнимает 2px
+   (DS-207). */
+.ds-numfield__input {
+  width: calc(3.5rem * var(--ds-ui-scale)); min-width: 0; min-height: var(--ds-target-min); padding: 0 var(--ds-space-3);
+  font-family: var(--ds-font-ui); font-size: var(--ds-fs-base); font-feature-settings: "tnum";
+  text-align: right; color: var(--ds-text-primary);
+  background: transparent; border: none;
+}
+.ds-numfield__control--sm .ds-numfield__input { font-size: var(--ds-fs-sm); }
+.ds-numfield__input:focus { outline: none; }
+
+.ds-numfield__suffix {
+  display: inline-flex; align-items: center; padding-right: var(--ds-space-3);
+  font-size: var(--ds-fs-sm); color: var(--ds-text-muted); user-select: none;
+}

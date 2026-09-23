@@ -1,0 +1,54 @@
+.ds-sections { display: flex; background: var(--ds-section-bar); }
+.ds-sections--vertical { flex-direction: column; width: calc(12.5rem * var(--ds-ui-scale)); border-right: 1px solid var(--ds-border); }
+.ds-sections--horizontal { flex-direction: row; border-bottom: 1px solid var(--ds-border); }
+/* ЛЕНТА ЛИСТАЕТСЯ САМА (DS-305), тем же приёмом, что `.ds-tabs__list`:
+   класс `is-scrollable` ставит компонент по замеру, только когда разделы не
+   влезают. Постоянный `overflow: auto` вычислил бы `overflow-y` в `auto` и
+   резал бы кольцо фокуса в обычном, невытесняющем случае. Было: ряд без
+   переноса и без прокрутки уводил документ на +229 уже при шкале 1.
+   Полоса прокрутки ВИДНА, в отличие от `Tabs`: у ленты вкладок есть стрелки,
+   у ленты разделов их нет, и спрятанная полоса оставила бы мыши без колеса
+   по горизонтали пункты за краем недостижимыми. Разделы не сжимаются —
+   подпись раздела не переносится и не режется. */
+.ds-sections--horizontal .ds-sections__item { flex: 0 0 auto; white-space: nowrap; }
+.ds-sections--horizontal.is-scrollable { overflow-x: auto; scrollbar-width: thin; }
+/* ЗАТУХАНИЕ КРАЯ, ЗА КОТОРЫМ ЕСТЬ РАЗДЕЛЫ (DS-313). Полоса выше остаётся,
+   но знаком «есть ещё» она служит не везде: на системе с плавающими полосами
+   (macOS по умолчанию) в покое её не рисуют вовсе. Маска — второй знак, от
+   платформы не зависящий. Какой край гасить, решает положение ленты (`is-start`
+   и `is-end` ставит компонент по `scroll`): у начала — правый, в конце — левый,
+   в середине — оба.
+   Маска, а не наложенная градиентом плашка: плашке нужен цвет подложки ленты, а
+   лента лежит на чужой подложке. Маска гасит и фон, и нижнюю линию у края — так
+   и выглядит «продолжается».
+   Явные `::-webkit-scrollbar` не взяты: полоса-подделка на macOS спорит с
+   настройкой пользователя и держит место, которое система не отдаёт.
+   `black` в градиенте — не цвет: маска читает только альфу, токен темы здесь
+   ничего бы не значил и переключался бы с темой впустую.
+   Ширина 1.5em — ленты, то есть уже со шкалой; в `SectionPanel.tsx` та же
+   величина (`FADE_EM`) — запас, с которым активный раздел выводится из-под края. */
+.ds-sections--horizontal.is-scrollable {
+  --ds-sections-fade: 1.5em;
+  -webkit-mask-image: linear-gradient(to right, transparent, black var(--ds-sections-fade), black calc(100% - var(--ds-sections-fade)), transparent);
+  mask-image: linear-gradient(to right, transparent, black var(--ds-sections-fade), black calc(100% - var(--ds-sections-fade)), transparent);
+}
+.ds-sections--horizontal.is-scrollable.is-start {
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - var(--ds-sections-fade)), transparent);
+  mask-image: linear-gradient(to right, black calc(100% - var(--ds-sections-fade)), transparent);
+}
+.ds-sections--horizontal.is-scrollable.is-end {
+  -webkit-mask-image: linear-gradient(to right, transparent, black var(--ds-sections-fade));
+  mask-image: linear-gradient(to right, transparent, black var(--ds-sections-fade));
+}
+.ds-sections__item {
+  display: flex; align-items: center; gap: var(--ds-space-3);
+  height: var(--ds-h-comfortable); padding: 0 var(--ds-space-5);
+  font-family: var(--ds-font-ui); font-size: var(--ds-fs-base); color: var(--ds-text-primary);
+  background: transparent; border: none; border-left: 3px solid transparent; cursor: pointer; text-align: left;
+}
+.ds-sections--horizontal .ds-sections__item { border-left: none; border-bottom: 3px solid transparent; }
+.ds-sections__item:hover:not(.is-active) { background: var(--ds-surface-subtle); }
+.ds-sections__item.is-active { background: var(--ds-surface); border-left-color: var(--ds-accent); font-weight: 500; }
+.ds-sections--horizontal .ds-sections__item.is-active { border-left-color: transparent; border-bottom-color: var(--ds-accent); }
+.ds-sections__icon { color: var(--ds-text-secondary); display: inline-flex; }
+.ds-sections__item.is-active .ds-sections__icon { color: var(--ds-accent); }

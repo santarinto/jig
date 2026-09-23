@@ -1,0 +1,49 @@
+.ds-slider { display: flex; flex-direction: column; gap: var(--ds-space-2); }
+.ds-slider__top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--ds-space-4); }
+.ds-slider__value { font-size: var(--ds-fs-sm); color: var(--ds-text-primary); font-feature-settings: "tnum"; }
+
+.ds-slider__input {
+  -webkit-appearance: none; appearance: none;
+  /* Коробка инпута — ЦЕЛЬ клика, 24px (SC 2.5.8): у ползунка она была 4px,
+     то есть в шесть раз ниже пола, и целиком состояла из видимой полосы.
+
+     Поэтому полосу рисует ТРЕК, а не коробка. Заливка приезжает переменной
+     `--ds-slider-fill` (её ставит компонент по текущему значению), и красит
+     она `::-webkit-slider-runnable-track` / `::-moz-range-track` высотой в те
+     же 4px. Сам инпут прозрачен.
+
+     `background-clip: content-box` на коробке ЗДЕСЬ НЕ РАБОТАЕТ, и это
+     проверено, а не предположено: хром красит range-инпут целиком, и первая
+     редакция этой правки дала полосу 24px вместо 4 — замер по вертикальному
+     срезу пикселей показал 24 окрашенных против 4. Приём годный для div и
+     негодный для нативного контрола. */
+  width: 100%; min-height: var(--ds-target-min); height: var(--ds-target-min); margin: 0; padding: 0;
+  background: transparent; cursor: pointer;
+}
+.ds-slider__input::-webkit-slider-runnable-track {
+  height: calc(0.25rem * var(--ds-ui-scale)); border-radius: var(--ds-radius-pill);
+  background: var(--ds-slider-fill, var(--ds-border));
+}
+.ds-slider__input:focus-visible { outline: none; }
+
+/* Thumb — WebKit */
+.ds-slider__input::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: calc(0.875rem * var(--ds-ui-scale)); height: calc(0.875rem * var(--ds-ui-scale)); border-radius: 50%;
+  background: var(--ds-accent); border: 2px solid var(--ds-surface);
+  box-shadow: var(--ds-shadow-sm); cursor: pointer;
+}
+.ds-slider__input:focus-visible::-webkit-slider-thumb { box-shadow: var(--ds-focus-ring); }
+/* Thumb — Firefox */
+.ds-slider__input::-moz-range-thumb {
+  width: calc(0.875rem * var(--ds-ui-scale)); height: calc(0.875rem * var(--ds-ui-scale)); border-radius: 50%;
+  background: var(--ds-accent); border: 2px solid var(--ds-surface); cursor: pointer;
+}
+.ds-slider__input::-moz-range-track {
+  height: calc(0.25rem * var(--ds-ui-scale)); border-radius: var(--ds-radius-pill);
+  background: var(--ds-slider-fill, var(--ds-border));
+}
+.ds-slider__input:focus-visible::-moz-range-thumb { box-shadow: var(--ds-focus-ring); }
+
+.ds-slider.is-disabled { opacity: 0.55; }
+.ds-slider.is-disabled .ds-slider__input { cursor: default; }

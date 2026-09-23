@@ -1,0 +1,32 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body>
+<div style="border:1px solid var(--ds-border);border-radius:4px;overflow:hidden">
+  <header class="ds-appbar">
+    <div class="ds-appbar__brand">Курьер 7</div>
+    <div class="ds-appbar__center"><div class="ds-appbar__centerbox"><input class="ds-input ds-input--sm" placeholder="Поиск везде" style="width:320px"></div></div>
+    <div class="ds-appbar__actions"><span class="ds-appbar__trailing" data-ds-trailing=""><span class="ds-badge ds-badge--accent">ИП</span></span></div>
+  </header>
+  <div style="display:flex;min-height:300px;background:var(--ds-bg-app)">
+    <div class="ds-sections ds-sections--vertical" role="tablist" aria-orientation="vertical">
+      <button type="button" class="ds-sections__item is-active" role="tab" aria-selected="true" tabindex="0"><span class="ds-sections__label">Продажи</span></button>
+      <button type="button" class="ds-sections__item" role="tab" aria-selected="false" tabindex="-1"><span class="ds-sections__label">Закупки</span></button>
+      <button type="button" class="ds-sections__item" role="tab" aria-selected="false" tabindex="-1"><span class="ds-sections__label">Склад</span></button>
+      <button type="button" class="ds-sections__item" role="tab" aria-selected="false" tabindex="-1"><span class="ds-sections__label">Отчёты</span></button>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column">
+      <div class="ds-formtabs ds-formtabs--with-home">
+      <button type="button" class="ds-formtabs__home" aria-label="Начальная страница"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg></button>
+      <div class="ds-formtabs__list" role="tablist" aria-label="Открытые формы">
+        <div class="ds-formtabs__tab is-active"><button type="button" class="ds-formtabs__label" role="tab" aria-selected="true" tabindex="0" aria-keyshortcuts="Delete">Начальная страница<span class="ds-formtabs__close" aria-hidden="true" data-ds-target="" title="Закрыть Начальная страница">×</span></button></div>
+        <div class="ds-formtabs__tab"><button type="button" class="ds-formtabs__label" role="tab" aria-selected="false" tabindex="-1" aria-keyshortcuts="Delete">Реализация №РТ-0001<span class="ds-formtabs__close" aria-hidden="true" data-ds-target="" title="Закрыть Реализация №РТ-0001">×</span></button></div>
+      </div>
+      </div>
+      <div class="ds-dashboard">
+        <div class="ds-tile ds-tile--static ds-tile--accent"><span class="ds-tile__title">Продажи за день</span><span class="ds-tile__value">128 400</span></div>
+        <div class="ds-tile ds-tile--static ds-tile--neutral"><span class="ds-tile__title">Заказов в работе</span><span class="ds-tile__value">17</span></div>
+        <div class="ds-tile ds-tile--static ds-tile--neutral"><span class="ds-tile__title">Позиций на складе</span><span class="ds-tile__value">2 431</span></div>
+      </div>
+    </div>
+  </div>
+</div></body></html>

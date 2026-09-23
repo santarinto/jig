@@ -1,0 +1,65 @@
+.ds-chart { display: flex; flex-direction: column; gap: var(--ds-space-3); font-family: var(--ds-font-ui); }
+.ds-chart__plot { position: relative; width: 100%; }
+.ds-chart__svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+.ds-chart__grid { stroke: var(--ds-table-grid); stroke-width: 1; }
+/* Риска под подписанной точкой оси X (DS-281). Цвет линии оси: риска —
+   разметка шкалы, а не сообщение, и заметнее сетки ей быть незачем. */
+.ds-chart__xtick { stroke: var(--ds-table-grid); stroke-width: 1; }
+.ds-chart__ylabel, .ds-chart__xlabel { fill: var(--ds-text-muted); font-size: var(--ds-fs-sm); }
+/* Все ряды скрыты легендой. SVG-текст, а не HTML поверх: центр поля графика
+   считается в той же системе координат, что оси (1:1 к пикселям), и без
+   второго позиционирования. Тише подписи значения, но крупнее подписей оси —
+   это сообщение, а не разметка шкалы. */
+.ds-chart__empty { fill: var(--ds-text-muted); font-size: var(--ds-fs-sm); }
+
+.ds-chart__area { opacity: 0.14; stroke: none; }
+.ds-chart__line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.ds-chart__dot { stroke: var(--ds-surface); stroke-width: 1.5; }
+.ds-chart__cursor { stroke: var(--ds-border-strong); stroke-width: 1; stroke-dasharray: 3 3; }
+
+/* Tooltip */
+/* Координаты ставит компонент (DS-279): сторона от направляющей и
+   потолок ширины считаются по холсту, которого лист не знает. Здесь остаётся
+   всё, что от места не зависит. `box-sizing` — часть договора с этим расчётом:
+   потолок меряется по внешнему краю плашки вместе с полями и рамкой. */
+.ds-chart__tip {
+  position: absolute; box-sizing: border-box;
+  pointer-events: none; z-index: 5;
+  /* Пол ширины здесь НЕ ОБЪЯВЛЕН, и это не пропуск (DS-297). Полосу
+     ширины целиком ставит разметка (`TIP_MIN` в `LineChart.tsx`), потому что
+     потолок считается по ИЗМЕРЕННОМУ месту, а CSS такого числа не знает: его
+     `100%` — это содержащий блок, то есть весь холст, а не место от подписей
+     оси Y до края. Пол, объявленный здесь, был сильнее потолка (в CSS
+     `min-width` перебивает `max-width`) и выводил плашку из поля данных. */
+  padding: var(--ds-space-2) var(--ds-space-3);
+  background: var(--ds-surface); border: 1px solid var(--ds-border-overlay); border-radius: var(--ds-radius);
+  box-shadow: var(--ds-shadow-md); font-size: var(--ds-fs-sm);
+}
+/* Подпись периода переносится: диапазон дат («07.09.2026–13.09.2026») длиннее
+   узкой плашки, и без переноса он вылезал бы за её край, оставляя коробку
+   правильной, а текст — за холстом. */
+.ds-chart__tip-x { color: var(--ds-text-muted); font-size: var(--ds-fs-sm); margin-bottom: var(--ds-space-1); overflow-wrap: anywhere; }
+.ds-chart__tip-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-2); min-width: 0; }
+.ds-chart__tip-dot { width: calc(0.5rem * var(--ds-ui-scale)); height: calc(0.5rem * var(--ds-ui-scale)); border-radius: 2px; flex: 0 0 auto; }
+/* Имя ряда сжимается с многоточием, ЧИСЛО — никогда: тот же закон, что у
+   подписей `BarChart`, — обрезанное имя узнаётся, обрезанное число врёт. */
+.ds-chart__tip-label { color: var(--ds-text-secondary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ЧИСЛО НЕ ПЕРЕНОСИТСЯ, А ЕДИНИЦА — ПЕРЕНОСИТСЯ (DS-297). Здесь стояло
+   `nowrap` на всю ячейку, и неразрывным становилось «1 000 000 тыс ₽»
+   целиком — то есть самый широкий неделимый кусок плашки был на треть длиннее
+   самого числа. На поле данных контейнера 300 при шкале 1.5 он не помещался ни
+   с одной стороны от точки, и плашка выходила за холст.
+   Само число неразрывно и БЕЗ этого правила: `Intl` ставит между разрядами
+   неразрывный пробел, и «1 000 000» не переносится нигде. А пробел перед
+   единицей — обычный, и перенос по нему ничего не ломает: единица остаётся при
+   своём числе строкой ниже, читается так же и врать не может — врёт только
+   обрезанное ЧИСЛО (тот же закон, что у подписей оси и у чисел `BarChart`). */
+.ds-chart__tip-val { margin-left: auto; color: var(--ds-text-primary); font-feature-settings: "tnum"; font-weight: 500; }
+
+/* Легенда — в `src/styles/chart-legend.css`, общая с соседним графиком. */
+
+/* Sparkline: a trend inside a card — no chrome, so the stroke carries it. */
+.ds-chart--spark .ds-chart__plot { padding: 0; }
+.ds-chart--spark .ds-chart__line { stroke-width: 1.5; }
+.ds-chart--spark .ds-chart__area { opacity: .16; }

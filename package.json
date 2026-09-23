@@ -1,0 +1,81 @@
+{
+  "name": "@santarinto/jig",
+  "private": true,
+  "version": "4.2.6",
+  "type": "module",
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && (cd src && find . -name '*.css' -exec cp --parents {} ../dist/src/ \\;) && mkdir -p dist/tokens dist/fonts && cp tokens/*.css dist/tokens/ && cp fonts/* dist/fonts/ && node scripts/build-bundles.mjs",
+    "pack": "npm run build && npm pack --pack-destination .",
+    "prepack": "node scripts/strip-manifest.mjs strip",
+    "postpack": "node scripts/strip-manifest.mjs restore",
+    "test": "vitest run",
+    "guards": "vitest run src/__guards__",
+    "dist-checks": "vitest run --config vitest.dist.config.ts",
+    "test:tz": "TZ=America/New_York vitest run src/components/EventCalendar/layout.test.ts",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.previews.json",
+    "smoke": "bash scripts/smoke-consumer.sh",
+    "smoke:noscripts": "bash scripts/smoke-consumer.sh noscripts",
+    "smoke:upgrade": "bash scripts/smoke-upgrade.sh",
+    "smoke:delivery": "bash scripts/smoke-delivery.sh",
+    "measure": "node scripts/measure-invariants.mjs",
+    "measure:memory": "node scripts/measure-memory.mjs",
+    "smoke:wb": "node scripts/smoke-workbench.mjs",
+    "states": "node scripts/case-states.mjs",
+    "demo": "vite --config vite.demo.config.ts",
+    "wb": "vite --config vite.workbench.config.ts",
+    "stat": "node scripts/stat.mjs",
+    "smoke:ssr": "bash scripts/smoke-ssr.sh",
+    "dock-floor": "node scripts/measure-dock-floor.mjs",
+    "shell-rhythm": "node scripts/measure-shell-rhythm.mjs",
+    "matrix": "node scripts/case-matrix.mjs"
+  },
+  "peerDependencies": {
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@tabler/icons-react": "^3.45.0",
+    "@testing-library/jest-dom": "^6.4.8",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/d3-hierarchy": "^3.1.7",
+    "@types/d3-shape": "^3.1.8",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^4.3.1",
+    "axe-core": "^4.13.0",
+    "esbuild": "^0.21.5",
+    "jsdom": "^25.0.0",
+    "playwright": "^1.61.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0",
+    "vitest": "^2.1.1"
+  },
+  "main": "dist/src/index.js",
+  "module": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    },
+    "./styles.css": "./dist/src/styles.css",
+    "./tokens/tokens.css": "./dist/tokens/tokens.css",
+    "./fonts/*": "./dist/fonts/*",
+    "./package.json": "./package.json",
+    "./styles.bundle.css": "./dist/styles.bundle.css",
+    "./theme-auto.css": "./dist/theme-auto.css"
+  },
+  "dependencies": {
+    "d3-hierarchy": "^3.1.2",
+    "d3-shape": "^3.2.0"
+  }
+}

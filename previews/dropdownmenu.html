@@ -1,0 +1,39 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px;height:220px;display:flex;gap:48px">
+  <!-- Кебаб с открытым меню: и триггер, и пункты — цели клика, которых замер
+       до сих пор не видел ни на одной странице превью. -->
+  <span class="ds-dropdown">
+    <button type="button" class="ds-dropdown__kebab" aria-label="Действия"
+      aria-haspopup="menu" aria-expanded="true" aria-controls="dm-menu"><span aria-hidden="true">⋯</span></button>
+    <div id="dm-menu" role="menu" aria-label="Действия" class="ds-dropdown__menu ds-dropdown__menu--start">
+      <button type="button" role="menuitem" tabindex="0" class="ds-dropdown__item is-active">Открыть</button>
+      <button type="button" role="menuitem" tabindex="-1" class="ds-dropdown__item">Дублировать</button>
+      <button type="button" role="menuitem" tabindex="-1" class="ds-dropdown__item" disabled>Архив</button>
+      <div class="ds-dropdown__sep" role="separator"></div>
+      <button type="button" role="menuitem" tabindex="-1" class="ds-dropdown__item ds-dropdown__item--error">Удалить</button>
+    </div>
+  </span>
+
+  <!-- Свой триггер: НАСТОЯЩАЯ кнопка системы (DS-359). Компонент вешает
+       `aria-*` и обработчик прямо на неё через `cloneElement`, своей обёртки
+       вокруг чужого узла больше нет — а значит нет и `<span class="ds-btn">`,
+       которым прежде приходилось изображать кнопку. -->
+  <span class="ds-dropdown">
+    <button type="button" class="ds-btn ds-btn--secondary ds-btn--md ds-dropdown__trigger"
+      aria-haspopup="menu" aria-expanded="false"><span class="ds-btn__label">Ещё ▾</span></button>
+  </span>
+
+  <!-- ГОЛЫЙ `<button>` в триггере: единственная цель на этой странице, которую
+       держит не оформление кнопки, а пол `--ds-target-min` из класса
+       `ds-dropdown__trigger` (DS-359). Компонент дописывает этот класс к
+       `className` потребителя; оформления в нём нет. Снимите правило из
+       `DropdownMenu.css` — обход «Цель клика» покраснеет именно здесь: голая
+       кнопка высотой в строку текста даёт 16.6 / 18.5 / 21.3 на шкалах
+       0.875 / 1 / 1.15. На `ds-btn` выше правило — no-op, там пол держит сама
+       кнопка, поэтому мелкий случай нужен отдельным. -->
+  <span class="ds-dropdown">
+    <button type="button" class="ds-dropdown__trigger"
+      aria-haspopup="menu" aria-expanded="false">Действия</button>
+  </span>
+</div></body></html>

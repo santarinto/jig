@@ -1,0 +1,58 @@
+/* Доля строки поиска — КОНТЕЙНЕР, а не вьюпорт (DS-167): поле стоит
+   в строке тулбара рядом с другими элементами, и «сколько осталось в строке»
+   — это не «сколько осталось на экране». Без зажима `calc(20rem*scale)`
+   давала 480 на кадре 360 при шкале 1.5, и документ уезжал в горизонтальную
+   прокрутку (scrollWidth 579 при clientWidth 360).
+   ПОЧЕМУ НЕ `width: min(calc(20rem*scale), 100%)` у самого поля — замерено,
+   а не выведено: обёртка `inline-block` считает свою ширину по содержимому,
+   а процент внутри при этом счёте берётся за `auto`, и поле схлопывалось до
+   собственной внутренней ширины ВЕЗДЕ — 173 / 221 / 258 на 1024, где места
+   вдоволь. Поэтому длина живёт в `width`, а потолок в `max-width`: при
+   определённой ширине ребёнка обёртка считает по ней и зажим доезжает.
+   ПОЧЕМУ ЗАЖИМ ЕЩЁ И НА ОБЁРТКЕ: с определённой шириной ребёнка min-content
+   самой обёртки равен 480, и она отказывалась сжиматься — `max-width: 100%`
+   даёт ей потолок в блоке, а `min-width: 0` снимает `min-width: auto`
+   флекс-элемента, иначе в настоящем тулбаре она бы не ужалась (замерено: с
+   обоими — 290.9 / 276.1 / 261.3 по остатку строки, край ровно в 360). */
+.ds-gsearch { position: relative; display: inline-block; max-width: 100%; min-width: 0; }
+.ds-gsearch__input { width: calc(20rem * var(--ds-ui-scale)); max-width: 100%; }
+.ds-gsearch__menu {
+  position: absolute; z-index: var(--ds-z-popup); left: 0; right: 0; top: calc(100% + var(--ds-space-1));
+  list-style: none; margin: 0; padding: var(--ds-space-1);
+  background: var(--ds-surface); border: 1px solid var(--ds-border-overlay); border-radius: var(--ds-radius); box-shadow: var(--ds-shadow-md);
+  max-height: calc(17.5rem * var(--ds-ui-scale)); overflow-y: auto;
+}
+/* Строка результата кликабельна сама: фокусируемой кнопки внутри `role="option"`
+   нет — навигация одна, через aria-activedescendant на поле поиска. */
+.ds-gsearch__option {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--ds-space-4);
+  width: 100%; padding: var(--ds-space-3) var(--ds-space-4);
+  border-radius: var(--ds-radius-sm); cursor: pointer; text-align: left;
+  color: var(--ds-text-primary);
+}
+/* Подсветка по классу, а не по :hover: активную строку двигают и стрелки, и
+   мышь, а :hover о клавиатуре ничего не знает — стрелка ушла бы вниз, а подсветка
+   осталась бы под курсором. onMouseEnter сводит оба жеста к одному состоянию.
+
+   УКАЗАТЕЛЬ — КОЛЬЦО, А ФОН ПРИ НЁМ (DS-160). Один фон
+   `--ds-table-hover` давал 1.09 : 1 к панели в свете и 1.04 в темноте при поле
+   3 : 1 для нетекстового указателя (SC 1.4.11), и другой приметы у строки не
+   было. `:focus-visible` тут не помощник и не будет: фокус остаётся в поле,
+   строка активна через `aria-activedescendant`, то есть кольцо фокуса на ней не
+   сработает НИКОГДА — это следствие контракта, а не забытый стиль. Отсюда
+   кольцо рисуется по КЛАССУ, тем же токеном `--ds-focus-ring-inset`: 4.62 к
+   фону строки и 5.01 к фону панели в свете, 6.43 и 6.20 в темноте.
+
+   Почему `--ds-table-hover` при этом остаётся: он уместен ровно там, где стоит,
+   — как подсказка мыши. Негоден он как ЕДИНСТВЕННЫЙ указатель выбора, и
+   вычитание фона отняло бы у зрячего пользователя мыши работающую примету
+   вместо того, чтобы добавить вторую. У `DropdownMenu` тот же токен и тот же
+   вид, только кольцо там приезжает от настоящего фокуса.
+
+   Держится случаем `measure` «GlobalSearch и Combobox: активную строку метит
+   кольцо, а не фон 1.05:1». */
+.ds-gsearch__option.is-active {
+  background: var(--ds-table-hover);
+  box-shadow: var(--ds-focus-ring-inset);
+}
+.ds-gsearch__group { font-size: var(--ds-fs-sm); color: var(--ds-text-muted); }

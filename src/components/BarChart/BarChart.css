@@ -1,0 +1,63 @@
+.ds-bar { display: flex; flex-direction: column; gap: var(--ds-space-3); font-family: var(--ds-font-ui); }
+.ds-bar__plot { position: relative; width: 100%; }
+.ds-bar__svg { display: block; }
+
+.ds-bar__grid { stroke: var(--ds-table-grid); stroke-width: 1; }
+.ds-bar__zero { stroke: var(--ds-border-strong); stroke-width: 1; }
+.ds-bar__axis { fill: var(--ds-text-muted); font-size: var(--ds-fs-sm); }
+/* Все ряды скрыты легендой — как `.ds-chart__empty`, и по тому же доводу: SVG-
+   текст в координатах поля, без второго позиционирования поверх. */
+.ds-bar__empty { fill: var(--ds-text-muted); font-size: var(--ds-fs-sm); }
+.ds-bar__value {
+  fill: var(--ds-text-secondary); font-size: var(--ds-fs-sm);
+  font-feature-settings: "tnum"; font-weight: 500;
+}
+.ds-bar__rect { transition: opacity 0.12s; }
+.ds-bar__plot:hover .ds-bar__rect { opacity: 0.75; }
+.ds-bar__plot .ds-bar__rect:hover { opacity: 1; }
+
+/* Легенда — в `src/styles/chart-legend.css`, общая с соседним графиком. */
+
+@media (hover: none) {
+  /* На тач-экране :hover залипает после тапа — столбцы остались бы блёклыми. */
+  .ds-bar__plot:hover .ds-bar__rect { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-bar__rect { transition: none; }
+}
+
+/* Дорожка колонки и выделение.
+
+   Дорожка нужна там, где значение бывает нулевым: нулевой столбец рисуется
+   путём нулевой высоты, то есть исчезает, и категорию не отличить от
+   отсутствия данных. Замер на часовом графике это и показал.
+
+   Тон дорожки — состояние категории, не её величина: величина остаётся в
+   высоте столбца. Тот же закон, что у рампа теплокарты и меток типа дня. */
+.ds-bar__track { fill: var(--ds-surface-subtle); }
+
+.ds-bar__track--neutral { fill: color-mix(in srgb, var(--ds-border-strong) 22%, var(--ds-surface)); }
+.ds-bar__track--accent { fill: color-mix(in srgb, var(--ds-accent) 18%, var(--ds-surface)); }
+.ds-bar__track--success { fill: color-mix(in srgb, var(--ds-success) 18%, var(--ds-surface)); }
+.ds-bar__track--warning { fill: color-mix(in srgb, var(--ds-warning) 18%, var(--ds-surface)); }
+.ds-bar__track--error { fill: color-mix(in srgb, var(--ds-error) 18%, var(--ds-surface)); }
+.ds-bar__track--info { fill: color-mix(in srgb, var(--ds-info) 18%, var(--ds-surface)); }
+
+/* Столбец в тоне состояния. Переменная, а не прямой цвет, — чтобы модификатор
+   задавал только значение, а правило заливки было одно. */
+.ds-bar__bar--neutral { --ds-bar-tone: var(--ds-border-strong); }
+.ds-bar__bar--accent { --ds-bar-tone: var(--ds-accent); }
+.ds-bar__bar--success { --ds-bar-tone: var(--ds-success); }
+.ds-bar__bar--warning { --ds-bar-tone: var(--ds-warning); }
+.ds-bar__bar--error { --ds-bar-tone: var(--ds-error); }
+.ds-bar__bar--info { --ds-bar-tone: var(--ds-info); }
+
+/* Выделенная категория. Обводка вокруг всей колонки, а не подчёркивание под
+   осью: там уже стоят подписи категорий, и канал занят соседом. Цепляется за
+   колонку, поэтому работает и когда столбец нулевой. */
+.ds-bar__mark {
+  fill: none;
+  stroke: var(--ds-text-primary);
+  stroke-width: 1.5;
+}

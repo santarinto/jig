@@ -1,0 +1,54 @@
+# Поставка (JIG-28): на push тега `v*` собрать dist/, упаковать тарбол
+# (prepack/postpack чистят devDependencies/scripts — scripts/strip-manifest.mjs,
+# гейт dist-shipped) и приложить его к GitHub Release. Тег указывает на
+# ИСХОДНЫЙ коммит выпуска (ветки delivery больше нет, см. docs/release.md) —
+# сборка целиком идёт здесь, а не в момент релизного коммита.
+#
+# Версия Node: в репозитории нет ни .nvmrc, ни package.json#engines — источника
+# истины НЕТ. Взято 26.x по единственному доступному сигналу — мажору
+# devDependencies."@types/node" ("^26.1.1") — а не угадано. Задача не заводит
+# .nvmrc: если владелец хочет зафиксировать версию явно, это отдельное решение.
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: dist-version — токен доехал до собранного
+        run: node scripts/check-dist-version.mjs
+
+      - name: dist-shipped — тарбол без devDependencies/scripts, состав корректен
+        run: npx vitest run src/__guards__/dist-shipped.test.ts
+
+      - name: npm pack
+        run: npm run --silent pack
+
+      - name: тело релиза из CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          node scripts/print-changelog-section.mjs "$version" > /tmp/release-notes.md
+
+      - name: gh release create
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" santarinto-jig-*.tgz \
+            --notes-file /tmp/release-notes.md

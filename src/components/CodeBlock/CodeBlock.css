@@ -1,0 +1,65 @@
+/* Однострочная команда, а не листинг: перенос ломает и копирование, и
+   беглый поиск флага глазами, поэтому `pre` и прокрутка вбок. */
+/* Кнопка — сосед по флексу, а не наложение поверх кода. Наложением хвост
+   уезжал под неё: замерено, при прокрутке до упора 74px команды прятались, а в
+   конце команды обычно самый важный флаг. Соседство делает перекрытие
+   невозможным при любой подписи, а не при той, под которую подобран отступ. */
+.ds-codeblock {
+  display: flex; align-items: flex-start; gap: var(--ds-space-2);
+  padding: var(--ds-space-2);
+  background: var(--ds-surface-subtle);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  font-family: var(--ds-font-mono);
+}
+
+.ds-codeblock__pre {
+  margin: 0;
+  flex: 1 1 auto;
+  /* `min-width: 0` обязателен: флекс-элемент по умолчанию не ужимается меньше
+     содержимого, и `pre` с длинной строкой растянул бы блок вместо прокрутки. */
+  min-width: 0;
+  overflow-x: auto;
+  white-space: pre;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  font-family: inherit;
+  font-size: var(--ds-fs-sm);
+  color: var(--ds-text-primary);
+}
+
+/* Прокрутка `pre` доступна с клавиатуры: без `tabIndex` уехавший вбок хвост
+   команды нельзя увидеть без мыши. Кольцо фокуса поэтому обязано быть. */
+.ds-codeblock__pre:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: -2px; }
+
+/* Мягкий перенос вместо горизонтальной прокрутки — opt-in (см. `wrap` в AGENTS):
+   для сплошного текста без переносов. `pre-wrap` сворачивает строку по пробелам,
+   `overflow-wrap: anywhere` — одно сверхдлинное слово/токен; `overflow-x: hidden`
+   снимает горизонтальный скролл, который при переносе всё равно не активируется,
+   но в редких браузерах рисует пустую полосу. */
+.ds-codeblock__pre--wrap {
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ds-codeblock__code { font-family: inherit; }
+
+.ds-codeblock__copy {
+  flex: 0 0 auto;
+  display: inline-grid; place-items: center;
+  height: var(--ds-h-compact); padding: 0 var(--ds-space-3);
+  font-family: var(--ds-font-ui); font-size: var(--ds-fs-sm);
+  color: var(--ds-text-secondary);
+  /* Своя заливка, не общая ступень кнопки (DS-269): блок сам
+     `--ds-surface-subtle`, и на нём кнопка отличается светлым. */
+  background: var(--ds-surface);
+  cursor: pointer;
+}
+.ds-codeblock__copy:hover { border-color: var(--ds-accent); color: var(--ds-text-primary); }
+.ds-codeblock__copy.is-copied { color: var(--ds-success); border-color: var(--ds-success); }
+.ds-codeblock__copy.is-failed { color: var(--ds-error); border-color: var(--ds-error); }
+
+/* Распорщик кладётся в ту же ячейку грида, что и подпись, и не рисуется:
+   ширину даёт, высоту и вид — нет. */
+.ds-codeblock__copytext, .ds-codeblock__copysizer { grid-area: 1 / 1; }
+.ds-codeblock__copysizer { display: flex; flex-direction: column; visibility: hidden; height: 0; }

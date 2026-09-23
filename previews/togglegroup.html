@@ -1,0 +1,19 @@
+<!doctype html><html lang="ru" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../src/styles.css"></head>
+<body><div style="padding:16px;display:flex;flex-direction:column;gap:16px;align-items:flex-start">
+  <!-- single: radiogroup, стрелка ВЫБИРАЕТ, поэтому tabindex=0 у выбранного. -->
+  <div class="ds-togglegroup ds-togglegroup--framed ds-togglegroup--md" role="radiogroup" aria-label="Период">
+    <button type="button" class="ds-togglegroup__item is-active" role="radio" aria-checked="true" tabindex="0">День</button>
+    <button type="button" class="ds-togglegroup__item" role="radio" aria-checked="false" tabindex="-1">Неделя</button>
+    <button type="button" class="ds-togglegroup__item" role="radio" aria-checked="false" tabindex="-1">Месяц</button>
+  </div>
+
+  <!-- multiple: group с aria-pressed; иконка и счётчик — самые узкие цели. -->
+  <div class="ds-togglegroup ds-togglegroup--plain ds-togglegroup--sm" role="group" aria-label="Виды">
+    <button type="button" class="ds-togglegroup__item is-active" aria-pressed="true" tabindex="0">
+      <span class="ds-togglegroup__icon" aria-hidden="true">▤</span>Проведённые<span class="ds-togglegroup__count">12</span></button>
+    <button type="button" class="ds-togglegroup__item" aria-pressed="false" tabindex="-1">
+      <span class="ds-togglegroup__icon" aria-hidden="true">▦</span>Черновики<span class="ds-togglegroup__count">3</span></button>
+    <button type="button" class="ds-togglegroup__item" aria-pressed="false" aria-disabled="true" tabindex="-1">Удалённые</button>
+  </div>
+</div></body></html>

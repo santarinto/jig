@@ -1,0 +1,59 @@
+/* Toast */
+/* Оба предела ширины уступают вьюпорту (DS-167).
+   Противоречие жило ВНУТРИ одного семейства: `.ds-toaster` (toast.css) уже
+   зажат `min(calc(22.5rem*scale), calc(100vw - calc(2rem*scale)))`, а его
+   собственный ребёнок `.ds-toast` пробивал этот зажим СВОЕЙ `min-width` —
+   приём в системе есть, он просто не был применён везде. На кадре 360 при
+   шкале 1.5 карточка выходила 390, и крестик закрытия уезжал на 35px за
+   правый край.
+   Виновата именно `min-width`: `max-width` только не даёт расти, а пол
+   отказывается сжиматься. Поле вьюпорта взято ТО ЖЕ, что у тостера, — иначе
+   стопка и карточка считали бы край экрана по-разному. */
+.ds-toast {
+  display: inline-flex; align-items: center; gap: var(--ds-space-4);
+  min-width: min(calc(16.25rem * var(--ds-ui-scale)), calc(100vw - calc(2rem * var(--ds-ui-scale))));
+  max-width: min(calc(25rem * var(--ds-ui-scale)), calc(100vw - calc(2rem * var(--ds-ui-scale))));
+  padding: var(--ds-space-4) var(--ds-space-5);
+  background: var(--ds-surface); border: 1px solid var(--ds-border-overlay); border-left-width: 3px;
+  border-radius: var(--ds-radius); box-shadow: var(--ds-shadow-md); color: var(--ds-text-primary); font-size: var(--ds-fs-base);
+}
+/* Знак тона — ВТОРОЙ носитель рядом с полосой (DS-157). Цвет тот же, что
+   у полосы: знак и полоса говорят одно и то же, и разойтись по цвету им нечего.
+   `flex: 0 0 auto` плюс выравнивание по первой строке — сообщение бывает в две
+   строки, и знак обязан стоять у её начала, а не по центру карточки. */
+.ds-toast__icon,
+.ds-notifs__icon { flex: 0 0 auto; align-self: flex-start; margin-top: 1px; color: var(--ds-tone); }
+
+/* Тон объявляется ОДИН раз переменной, как у `Alert`, и оттуда его берут оба
+   носителя — полоса и знак. До DS-157 цвет тона стоял прямо в
+   `border-left-color`, и второму носителю пришлось бы завести второй список
+   тех же четырёх цветов: два места, которым запрещено расходиться. */
+.ds-toast--success, .ds-notifs__item--success { --ds-tone: var(--ds-success); }
+.ds-toast--warning, .ds-notifs__item--warning { --ds-tone: var(--ds-warning); }
+.ds-toast--error,   .ds-notifs__item--error   { --ds-tone: var(--ds-error); }
+.ds-toast--info,    .ds-notifs__item--info    { --ds-tone: var(--ds-info); }
+.ds-toast { border-left-color: var(--ds-tone, var(--ds-border)); }
+.ds-toast__msg { flex: 1 1 auto; }
+/* 1.5rem вместо 1.25rem: оба крестика были 20×20 при поле 24 (SC 2.5.8).
+   По высоте это бесплатно — тост 38px, строка центра уведомлений 52.7px;
+   платится 4px ширины. */
+.ds-toast__close, .ds-notifs__dismiss {
+  width: calc(1.5rem * var(--ds-ui-scale)); height: calc(1.5rem * var(--ds-ui-scale));
+  min-width: var(--ds-target-min); min-height: var(--ds-target-min);
+  background: none; border: none; border-radius: var(--ds-radius-sm);
+  color: var(--ds-text-muted); cursor: pointer; font-size: var(--ds-fs-lg); line-height: 1;
+}
+.ds-toast__close:hover, .ds-notifs__dismiss:hover { background: var(--ds-surface-subtle); color: var(--ds-text-primary); }
+
+/* Notification center */
+/* Ширина центра уведомлений тоже уступает вьюпорту (DS-167): жёсткая
+   `calc(20rem*scale)` давала 480 на кадре 360 при шкале 1.5 — панель уезжала
+   за правый край и уводила туда же горизонтальную прокрутку документа.
+   Поле — то же, что у тоста и тостера. */
+.ds-notifs { display: flex; flex-direction: column; width: min(calc(20rem * var(--ds-ui-scale)), calc(100vw - calc(2rem * var(--ds-ui-scale)))); background: var(--ds-surface); border: 1px solid var(--ds-border-overlay); border-radius: var(--ds-radius-md); overflow: hidden; }
+.ds-notifs__item { display: flex; align-items: flex-start; gap: var(--ds-space-4); padding: var(--ds-space-4) var(--ds-space-5); border-bottom: 1px solid var(--ds-border); border-left: 3px solid transparent; }
+.ds-notifs__item:last-child { border-bottom: none; }
+.ds-notifs__item { border-left-color: var(--ds-tone, transparent); }
+.ds-notifs__body { flex: 1 1 auto; }
+.ds-notifs__title { font-size: var(--ds-fs-base); font-weight: 500; color: var(--ds-text-primary); }
+.ds-notifs__text { font-size: var(--ds-fs-sm); color: var(--ds-text-secondary); margin-top: var(--ds-space-1); }
