@@ -248,10 +248,30 @@ export async function checkPublished(root = process.cwd()) {
   return { ...tags, asset: asset.url }
 }
 
+/**
+ * Вход `make release` (JIG-3). Перед выпуском проверяется, что ПРОШЛЫЙ выпуск
+ * дошёл до потребителя. На первом выпуске прошлого нет — тегов `v*` ноль, и это
+ * не ошибка, а режим: проверять нечего. Строгая форма без тегов остаётся за
+ * `make published` (конец `make push`): там ноль тегов значит «публиковать
+ * нечего», и это отказ.
+ *
+ * `check` передаётся параметром, чтобы случай «теги есть — проверка идёт»
+ * проверялся без сети.
+ */
+export async function checkBeforeRelease(root = process.cwd(), check = checkPublished) {
+  if (localTags(root).length === 0) return { first: true }
+  return { first: false, ...(await check(root)) }
+}
+
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
 if (isMain) {
   try {
-    if (process.argv[2] === '--tags-only') {
+    if (process.argv[2] === '--before-release') {
+      const r = await checkBeforeRelease(process.cwd())
+      console.log(r.first
+        ? 'PUBLISHED OK — первый выпуск: тегов v* нет, прошлого выпуска проверять нечего'
+        : `PUBLISHED OK — ${r.tags.length} тег(ов) на ${r.remote}, ассет совпал → ${r.asset}`)
+    } else if (process.argv[2] === '--tags-only') {
       const { remote, tags } = checkTagsReached(process.cwd())
       console.log(`PUBLISHED TAGS OK — ${tags.length} тег(ов) на ${remote}`)
     } else {

@@ -269,7 +269,7 @@ stat:
 # check-full) the claim is unchanged: the set of local tags does not depend on the
 # bump.
 release:
-	@node scripts/check-published.mjs
+	@node scripts/check-published.mjs --before-release
 	@node scripts/release.mjs prepare
 	@$(MAKE) check-full
 	@node scripts/release.mjs commit

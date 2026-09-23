@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 import { resolve, join } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import {
-  installUrl, parseAssetUrl, remoteTagCommits, diffTags, checkTagsReached,
+  installUrl, parseAssetUrl, remoteTagCommits, diffTags, checkTagsReached, checkBeforeRelease,
   readTgzEntries, hashEntries, compareTgzContents,
 } from '../../scripts/check-published.mjs'
 import { tempRoot } from './tmp-sandbox'
@@ -190,5 +190,29 @@ describe('checkTagsReached (E2E, офлайн — только локальны�
     r.git('commit', '-q', '-m', 'fix: moved')
     r.git('tag', '-f', '-a', 'v1.0.0', '-m', 'v1.0.0')
     expect(() => checkTagsReached(r.root)).toThrow(/указывает на/)
+  })
+})
+
+// JIG-3: первый выпуск на корне без тегов. `make release` первым шагом зовёт
+// эту проверку, и без режима первого выпуска она отказывала «публиковать
+// нечего» — выпуск 1.0.0 не начинался вовсе.
+describe('checkBeforeRelease — вход make release', () => {
+  it('тегов нет — первый выпуск, проверять нечего, и строгая проверка НЕ зовётся', async () => {
+    const r = setup()
+    let called = false
+    const res = await checkBeforeRelease(r.root, async () => { called = true; return {} })
+    expect(res.first).toBe(true)
+    expect(called).toBe(false)
+  })
+
+  it('теги есть — идёт строгая проверка, и её отказ не глотается', async () => {
+    const r = setup()
+    release(r, 'v1.0.0')
+    await expect(checkBeforeRelease(r.root, async () => { throw new Error('не доехал') })).rejects.toThrow(/не доехал/)
+  })
+
+  it('строгая форма без тегов по-прежнему отказывает — это make published', () => {
+    const r = setup()
+    expect(() => checkTagsReached(r.root)).toThrow(/нет локальных тегов/)
   })
 })
