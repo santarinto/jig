@@ -64,6 +64,10 @@ const DOC_SITES = [
   { file: 'tokens/tokens.css', anchor: /(--ds-version:\s*")\d+\.\d+\.\d+/g },
 ]
 const TARBALL = /(santarinto-jig-)\d+\.\d+\.\d+(\.tgz)/g
+// Тег в пути ассета GitHub Release (JIG-28): `/releases/download/vX.Y.Z/`. Без
+// него бамп переписывал имя тарбола, а тег оставлял прежним — адрес, которого
+// не будет никогда (пойман на первом выпуске 1.0.0, JIG-3).
+const RELEASE_TAG = /(\/releases\/download\/v)\d+\.\d+\.\d+(\/)/g
 
 /**
  * Корневая запись `package-lock.json` (DS-318). До этой задачи бамп её не
@@ -111,7 +115,7 @@ export function bumpFiles(root, next) {
   for (const { file, anchor } of DOC_SITES) {
     const p = resolve(root, file)
     const text = readFileSync(p, 'utf8')
-    writeFileSync(p, text.replace(anchor, `$1${next}`).replace(TARBALL, `$1${next}$2`))
+    writeFileSync(p, text.replace(anchor, `$1${next}`).replace(TARBALL, `$1${next}$2`).replace(RELEASE_TAG, `$1${next}$2`))
   }
 }
 

@@ -29,7 +29,10 @@ export function seedFiles(root: string, version: string) {
   mkdirSync(resolve(root, '.design-sync'), { recursive: true })
   writeFileSync(
     resolve(root, 'docs/portal-migration/consumption.md'),
-    `Текущая версия пакета — **${version}**.\n\nsantarinto-jig-${version}.tgz\n`,
+    // Строка установки — в ТОЙ форме, в которой она живёт в consumption.md: тег
+    // в пути ассета и имя тарбола. Прежняя фикстура несла одно имя тарбола, и
+    // бамп, переписавший имя, но забывший тег, проходил зелёным (JIG-3).
+    `Текущая версия пакета — **${version}**.\n\nhttps://github.com/santarinto/jig/releases/download/v${version}/santarinto-jig-${version}.tgz\n`,
   )
   writeFileSync(resolve(root, '.design-sync/conventions.md'), `> **Version ${version}**\n`)
   // Пятое версионное место с DS-215. Не декорация харнесса: `bumpFiles`
