@@ -302,7 +302,7 @@ check(cells === 4, `ячеек сетки: ${cells}`)
 // `data-theme`: токены тёмной темы не пересчёт светлых, а отдельные значения,
 // и копия соврала бы ровно в том месте, ради которого пару и открывают.
 // Счёт «два кадра» этого не различает вовсе.
-await group('Ширина кадра').getByRole('button', { name: '360' }).click()
+await group('Ширина кадра').getByRole('button', { name: '440' }).click()
 await group('Темы сетки').getByRole('button', { name: 'обе темы' }).click()
 await page.waitForTimeout(2000)
 const pair = page.locator('iframe.wb__frame')

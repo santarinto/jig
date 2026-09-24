@@ -147,7 +147,7 @@ describe('сетка', () => {
     expect(screen.queryByRole('separator', { name: /правый край/ })).toBeNull()
 
     const widths = screen.getByRole('group', { name: 'Ширина кадра' })
-    const preset = within(widths).getByRole('button', { name: '360' })
+    const preset = within(widths).getByRole('button', { name: '440' })
     expect(preset.hasAttribute('disabled')).toBe(false)
     expect(within(widths).getByRole('button', { name: 'все' }).getAttribute('aria-pressed')).toBe('true')
     expect(within(widths).getByText('все сразу')).toBeTruthy()
@@ -163,7 +163,7 @@ describe('сетка', () => {
     // притворялась бы парой. Отличаться обязана ТЕМА, совпадать — ширина.
     toGrid()
     const widths = screen.getByRole('group', { name: 'Ширина кадра' })
-    fireEvent.click(within(widths).getByRole('button', { name: '360' }))
+    fireEvent.click(within(widths).getByRole('button', { name: '440' }))
     fireEvent.click(screen.getByRole('button', { name: 'обе темы' }))
 
     expect(frames()).toHaveLength(2)
@@ -172,10 +172,10 @@ describe('сетка', () => {
     // Ширина вьюпорта — у обёртки кадра, в адрес она не едет (см. случай выше).
     const wraps = Array.from(document.querySelectorAll<HTMLElement>('.wb__frame-wrap'))
     expect(wraps).toHaveLength(2)
-    expect(new Set(wraps.map((el) => el.style.width))).toEqual(new Set(['360px']))
+    expect(new Set(wraps.map((el) => el.style.width))).toEqual(new Set(['440px']))
     // Подписи ячеек называют то же самое человеку.
-    expect(screen.getByText('360 · свет')).toBeTruthy()
-    expect(screen.getByText('360 · тьма')).toBeTruthy()
+    expect(screen.getByText('440 · свет')).toBeTruthy()
+    expect(screen.getByText('440 · тьма')).toBeTruthy()
     // Лимит здесь ни при чём: резать нечего, и приписка о срезанном не лжёт.
     expect(screen.queryByText(/не показано/)).toBeNull()
   })
@@ -184,8 +184,8 @@ describe('сетка', () => {
     // Тот же довод, что у смены темы: ячейка ключуется шириной и местом, а не
     // составом. Пересозданный кадр внешне такой же, поэтому сверяется адрес.
     toGrid()
-    const before = srcs()[WIDTH_PRESETS.indexOf(360)]
-    fireEvent.click(within(screen.getByRole('group', { name: 'Ширина кадра' })).getByRole('button', { name: '360' }))
+    const before = srcs()[WIDTH_PRESETS.indexOf(440)]
+    fireEvent.click(within(screen.getByRole('group', { name: 'Ширина кадра' })).getByRole('button', { name: '440' }))
     expect(srcs()).toEqual([before])
   })
 

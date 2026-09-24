@@ -30,9 +30,9 @@ describe('ширина кадра', () => {
     render(<Shell />)
     expect(wrapWidth()).toBe('768px')
 
-    fireEvent.click(widths().getByRole('button', { name: '360' }))
+    fireEvent.click(widths().getByRole('button', { name: '440' }))
 
-    expect(wrapWidth()).toBe('360px')
+    expect(wrapWidth()).toBe('440px')
   })
 
   it('пресет НЕ трогает адрес кадра — ни ширины в нём, ни новой сессии', () => {
@@ -68,22 +68,22 @@ describe('ширина кадра', () => {
    * shell-url.test.tsx.
    */
   describe('ширина в адресе оболочки (DS-345)', () => {
-    it('прямая загрузка `?w=360` доезжает и до чипа, и до кадра', () => {
-      window.history.pushState(null, '', '/?c=Badge&w=360')
+    it('прямая загрузка `?w=440` доезжает и до чипа, и до кадра', () => {
+      window.history.pushState(null, '', '/?c=Badge&w=440')
       render(<Shell />)
 
-      expect(wrapWidth()).toBe('360px')
-      expect(screen.getByLabelText('Заданная ширина').textContent).toBe('360')
+      expect(wrapWidth()).toBe('440px')
+      expect(screen.getByLabelText('Заданная ширина').textContent).toBe('440')
     })
 
     it('непресетная ширина из адреса восстанавливается как есть', () => {
       // Ширину задают не только чипами — её тянут за край (`clampWidth` на
       // перетаскивании). Пресетами адрес не ограничен, иначе ссылка на
       // подобранную вручную ширину теряла бы ровно то, ради чего её копируют.
-      window.history.pushState(null, '', '/?c=Badge&w=412')
+      window.history.pushState(null, '', '/?c=Badge&w=520')
       render(<Shell />)
 
-      expect(wrapWidth()).toBe('412px')
+      expect(wrapWidth()).toBe('520px')
     })
 
     it('ширина вне пределов прижимается при загрузке, а не рисует кадр в 99999', () => {
@@ -100,10 +100,10 @@ describe('ширина кадра', () => {
         render(<Shell />)
         act(() => vi.advanceTimersByTime(MIRROR_DELAY_MS)) // начальная запись зеркала
 
-        act(() => fireEvent.click(widths().getByRole('button', { name: '360' })))
+        act(() => fireEvent.click(widths().getByRole('button', { name: '440' })))
         act(() => vi.advanceTimersByTime(MIRROR_DELAY_MS))
 
-        expect(new URLSearchParams(window.location.search).get('w')).toBe('360')
+        expect(new URLSearchParams(window.location.search).get('w')).toBe('440')
       } finally {
         vi.useRealTimers()
       }
@@ -115,7 +115,7 @@ describe('ширина кадра', () => {
       // по делу.
       vi.useFakeTimers()
       try {
-        window.history.pushState(null, '', '/?c=Badge&w=360')
+        window.history.pushState(null, '', '/?c=Badge&w=440')
         render(<Shell />)
         act(() => vi.advanceTimersByTime(MIRROR_DELAY_MS))
 

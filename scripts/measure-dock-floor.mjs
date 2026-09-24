@@ -431,8 +431,10 @@ console.log(
  *
  * Высокий док делает поле ниже содержимого — появляется вертикальная полоса и
  * отнимает 15px у ширины поля; на полу дока полоса уходит. Кадр центрирован в
- * поле, и до `scrollbar-gutter: stable` прыгал на половину полосы: x 744.1 на
- * потолке против 751.6 на полу, на 360 и ширине кадра без изменений.
+ * поле, и до `scrollbar-gutter: stable` прыгал на половину полосы. С переездом
+ * чипа на пол 440 (DS-380) замер переснят на нём же: x 704.09 на потолке и
+ * 704.09 на полу, полоса 15px, ширина кадра без изменений — `stable` держит
+ * инвариант и на новом чипе.
  *
  * СВОЙ БРАУЗЕР, а не общий: playwright по умолчанию запускает chromium с
  * `--hide-scrollbars`, и полоса в нём не занимает места ВОВСЕ — дефект там
@@ -451,7 +453,7 @@ console.log(
   await p.goto(`http://${HOST}:${PORT}/?c=DataTable&sid=1&theme=light`, { waitUntil: 'domcontentloaded' })
   await p.waitForSelector('.wb__ctl', { timeout: 15000 })
   await p.evaluate(() => document.fonts.ready)
-  await p.click('button.wb__chip[data-label="360"]')
+  await p.click('button.wb__chip[data-label="440"]')
   const settle = () => p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
   const read = () =>
     p.evaluate(() => {

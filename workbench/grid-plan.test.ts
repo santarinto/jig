@@ -3,8 +3,8 @@ import { gridPlan, GRID_LIMIT } from './grid-plan.js'
 
 describe('gridPlan', () => {
   it('одна тема — по кадру на ширину, ничего не срезано', () => {
-    const plan = gridPlan([360, 768, 1024, 1440], ['light'])
-    expect(plan.cells.map((c) => c.w)).toEqual([360, 768, 1024, 1440])
+    const plan = gridPlan([440, 768, 1024, 1440], ['light'])
+    expect(plan.cells.map((c) => c.w)).toEqual([440, 768, 1024, 1440])
     expect(plan.dropped).toBe(0)
   })
 
@@ -12,10 +12,10 @@ describe('gridPlan', () => {
     // Порядок «сначала все светлые, потом все тёмные» разводит пару темы на
     // противоположные концы, и лимит отрезал бы у неё вторую половину,
     // оставив первую притворяться целой.
-    const plan = gridPlan([360, 768], ['light', 'dark'])
+    const plan = gridPlan([440, 768], ['light', 'dark'])
     expect(plan.cells).toEqual([
-      { w: 360, theme: 'light', slot: 0 },
-      { w: 360, theme: 'dark', slot: 1 },
+      { w: 440, theme: 'light', slot: 0 },
+      { w: 440, theme: 'dark', slot: 1 },
       { w: 768, theme: 'light', slot: 0 },
       { w: 768, theme: 'dark', slot: 1 },
     ])
@@ -23,7 +23,7 @@ describe('gridPlan', () => {
 
   it('лимит режет и НАЗЫВАЕТ число срезанного', () => {
     // Молчаливая обрезка читается как «показано всё».
-    const plan = gridPlan([360, 768, 1024, 1440], ['light', 'dark'])
+    const plan = gridPlan([440, 768, 1024, 1440], ['light', 'dark'])
     expect(plan.cells).toHaveLength(GRID_LIMIT)
     expect(plan.dropped).toBe(2)
     // Срезана самая ШИРОКАЯ пара целиком, а не половинки разных пар.
@@ -44,9 +44,9 @@ describe('место ячейки внутри ширины', () => {
   it('основная тема всегда на месте 0, какой бы она ни была', () => {
     // По месту, а не по теме, оболочка держит тождество документа: сменили
     // основную тему — место то же, документ тот же, тема доехала патчем.
-    const light = gridPlan([360], ['light', 'dark'])
-    const dark = gridPlan([360], ['dark', 'light'])
-    expect(light.cells[0]).toEqual({ w: 360, theme: 'light', slot: 0 })
-    expect(dark.cells[0]).toEqual({ w: 360, theme: 'dark', slot: 0 })
+    const light = gridPlan([440], ['light', 'dark'])
+    const dark = gridPlan([440], ['dark', 'light'])
+    expect(light.cells[0]).toEqual({ w: 440, theme: 'light', slot: 0 })
+    expect(dark.cells[0]).toEqual({ w: 440, theme: 'dark', slot: 0 })
   })
 })

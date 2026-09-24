@@ -102,8 +102,8 @@ describe('адрес кадра', () => {
    */
   describe('ширина кадра — в адресе оболочки, не кадра (DS-345)', () => {
     it('оболочка пишет ширину, кадр — нет, из одного состояния', () => {
-      const s = { ...base, w: 360 }
-      expect(buildShellUrl(s)).toContain('w=360')
+      const s = { ...base, w: 440 }
+      expect(buildShellUrl(s)).toContain('w=440')
       expect(buildFrameUrl(s)).not.toContain('w=')
     })
 
@@ -113,7 +113,7 @@ describe('адрес кадра', () => {
     })
 
     it('ширина едет туда и обратно через адрес оболочки', () => {
-      expect(parseFrameUrl(buildShellUrl({ ...base, w: 412 })).w).toBe(412)
+      expect(parseFrameUrl(buildShellUrl({ ...base, w: 520 })).w).toBe(520)
     })
 
     it('ширины нет в адресе — `null`, а не умолчание числом', () => {
@@ -123,9 +123,9 @@ describe('адрес кадра', () => {
       expect(parseFrameUrl('?c=X&w=').w).toBeNull()
     })
 
-    it('нечисло — умолчание, а не 240: `clampWidth(NaN)` отдал бы MIN_WIDTH', () => {
+    it('нечисло — умолчание, а не 440: `clampWidth(NaN)` отдал бы MIN_WIDTH', () => {
       // Тот же довод, что у `mode=абв`: адрес приходит из чужих рук. Кадр в
-      // 240 px — правдоподобная картинка не про то, что просили, и это хуже
+      // 440 px — правдоподобная картинка не про то, что просили, и это хуже
       // белого экрана: её не с чем сравнить.
       expect(parseFrameUrl('?c=X&w=абв').w).toBeNull()
       expect(parseFrameUrl('?c=X&w=NaN').w).toBeNull()

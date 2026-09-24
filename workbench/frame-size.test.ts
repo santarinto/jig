@@ -134,28 +134,28 @@ describe('roomOf', () => {
     document.body.replaceChildren()
   })
 
-  it('кадр 360 с полосой 15: контейнеру 285, а не 300', () => {
-    vi.stubGlobal('innerWidth', 360)
-    stubWidth(document.documentElement, 345)
-    expect(roomOf(host(345))).toEqual({ cw: 285, bar: 15 })
+  it('кадр 440 с полосой 15: контейнеру 365, а не 380', () => {
+    vi.stubGlobal('innerWidth', 440)
+    stubWidth(document.documentElement, 425)
+    expect(roomOf(host(425))).toEqual({ cw: 365, bar: 15 })
   })
 
   it('без полосы: контейнеру ширина кадра минус паддинги', () => {
-    vi.stubGlobal('innerWidth', 360)
-    stubWidth(document.documentElement, 360)
-    expect(roomOf(host(360))).toEqual({ cw: 300, bar: 0 })
+    vi.stubGlobal('innerWidth', 440)
+    stubWidth(document.documentElement, 440)
+    expect(roomOf(host(440))).toEqual({ cw: 380, bar: 0 })
   })
 
   it('reportSize отдаёт место третьим аргументом', () => {
-    vi.stubGlobal('innerWidth', 360)
-    stubWidth(document.documentElement, 345)
+    vi.stubGlobal('innerWidth', 440)
+    stubWidth(document.documentElement, 425)
     const send = vi.fn()
-    const h = host(345)
-    box(h, { left: 0, top: 0, right: 345, bottom: 19 })
+    const h = host(425)
+    box(h, { left: 0, top: 0, right: 425, bottom: 19 })
 
     reportSize(h, send)
     fire!()
 
-    expect(send).toHaveBeenCalledWith(345, 19, { cw: 285, bar: 15 })
+    expect(send).toHaveBeenCalledWith(425, 19, { cw: 365, bar: 15 })
   })
 })
