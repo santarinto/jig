@@ -59,3 +59,12 @@ make wb-logs       журнал
 `Environment=PATH=` — то есть пин на версию. После `nvm install` служба при
 следующем рестарте умрёт с `status=203/EXEC`, что читается как «сломалась», а не
 «нода переехала». Это ловит `make wb-status`; чинит `make wb-install`.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+The fonts in `fonts/` (shipped as `dist/fonts/`) are not covered by MIT: Inter and
+JetBrains Mono are distributed under the SIL Open Font License 1.1, see
+[fonts/OFL-Inter.txt](fonts/OFL-Inter.txt) and
+[fonts/OFL-JetBrainsMono.txt](fonts/OFL-JetBrainsMono.txt).
