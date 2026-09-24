@@ -91,7 +91,11 @@ describe('locale wiring', () => {
   })
 
   it('LogViewer: отметка времени', () => {
-    const lines = [{ ts: NOON, kind: 'info', text: 'строка' }]
+    // Отметка — 15:00 МЕСТНОГО времени, а не NOON: `LogViewer` печатает час в
+    // зоне процесса, и `NOON` (полдень UTC) давал «15:00:00» только под UTC+3,
+    // зоной машины владельца. В раннере CI (UTC) случай падал «12:00:00».
+    const ts = new Date(2026, 8, 2, 15, 0, 0).toISOString()
+    const lines = [{ ts, kind: 'info', text: 'строка' }]
     const el = <LogViewer lines={lines} getLineId={(l) => l.ts} />
     const a = render(el)
     const ru = a.container.textContent ?? ''
