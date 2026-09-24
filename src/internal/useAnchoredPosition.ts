@@ -369,11 +369,62 @@ export function useAnchoredPosition({
     const onResize = () => measure()
     document.addEventListener('scroll', onScroll, true)
     window.addEventListener('resize', onResize)
+
+    /**
+     * ResizeObserver — `scroll`/`resize` выше ловят СДВИГ, а не смену РАЗМЕРА
+     * без сдвига, а таких путей несколько: догрузился шрифт и панель выросла
+     * по высоте, пришло асинхронное содержимое, у предка сменился
+     * `--ds-ui-scale`. Ни одно из этих событий `scroll` документа не рождает
+     * и `resize` окна не рождает — окно то же самое. Живой случай: `Popover`
+     * `placement=top-*` на шкале 1.15 — первый замер взял высоту панели
+     * 63.8px (до применения `--ds-ui-scale` к её содержимому), реальная
+     * раскладка вышла 85.5px, и низ панели, поставленный по старой высоте,
+     * заехал на кнопку-якорь на 19px (гейт `matrix`, кадр
+     * `Popover/placements ×1.15`).
+     *
+     * ПОЧЕМУ ХУК, А НЕ ВЕРСТАК. У кадра верстака `frame-app.tsx` шкала
+     * ставится в `useEffect` — то есть уже ПОСЛЕ первого замера хука, и это
+     * не совпадение, которое здесь чинится, а тот же класс асинхронности,
+     * что у догрузки шрифта и у чужого рендера содержимого. Поправить кадр
+     * значило бы спрятать дефект от гейта, а у потребителя, чей предок
+     * меняет масштаб иначе, дефект остался бы как был.
+     *
+     * ПЕТЛЯ НЕ ЗАВОДИТСЯ, и это стоит доказать, а не предположить: колбэк —
+     * `measure()`, а `measure` каждый раз пишет в состояние только `left` и
+     * `top` (`setPos` выше) — РАЗМЕР наблюдаемых узлов он не меняет никогда,
+     * хук не трогает ни `width`, ни `height` ни у панели, ни у якоря.
+     * `ResizeObserver` реагирует на `contentRect`, а не на положение
+     * (`position: fixed` из `left`/`top` в него не входит), поэтому
+     * применённый `measure()` не рождает того `resize`-события, на которое
+     * подписан тот же наблюдатель — цепочка обрывается на первом же шаге.
+     *
+     * Наблюдаются узлы, которые УЖЕ в DOM на момент эффекта: панель всегда
+     * отрисована (до первого замера — с `visibility: hidden`, см. конец
+     * файла), якорь и, если задан, сторонний якорь — тоже узлы потребителя,
+     * а не что-то, что этот хук создаёт сам.
+     *
+     * Guard `typeof ResizeObserver === 'undefined'` — тот же приём, что в
+     * `useChartBox.ts`: SSR и часть тестовой среды его не имеют, и
+     * деградация здесь безопасна — остаются `scroll`/`resize` выше, слушатели
+     * которых уже поставлены.
+     */
+    let ro: ResizeObserver | undefined
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => measure())
+      const floating = floatingRef.current
+      const anchor = anchorRef.current
+      const side = sideAnchorRef?.current
+      if (floating) ro.observe(floating)
+      if (anchor) ro.observe(anchor)
+      if (side) ro.observe(side)
+    }
+
     return () => {
       document.removeEventListener('scroll', onScroll, true)
       window.removeEventListener('resize', onResize)
+      ro?.disconnect()
     }
-  }, [enabled, measure])
+  }, [enabled, measure, anchorRef, sideAnchorRef, floatingRef])
 
   return pos
     ? { style: { position: 'fixed', left: pos.left, top: pos.top, right: 'auto', bottom: 'auto' }, side: pos.side }

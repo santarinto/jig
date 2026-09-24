@@ -37,10 +37,12 @@ interface HarnessProps {
   inset?: string
   /** Счётчик вызовов тела компонента — для утверждения о числе рендеров. */
   renders?: { current: number }
+  /** По умолчанию true — большинству случаев переключать нечего. */
+  enabled?: boolean
 }
 
 function Harness({
-  side, align, onTrapped, anchor, sideAnchor, floating, trap, gap = '4px', inset = '8px', renders,
+  side, align, onTrapped, anchor, sideAnchor, floating, trap, gap = '4px', inset = '8px', renders, enabled = true,
 }: HarnessProps) {
   if (renders) renders.current += 1
   const anchorRef = useRef<HTMLButtonElement>(null)
@@ -94,7 +96,7 @@ function Harness({
     if (el) el.getBoundingClientRect = () => rect(wanted.current.sideAnchor ?? {})
   }, [])
   const pos = useAnchoredPosition({
-    enabled: true,
+    enabled,
     anchorRef,
     // Ref передаётся ТОЛЬКО когда случай его заказал: иначе пустой узел стал бы
     // якорем стороны с нулевым прямоугольником, и каждый прежний случай начал
@@ -446,5 +448,81 @@ describe('useAnchoredPosition', () => {
     expect(styleOf().top).toBe('234px')
     act(() => { document.dispatchEvent(new Event('scroll')) })
     expect(styleOf().top).toBe('84px')
+  })
+
+  // JIG-7. `scroll`/`resize` выше ловят СДВИГ, а не смену РАЗМЕРА без сдвига:
+  // догрузившийся шрифт, асинхронное содержимое, смена `--ds-ui-scale` у
+  // предка ни того ни другого события не рождают, и позиция застывает —
+  // живой случай был у `Popover placement=top-*` на шкале 1.15 (низ панели
+  // заехал на собственную кнопку на 19px, гейт `matrix`).
+  //
+  // `ResizeObserver` в jsdom не существует; стаб ниже не изображает браузер, а
+  // даёт ровно то, что нужно случаям — колбэк и список наблюдаемых узлов
+  // снаружи, и ручной `fire()` вместо ожидания настоящей раскладки.
+  describe('ResizeObserver — пересчёт после смены размера без scroll/resize', () => {
+    class FakeResizeObserver {
+      static instances: FakeResizeObserver[] = []
+      observed: Element[] = []
+      disconnected = false
+      private cb: ResizeObserverCallback
+      constructor(cb: ResizeObserverCallback) {
+        this.cb = cb
+        FakeResizeObserver.instances.push(this)
+      }
+      observe(el: Element) { this.observed.push(el) }
+      unobserve(el: Element) { this.observed = this.observed.filter((n) => n !== el) }
+      disconnect() { this.disconnected = true }
+      /** Колбэку хука аргументы не нужны — он вызывает `measure()` без них. */
+      fire() { this.cb([] as unknown as ResizeObserverEntry[], this as unknown as ResizeObserver) }
+    }
+
+    beforeEach(() => {
+      FakeResizeObserver.instances = []
+      vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+    })
+
+    it('размер панели изменился после открытия, БЕЗ scroll/resize — top пересчитан по новой высоте', () => {
+      // side='top' без переворота: top = anchor.top − gap − floating.height.
+      // Заказано явно, чтобы формула была одна и число проверяло именно её.
+      const anchor = { left: 100, right: 140, top: 300, bottom: 330 }
+      const floating = { width: 180, height: 90 }
+      render(<Harness side="top" gap="4px" anchor={anchor} floating={floating} />)
+      expect(styleOf().top).toBe('206px') // 300 − 4 − 90
+
+      // Панель выросла — так выглядит догрузившийся шрифт или пришедший
+      // асинхронно контент. Сама по себе мутация объекта styleOf() не трогает:
+      // харнесс читает актуальный `floating` через `wanted.current` только
+      // внутри `getBoundingClientRect`, а её вызывает лишь `measure()`.
+      floating.height = 120
+      act(() => { FakeResizeObserver.instances.forEach((ro) => ro.fire()) })
+      expect(styleOf().top).toBe('176px') // 300 − 4 − 120
+    })
+
+    it('наблюдаются и панель, и якорь', () => {
+      render(<Harness anchor={{ left: 100, right: 140, top: 200, bottom: 230 }} floating={{ width: 180, height: 90 }} />)
+      const floatingEl = screen.getByTestId('floating')
+      const anchorEl = screen.getByRole('button', { name: 'якорь' })
+      const observed = FakeResizeObserver.instances.flatMap((ro) => ro.observed)
+      expect(observed).toContain(floatingEl)
+      expect(observed).toContain(anchorEl)
+    })
+
+    it('снимает наблюдатель при размонтировании', () => {
+      const { unmount } = render(
+        <Harness anchor={{ left: 100, right: 140, top: 200, bottom: 230 }} floating={{ width: 180, height: 90 }} />,
+      )
+      unmount()
+      expect(FakeResizeObserver.instances.some((ro) => ro.disconnected)).toBe(true)
+    })
+
+    it('снимает наблюдатель, когда enabled становится false', () => {
+      const { rerender } = render(
+        <Harness enabled anchor={{ left: 100, right: 140, top: 200, bottom: 230 }} floating={{ width: 180, height: 90 }} />,
+      )
+      rerender(
+        <Harness enabled={false} anchor={{ left: 100, right: 140, top: 200, bottom: 230 }} floating={{ width: 180, height: 90 }} />,
+      )
+      expect(FakeResizeObserver.instances.some((ro) => ro.disconnected)).toBe(true)
+    })
   })
 })
