@@ -351,8 +351,9 @@ export function taskCodes(prevTag, root, pathspec = []) {
  * DS-350 (см. историю ниже), — он выводится из `tsconfig.build.json`
  * (`include`/`exclude` решают, что компилирует `tsc`) плюс из того, что копирует
  * `npm run build` мимо `tsc` (`fonts/*`, CSS рядом с исходником) плюс
- * `scripts/build-bundles.mjs`, `package.json`, `README.md` — три файла, что
- * едут в пакет без компиляции вовсе. `buildInputConfig`/`shippedPathspec`
+ * `scripts/build-bundles.mjs`, `package.json`, `README.md`, `LICENSE` — четыре
+ * файла, что едут в пакет без компиляции вовсе (`LICENSE` npm кладёт в тарбол
+ * всегда, мимо `files`; JIG-33). `buildInputConfig`/`shippedPathspec`
  * держат это одним местом; гейт `build-input-mapping` доказывает, что список
  * ничего не забыл — сверяет с тем, что реально паковает `npm pack`.
  *
@@ -379,8 +380,8 @@ export function buildInputConfig(root) {
     // Копируются `build`-скриптом как есть, мимо tsc: `npm run build` в
     // package.json — `cp fonts/* dist/fonts/`.
     extraDirs: ['fonts'],
-    // Едут в пакет без компиляции: сценарий бандлов и сам манифест/README.
-    extraFiles: ['scripts/build-bundles.mjs', 'package.json', 'README.md'],
+    // Едут в пакет без компиляции: сценарий бандлов, манифест, README и LICENSE.
+    extraFiles: ['scripts/build-bundles.mjs', 'package.json', 'README.md', 'LICENSE'],
   }
 }
 

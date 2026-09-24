@@ -47,7 +47,7 @@ describe('вход сборки: список выводится', () => {
   it('extraDirs и extraFiles называют то, что копируется мимо tsc', () => {
     expect(cfg.extraDirs).toContain('fonts')
     expect(cfg.extraFiles).toEqual(expect.arrayContaining([
-      'scripts/build-bundles.mjs', 'package.json', 'README.md',
+      'scripts/build-bundles.mjs', 'package.json', 'README.md', 'LICENSE',
     ]))
   })
 })
@@ -72,7 +72,7 @@ describe.skipIf(!existsSync(DIST))('npm pack --dry-run — каждый упак
 
   /** Источник упакованного файла среди входов, или `null`, если его нет. */
   function mappedSource(path: string): string | null {
-    if (path === 'package.json' || path === 'README.md') {
+    if (path === 'package.json' || path === 'README.md' || path === 'LICENSE') {
       return cfg.extraFiles.includes(path) ? path : null
     }
     // Бандлы — генерируются `scripts/build-bundles.mjs` из src/tokens, а не
