@@ -18,7 +18,7 @@
      `tokens/tokens.css` из-за этого — ПЯТЫЙ файл в `VERSION_FILES`
      (`scripts/release.mjs`), и `doc-version` держит его в синхроне с
      остальными. Врущий маркер версии хуже отсутствующего: ему верят. */
-  --ds-version: "4.2.6";
+  --ds-version: "1.0.0";
 
   /* Accent (turquoise) */
   --ds-accent: #0E7C7C;

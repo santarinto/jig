@@ -3,7 +3,7 @@
 Источник правды для миграции портала `santarinto/site` (`frontend-react/`) на дизайн-систему
 **`@santarinto/jig`**. Документ самодостаточный: по нему можно работать, не открывая исходники DS.
 
-Текущая версия пакета — **4.2.6**. Стек потребителя: React 19 + TypeScript + Vite.
+Текущая версия пакета — **1.0.0**. Стек потребителя: React 19 + TypeScript + Vite.
 
 ---
 
@@ -23,7 +23,7 @@
 имени пакета:
 
 ```bash
-npm install --save '@santarinto/jig@https://github.com/santarinto/jig/releases/download/v4.2.6/santarinto-jig-4.2.6.tgz'
+npm install --save '@santarinto/jig@https://github.com/santarinto/jig/releases/download/v1.0.0/santarinto-jig-1.0.0.tgz'
 node -p "require('./node_modules/@santarinto/jig/package.json').version"   # → 4.2.6
 ```
 
