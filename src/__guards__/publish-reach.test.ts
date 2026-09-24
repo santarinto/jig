@@ -200,7 +200,7 @@ describe('checkBeforeRelease — вход make release', () => {
   it('тегов нет — первый выпуск, проверять нечего, и строгая проверка НЕ зовётся', async () => {
     const r = setup()
     let called = false
-    const res = await checkBeforeRelease(r.root, async () => { called = true; return {} })
+    const res = await checkBeforeRelease(r.root, async () => { called = true; return { asset: '', remote: '', tags: [] } })
     expect(res.first).toBe(true)
     expect(called).toBe(false)
   })
