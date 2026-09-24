@@ -96,7 +96,7 @@ describe('сам предикат', () => {
   // jsdom раскладки не считает: ни коробок, ни `elementFromPoint`, ни
   // прокрутки. Без подмены обход отбросил бы нулевые коробки, и случай был бы
   // зелен на пустом множестве. Модель страницы здесь — коробки в координатах
-  // ДОКУМЕНТА, вьюпорт 360×640 и смещение прокрутки окна; всё, что предикат
+  // ДОКУМЕНТА, вьюпорт 440×640 и смещение прокрутки окна; всё, что предикат
   // трогает, выводится из неё, а не подставляется ответом под каждый тест.
   //
   // `pointer-events: none` моделируется так, как его видит браузер: такой узел
@@ -108,7 +108,7 @@ describe('сам предикат', () => {
    * угла говорят про угол; центр судится своими тестами ниже.
    */
   const corner = (c: string | undefined) => c?.split('; центр')[0]
-  const VW = 360
+  const VW = 440
   const VH = 640
   const restore: (() => void)[] = []
   const stub = (obj: object, key: string, desc: PropertyDescriptor) => {
@@ -317,7 +317,7 @@ describe('сам предикат', () => {
   it('мелкая цель называется ПУТЁМ, а не списком классов', () => {
     page('<div class="wbf-host" id="host"><div class="ds-log">'
       + '<button class="ds-log__caret is-open" id="caret">x</button></div></div>',
-    { host: [0, 0, 360, 640], caret: [20, 20, 12, 12] })
+    { host: [0, 0, 440, 640], caret: [20, 20, 12, 12] })
     const s = scanTargets(document)
     expect(s.small).toHaveLength(1)
     expect(s.small[0]!.path).toBe('div.ds-log > button.ds-log__caret')
@@ -329,7 +329,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host">'
       + '<button class="ds-btn" id="btn">x</button>'
       + '<div class="ds-veil" id="veil"></div></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 40, 40], veil: [0, 0, 360, 640] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 40, 40], veil: [0, 0, 440, 640] })
     const s = scanTargets(document)
     expect(s.small).toEqual([])
     expect(s.unreachable).toEqual([])
@@ -340,7 +340,7 @@ describe('сам предикат', () => {
   it('pointer-events: none — цель не принимает указатель и это unhittable', () => {
     page('<div class="wbf-host" id="host">'
       + '<button class="ds-btn" id="btn" style="pointer-events:none">x</button></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 40, 40] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 40, 40] })
     expect(scanTargets(document).unhittable.map((u) => u.path)).toEqual(['button.ds-btn'])
   })
 
@@ -351,21 +351,21 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host">'
       + '<button class="ds-btn" id="btn">x</button>'
       + '<div class="ds-veil" id="veil"></div></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 40, 40], veil: [0, 0, 360, 640] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 40, 40], veil: [0, 0, 440, 640] })
     expect(corner(scanTargets(document).unhittable[0]!.coveredBy)).toBe('TL (13.0,13.0) div.ds-veil')
   })
 
   it('pointer-events: none — `coveredBy` называет то, что ПОД целью', () => {
     page('<div class="wbf-host" id="host"><div class="ds-card" id="card">'
       + '<button class="ds-btn" id="btn" style="pointer-events:none">x</button></div></div>',
-    { host: [0, 0, 360, 640], card: [0, 0, 200, 200], btn: [10, 10, 40, 40] })
+    { host: [0, 0, 440, 640], card: [0, 0, 200, 200], btn: [10, 10, 40, 40] })
     expect(corner(scanTargets(document).unhittable[0]!.coveredBy)).toBe('TL (13.0,13.0) div.ds-card')
   })
 
   it('сам хост называется `.wbf-host`, а не пустой строкой пути', () => {
     page('<div class="wbf-host" id="host">'
       + '<button class="ds-btn" id="btn" style="pointer-events:none">x</button></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 40, 40] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 40, 40] })
     expect(corner(scanTargets(document).unhittable[0]!.coveredBy)).toBe('TL (13.0,13.0) .wbf-host')
   })
 
@@ -373,7 +373,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host">'
       + '<button class="ds-btn" id="btn">x</button><button class="ds-btn" id="tiny">y</button>'
       + '<div class="ds-veil" id="veil"></div></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 40, 40], tiny: [100, 10, 20, 20], veil: [44, 44, 10, 10] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 40, 40], tiny: [100, 10, 20, 20], veil: [44, 44, 10, 10] })
     const s = scanTargets(document)
     expect(corner(s.unhittable[0]!.coveredBy)).toBe('BR (47.0,47.0) div.ds-veil')
     expect(s.small.map((t) => [t.hit, corner(t.coveredBy)])).toEqual([[true, undefined]])
@@ -382,7 +382,7 @@ describe('сам предикат', () => {
   it('мелкая, по которой не попасть, несёт `coveredBy`; попадаемая — нет', () => {
     page('<div class="wbf-host" id="host">'
       + '<button class="ds-btn" id="tiny">y</button><div class="ds-veil" id="veil"></div></div>',
-    { host: [0, 0, 360, 640], tiny: [100, 10, 20, 20], veil: [100, 10, 20, 20] })
+    { host: [0, 0, 440, 640], tiny: [100, 10, 20, 20], veil: [100, 10, 20, 20] })
     expect(scanTargets(document).small.map((t) => [t.hit, corner(t.coveredBy)])).toEqual([[false, 'TL (103.0,13.0) div.ds-veil']])
   })
 
@@ -390,7 +390,7 @@ describe('сам предикат', () => {
     // Сосед с заранее известным ответом (ловушка 5): модель страницы, которая
     // отдаёт «не попасть» на всё, дала бы два зелёных теста выше.
     page('<div class="wbf-host" id="host"><button class="ds-btn" id="btn">x</button></div>',
-      { host: [0, 0, 360, 640], btn: [10, 10, 40, 40] })
+      { host: [0, 0, 440, 640], btn: [10, 10, 40, 40] })
     const s = scanTargets(document)
     expect(s.unhittable).toEqual([])
     expect(s.small).toEqual([])
@@ -403,7 +403,7 @@ describe('сам предикат', () => {
     // нарушение, а не находка.
     page('<div class="wbf-host" id="host"><div id="tall"></div>'
       + '<button class="ds-btn" id="btn">x</button></div>',
-    { host: [0, 0, 360, 2100], tall: [0, 0, 360, 2000], btn: [10, 2010, 40, 40] })
+    { host: [0, 0, 440, 2100], tall: [0, 0, 440, 2000], btn: [10, 2010, 40, 40] })
     const s = scanTargets(document)
     expect(s.unhittable, 'цель за фолдом не нарушение').toEqual([])
     expect(s.unreachable, 'и не «не измерено»: прокрутка её достаёт').toEqual([])
@@ -415,7 +415,7 @@ describe('сам предикат', () => {
     // координаты. Старт НЕ с нуля, чтобы «вернул в ноль» не сошло за «вернул».
     const scroll = page('<div class="wbf-host" id="host"><div id="tall"></div>'
       + '<button class="ds-btn" id="btn">x</button></div>',
-    { host: [0, 0, 360, 2100], tall: [0, 0, 360, 2000], btn: [10, 2010, 40, 40] }, [0, 30])
+    { host: [0, 0, 440, 2100], tall: [0, 0, 440, 2000], btn: [10, 2010, 40, 40] }, [0, 30])
     scanTargets(document)
     expect(scroll.y).toBe(30)
   })
@@ -429,7 +429,7 @@ describe('сам предикат', () => {
     const sc = page('<div class="wbf-host" id="host">'
       + '<div class="ds-log__scroll" id="box" style="overflow-y:auto">'
       + '<button class="ds-btn" id="btn">x</button></div></div>',
-    { host: [0, 0, 360, 640], box: [0, 0, 360, 200], btn: [10, 500, 40, 40] })
+    { host: [0, 0, 440, 640], box: [0, 0, 440, 200], btn: [10, 500, 40, 40] })
     const box = document.getElementById('box')!
     box.scrollTop = 30
     const s = scanTargets(document)
@@ -445,7 +445,7 @@ describe('сам предикат', () => {
     const sc = page('<div class="wbf-host" id="host">'
       + '<div class="ds-log__scroll" id="box" style="overflow-y:auto">'
       + '<button class="ds-btn" id="btn">x</button></div></div>',
-    { host: [0, 0, 360, 640], box: [0, 0, 360, 200], btn: [10, 500, 40, 40] })
+    { host: [0, 0, 440, 640], box: [0, 0, 440, 200], btn: [10, 500, 40, 40] })
     document.getElementById('btn')!.scrollIntoView({ block: 'nearest', inline: 'nearest' })
     expect(sc.inner(document.getElementById('box')!).t).toBe(340)
   })
@@ -480,7 +480,7 @@ describe('сам предикат', () => {
       + '<button class="ds-btn" id="btn" style="border-top-left-radius:8px;border-top-right-radius:8px;'
       + 'border-bottom-left-radius:8px;border-bottom-right-radius:8px">x</button>'
       + '<div class="ds-corner" id="corner"></div></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 40, 40], corner: [10, 10, 4, 4] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 40, 40], corner: [10, 10, 4, 4] })
     expect(scanTargets(document).unhittable).toEqual([])
   })
 
@@ -489,7 +489,7 @@ describe('сам предикат', () => {
     // где угловой сосед не перекрывает ничего вовсе.
     page('<div class="wbf-host" id="host"><button class="ds-btn" id="btn">x</button>'
       + '<div class="ds-corner" id="corner"></div></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 40, 40], corner: [10, 10, 4, 4] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 40, 40], corner: [10, 10, 4, 4] })
     expect(scanTargets(document).unhittable.map((u) => u.path)).toEqual(['button.ds-btn'])
   })
 
@@ -502,7 +502,7 @@ describe('сам предикат', () => {
       + '<div class="ds-page" inert><button class="ds-btn" id="bg">x</button></div>'
       + '<div class="ds-veil" id="veil"></div>'
       + '<button class="ds-modal__close" id="live">y</button></div>',
-    { host: [0, 0, 360, 640], bg: [10, 10, 40, 40], veil: [0, 0, 360, 640], live: [100, 100, 40, 40] })
+    { host: [0, 0, 440, 640], bg: [10, 10, 40, 40], veil: [0, 0, 440, 640], live: [100, 100, 40, 40] })
     const s = scanTargets(document)
     expect(s.total, 'инертная кнопка не осмотрена').toBe(1)
     expect(s.unhittable).toEqual([])
@@ -518,7 +518,7 @@ describe('сам предикат', () => {
       + '<button class="ds-btn" id="dis" disabled>x</button>'
       + '<a class="ds-btn" id="aria" href="#" aria-disabled="true" style="pointer-events:none">y</a>'
       + '<div class="ds-veil" id="veil"></div></div>',
-    { host: [0, 0, 360, 640], dis: [10, 10, 40, 40], aria: [10, 60, 40, 40], veil: [0, 0, 360, 640] })
+    { host: [0, 0, 440, 640], dis: [10, 10, 40, 40], aria: [10, 60, 40, 40], veil: [0, 0, 440, 640] })
     const s = scanTargets(document)
     expect(s.total, 'отключённая — цель, её размер судится').toBe(2)
     expect(s.unhittable).toEqual([])
@@ -530,7 +530,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host">'
       + '<a class="ds-btn" id="aria" href="#" aria-disabled="false">y</a>'
       + '<div class="ds-veil" id="veil"></div></div>',
-    { host: [0, 0, 360, 640], aria: [10, 60, 40, 40], veil: [0, 0, 360, 640] })
+    { host: [0, 0, 440, 640], aria: [10, 60, 40, 40], veil: [0, 0, 440, 640] })
     expect(scanTargets(document).unhittable.map((u) => u.path)).toEqual(['a.ds-btn'])
   })
 
@@ -539,7 +539,7 @@ describe('сам предикат', () => {
     // Цель целиком во вьюпорте и не перекрыта — спроси предикат углы, пришло
     // бы `true`; `null` значит, что их не спрашивали.
     page('<div class="wbf-host" id="host"><button class="ds-btn" id="dis" disabled>x</button></div>',
-      { host: [0, 0, 360, 640], dis: [10, 10, 10, 10] })
+      { host: [0, 0, 440, 640], dis: [10, 10, 10, 10] })
     const s = scanTargets(document)
     expect(s.small.map((t) => [t.path, t.hit])).toEqual([['button.ds-btn', null]])
   })
@@ -550,7 +550,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host">'
       + '<button class="ds-tg__item" id="a" style="border:1px solid">a</button>'
       + '<button class="ds-tg__item" id="b" style="border:1px solid">b</button></div>',
-    { host: [0, 0, 360, 640], a: [10, 10, 40, 40], b: [49, 10, 40, 40] })
+    { host: [0, 0, 440, 640], a: [10, 10, 40, 40], b: [49, 10, 40, 40] })
     const s = scanTargets(document)
     expect(s.unhittable).toEqual([])
     expect(s.total).toBe(2)
@@ -562,7 +562,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host">'
       + '<button class="ds-tg__item" id="a" style="border:1px solid">a</button>'
       + '<button class="ds-tg__item" id="b" style="border:1px solid">b</button></div>',
-    { host: [0, 0, 360, 640], a: [10, 10, 40, 40], b: [45, 10, 40, 40] })
+    { host: [0, 0, 440, 640], a: [10, 10, 40, 40], b: [45, 10, 40, 40] })
     expect(scanTargets(document).unhittable.map((u) => u.path)).toEqual(['button.ds-tg__item'])
   })
 
@@ -573,7 +573,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host">'
       + '<button class="ds-tg__item" id="a" style="border:0">a</button>'
       + '<button class="ds-tg__item" id="b" style="border:0">b</button></div>',
-    { host: [0, 0, 360, 640], a: [10, 10, 40, 40], b: [49, 10, 40, 40] })
+    { host: [0, 0, 440, 640], a: [10, 10, 40, 40], b: [49, 10, 40, 40] })
     expect(scanTargets(document).unhittable.map((u) => u.path)).toEqual(['button.ds-tg__item'])
   })
 
@@ -590,7 +590,7 @@ describe('сам предикат', () => {
     + `<div class="ds-tabs__list" id="list" style="${listStyle}">`
     + '<button class="ds-tabs__tab" id="tab">t</button></div>'
     + '<button class="ds-tabs__next" id="next">›</button></div>',
-  { host: [0, 0, 360, 640], list: [66, 10, 96, 40], tab: [66, 10, 130, 40], next: [162, 5, 34, 50] })
+  { host: [0, 0, 440, 640], list: [66, 10, 96, 40], tab: [66, 10, 130, 40], next: [162, 5, 34, 50] })
 
   it('попадание судится по ВИДИМОЙ части: углы за клипом предка не спрашиваются', () => {
     clipped('overflow-x:hidden;overflow-y:hidden')
@@ -609,7 +609,7 @@ describe('сам предикат', () => {
   it('размер судится по ПОЛНОЙ коробке: обрезанная до 20 px цель 30×30 не мелкая', () => {
     page('<div class="wbf-host" id="host"><div id="clip" style="overflow-x:hidden;overflow-y:hidden">'
       + '<button class="ds-btn" id="btn">x</button></div></div>',
-    { host: [0, 0, 360, 640], clip: [10, 10, 20, 30], btn: [10, 10, 30, 30] })
+    { host: [0, 0, 440, 640], clip: [10, 10, 20, 30], btn: [10, 10, 30, 30] })
     const s = scanTargets(document)
     expect(s.small).toEqual([])
     expect(s.unhittable).toEqual([])
@@ -619,7 +619,7 @@ describe('сам предикат', () => {
   it('пустое пересечение с клипом (свёрнутая панель) — цели нет: ни в счёте, ни в подписи', () => {
     page('<div class="wbf-host" id="host"><div class="ds-split__pane" id="pane" style="overflow-x:hidden;overflow-y:hidden">'
       + '<button class="ds-btn" id="btn">x</button></div></div>',
-    { host: [0, 0, 360, 640], pane: [0, 0, 0, 640], btn: [0, 10, 40, 40] })
+    { host: [0, 0, 440, 640], pane: [0, 0, 0, 640], btn: [0, 10, 40, 40] })
     const s = scanTargets(document)
     expect(s.total).toBe(0)
     expect([...s.small, ...s.unhittable, ...s.unreachable]).toEqual([])
@@ -629,7 +629,7 @@ describe('сам предикат', () => {
   it('соседний случай: та же панель развёрнута — кнопка цель', () => {
     page('<div class="wbf-host" id="host"><div class="ds-split__pane" id="pane" style="overflow-x:hidden;overflow-y:hidden">'
       + '<button class="ds-btn" id="btn">x</button></div></div>',
-    { host: [0, 0, 360, 640], pane: [0, 0, 200, 640], btn: [0, 10, 40, 40] })
+    { host: [0, 0, 440, 640], pane: [0, 0, 200, 640], btn: [0, 10, 40, 40] })
     expect(scanTargets(document).total).toBe(1)
     expect(targetSignature(document)).toBe('0.0,10.0,40.0,40.0')
   })
@@ -641,7 +641,7 @@ describe('сам предикат', () => {
     // край: замер обязан её назвать, а не вычесть.
     page('<div class="wbf-host" id="host"><div id="clip" style="overflow-x:clip">'
       + '<button class="ds-btn" id="btn">x</button></div></div>',
-    { host: [0, 0, 360, 640], clip: [0, 0, 100, 640], btn: [150, 10, 40, 40] })
+    { host: [0, 0, 440, 640], clip: [0, 0, 100, 640], btn: [150, 10, 40, 40] })
     const s = scanTargets(document)
     expect(s.total).toBe(1)
     expect(s.clipped).toBe(0)
@@ -652,7 +652,7 @@ describe('сам предикат', () => {
   it('клип, СХЛОПНУТЫЙ в ноль по своей оси, — цели нет, и это считается', () => {
     page('<div class="wbf-host" id="host"><div id="clip" style="overflow-x:clip">'
       + '<button class="ds-btn" id="btn">x</button></div></div>',
-    { host: [0, 0, 360, 640], clip: [0, 0, 0, 640], btn: [150, 10, 40, 40] })
+    { host: [0, 0, 440, 640], clip: [0, 0, 0, 640], btn: [150, 10, 40, 40] })
     const s = scanTargets(document)
     expect([s.total, s.clipped]).toEqual([0, 1])
     expect(targetSignature(document)).toBe('')
@@ -665,7 +665,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host"><div class="ds-tabs" id="bar" style="overflow-x:clip">'
       + '<div class="ds-tabs__list" id="list" style="overflow-x:auto">'
       + '<div id="fill"></div><button class="ds-tabs__tab" id="tab">t</button></div></div></div>',
-    { host: [0, 0, 360, 640], bar: [0, 0, 200, 40], list: [0, 0, 200, 40], fill: [0, 0, 300, 40], tab: [300, 0, 60, 40] })
+    { host: [0, 0, 440, 640], bar: [0, 0, 200, 40], list: [0, 0, 200, 40], fill: [0, 0, 300, 40], tab: [300, 0, 60, 40] })
     const s = scanTargets(document)
     expect([s.total, s.clipped]).toEqual([1, 0])
     expect([...s.small, ...s.unhittable, ...s.unreachable]).toEqual([])
@@ -676,7 +676,7 @@ describe('сам предикат', () => {
     // не может — ни колесом, ни пальцем, ни полосой. Смещение возвращается.
     page('<div class="wbf-host" id="host"><div class="ds-split" id="clip" style="overflow-x:hidden;overflow-y:hidden">'
       + '<div id="fill"></div><div class="ds-split__bar" id="bar" tabindex="0"></div></div></div>',
-    { host: [0, 0, 360, 640], clip: [0, 0, 300, 200], fill: [0, 0, 420, 200], bar: [391, 0, 15, 200] })
+    { host: [0, 0, 440, 640], clip: [0, 0, 300, 200], fill: [0, 0, 420, 200], bar: [391, 0, 15, 200] })
     const s = scanTargets(document)
     expect(s.small.map((t) => [t.path, t.hit, t.coveredBy])).toEqual([
       ['div.ds-split > div.ds-split__bar', false, 'вне досягаемости — срезана overflow hidden/hidden у div.ds-split'],
@@ -687,7 +687,7 @@ describe('сам предикат', () => {
   it('соседний случай: цель ВНУТРИ видимой части `hidden` — попадаема, хоть скрипт его и листает', () => {
     page('<div class="wbf-host" id="host"><div class="ds-split" id="clip" style="overflow-x:hidden;overflow-y:hidden">'
       + '<div id="fill"></div><button class="ds-btn" id="btn">x</button></div></div>',
-    { host: [0, 0, 360, 640], clip: [0, 0, 300, 200], fill: [0, 0, 420, 400], btn: [200, 100, 40, 40] })
+    { host: [0, 0, 440, 640], clip: [0, 0, 300, 200], fill: [0, 0, 420, 400], btn: [200, 100, 40, 40] })
     const s = scanTargets(document)
     expect([s.total, s.unhittable, s.unreachable]).toEqual([1, [], []])
   })
@@ -698,7 +698,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host">'
       + '<div class="ds-log__scroll" id="box" style="overflow-y:auto">'
       + '<button class="ds-btn" id="btn">x</button><div class="ds-veil" id="veil"></div></div></div>',
-    { host: [0, 0, 360, 640], box: [0, 0, 360, 200], btn: [10, 500, 40, 40], veil: [0, 500, 360, 20] })
+    { host: [0, 0, 440, 640], box: [0, 0, 440, 200], btn: [10, 500, 40, 40], veil: [0, 500, 440, 20] })
     const s = scanTargets(document)
     expect(s.total, 'не выпала из счёта').toBe(1)
     expect(s.unhittable.map((u) => u.path), 'и судится: вуаль на её верхних углах').toHaveLength(1)
@@ -711,7 +711,7 @@ describe('сам предикат', () => {
       + '<div role="treeitem" class="ds-tree__item" id="a" tabindex="0">a</div>'
       + '<div role="treeitem" class="ds-tree__item" id="b" tabindex="-1">b</div>'
       + '<div role="treeitem" class="ds-tree__item" id="c" tabindex="-1">c</div></div></div>',
-    { host: [0, 0, 360, 640], tree: [0, 0, 300, 90], a: [0, 0, 300, 28], b: [0, 30, 300, 28], c: [0, 60, 300, 28] })
+    { host: [0, 0, 440, 640], tree: [0, 0, 300, 90], a: [0, 0, 300, 28], b: [0, 30, 300, 28], c: [0, 60, 300, 28] })
     expect(scanTargets(document).total).toBe(3)
   })
 
@@ -723,7 +723,7 @@ describe('сам предикат', () => {
       + '<div role="row" class="ds-tree__item" id="r1" tabindex="0"><span role="gridcell" id="c1">1</span></div>'
       + '<div role="row" class="ds-tree__item" id="r2" tabindex="-1"><span role="gridcell" id="c2">2</span></div>'
       + '</div></div>',
-    { host: [0, 0, 360, 640], grid: [0, 0, 300, 90], head: [0, 0, 300, 28], ch: [0, 0, 100, 28],
+    { host: [0, 0, 440, 640], grid: [0, 0, 300, 90], head: [0, 0, 300, 28], ch: [0, 0, 100, 28],
       r1: [0, 30, 300, 28], c1: [100, 30, 100, 28], r2: [0, 60, 300, 28], c2: [100, 60, 100, 28] })
     const s = scanTargets(document)
     expect(s.total).toBe(2)
@@ -735,7 +735,7 @@ describe('сам предикат', () => {
       + '<div role="gridcell" class="ds-eventcal__slot" id="s1" tabindex="0"></div>'
       + '<div role="gridcell" class="ds-eventcal__slot" id="s2" tabindex="-1"></div>'
       + '<div role="gridcell" class="ds-table__cell" id="s3"></div></div></div></div>',
-    { host: [0, 0, 360, 640], grid: [0, 0, 300, 30], row: [0, 0, 300, 30],
+    { host: [0, 0, 440, 640], grid: [0, 0, 300, 30], row: [0, 0, 300, 30],
       s1: [0, 0, 100, 30], s2: [100, 0, 100, 30], s3: [200, 0, 100, 30] })
     expect(scanTargets(document).total).toBe(2)
   })
@@ -744,7 +744,7 @@ describe('сам предикат', () => {
   const slotUnder = (cover: string) => {
     page('<div class="wbf-host" id="host"><div role="grid" id="grid">'
       + '<div role="gridcell" class="ds-eventcal__slot" id="slot" tabindex="-1"></div></div>' + cover + '</div>',
-    { host: [0, 0, 360, 640], grid: [0, 0, 300, 90], slot: [0, 0, 60, 30], ev: [0, 0, 60, 90] })
+    { host: [0, 0, 440, 640], grid: [0, 0, 300, 90], slot: [0, 0, 60, 30], ev: [0, 0, 60, 90] })
     return scanTargets(document)
   }
 
@@ -762,14 +762,14 @@ describe('сам предикат', () => {
   it('контроль: событие под другим событием — промах, прощение только у ячейки сетки', () => {
     page('<div class="wbf-host" id="host">'
       + '<button class="ds-eventcal__event" id="a">a</button><button class="ds-eventcal__event" id="b">b</button></div>',
-    { host: [0, 0, 360, 640], a: [0, 0, 60, 90], b: [30, 0, 60, 90] })
+    { host: [0, 0, 440, 640], a: [0, 0, 60, 90], b: [30, 0, 60, 90] })
     expect(scanTargets(document).unhittable.map((u) => u.path)).toEqual(['button.ds-eventcal__event'])
   })
 
   it('fixed-цель клипом предка не обрезается — она из-под него выходит', () => {
     page('<div class="wbf-host" id="host"><div id="clip" style="overflow-x:hidden;overflow-y:hidden">'
       + '<button class="ds-btn" id="btn" style="position:fixed">x</button></div></div>',
-    { host: [0, 0, 360, 640], clip: [0, 0, 0, 0], btn: [10, 10, 40, 40] })
+    { host: [0, 0, 440, 640], clip: [0, 0, 0, 0], btn: [10, 10, 40, 40] })
     expect(scanTargets(document).total).toBe(1)
   })
 
@@ -778,7 +778,7 @@ describe('сам предикат', () => {
     // Попадает ПОТОМОК накладки (иконка): владелец ищется вверх от точки.
     page('<div class="wbf-host" id="host"><button class="ds-tabs__tab" id="tab">t</button>'
       + '<button class="ds-tabs__close" id="close"><span id="ico"></span></button></div>',
-    { host: [0, 0, 360, 640], tab: [10, 10, 120, 40], close: [106, 10, 24, 24], ico: [106, 10, 24, 24] })
+    { host: [0, 0, 440, 640], tab: [10, 10, 120, 40], close: [106, 10, 24, 24], ico: [106, 10, 24, 24] })
     const s = scanTargets(document)
     expect(s.unhittable).toEqual([])
     expect(s.total).toBe(2)
@@ -787,35 +787,35 @@ describe('сам предикат', () => {
   it('накладка может торчать на полпикселя — допуск ±0.5', () => {
     page('<div class="wbf-host" id="host"><button class="ds-tabs__tab" id="tab">t</button>'
       + '<button class="ds-tabs__close" id="close"></button></div>',
-    { host: [0, 0, 360, 640], tab: [10, 10, 120, 40], close: [106.4, 9.6, 24, 24] })
+    { host: [0, 0, 440, 640], tab: [10, 10, 120, 40], close: [106.4, 9.6, 24, 24] })
     expect(scanTargets(document).unhittable).toEqual([])
   })
 
   it('цель, НЕ вложенная в коробку (соседнее событие), — по-прежнему промах', () => {
     page('<div class="wbf-host" id="host"><button class="ds-ev" id="a">a</button>'
       + '<button class="ds-ev" id="b">b</button></div>',
-    { host: [0, 0, 360, 640], a: [10, 10, 100, 40], b: [80, 30, 100, 40] })
+    { host: [0, 0, 440, 640], a: [10, 10, 100, 40], b: [80, 30, 100, 40] })
     expect(scanTargets(document).unhittable.map((u) => u.path)).toEqual(['button.ds-ev'])
   })
 
   it('торчащая больше допуска накладка — промах', () => {
     page('<div class="wbf-host" id="host"><button class="ds-tabs__tab" id="tab">t</button>'
       + '<button class="ds-tabs__close" id="close"></button></div>',
-    { host: [0, 0, 360, 640], tab: [10, 10, 120, 40], close: [107, 8, 24, 24] })
+    { host: [0, 0, 440, 640], tab: [10, 10, 120, 40], close: [107, 8, 24, 24] })
     expect(scanTargets(document).unhittable.map((u) => u.path)).toEqual(['button.ds-tabs__tab'])
   })
 
   it('НЕ-цель внутри коробки над углом (svg сводной) — промах', () => {
     page('<div class="wbf-host" id="host"><button class="ds-pivot__fold" id="fold">f</button>'
       + '<div class="ds-pivot__svg" id="svg"></div></div>',
-    { host: [0, 0, 360, 640], fold: [10, 10, 120, 40], svg: [106, 10, 24, 24] })
+    { host: [0, 0, 440, 640], fold: [10, 10, 120, 40], svg: [106, 10, 24, 24] })
     expect(scanTargets(document).unhittable.map((u) => u.path)).toEqual(['button.ds-pivot__fold'])
   })
 
   it('прокручиваемая область (исключение по форме) внутри коробки — не накладка, промах', () => {
     page('<div class="wbf-host" id="host"><button class="ds-btn" id="btn">x</button>'
       + '<div class="ds-log__scroll" id="sc" tabindex="0" style="overflow-x:auto;overflow-y:auto"></div></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 120, 40], sc: [106, 10, 24, 24] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 120, 40], sc: [106, 10, 24, 24] })
     expect(scanTargets(document).unhittable.map((u) => u.path)).toEqual(['button.ds-btn'])
   })
 
@@ -826,7 +826,7 @@ describe('сам предикат', () => {
       + '<div class="ds-tabs__list" id="list" style="overflow-x:hidden;overflow-y:hidden">'
       + '<button class="ds-tabs__tab" id="tab">t</button></div>'
       + '<button class="ds-tabs__close" id="close"></button></div>',
-    { host: [0, 0, 360, 640], list: [66, 10, 96, 40], tab: [66, 10, 130, 40], close: [150, 10, 30, 24] })
+    { host: [0, 0, 440, 640], list: [66, 10, 96, 40], tab: [66, 10, 130, 40], close: [150, 10, 30, 24] })
     expect(scanTargets(document).unhittable).toEqual([])
   })
 
@@ -834,7 +834,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host"><button class="ds-chip" id="chip">c</button>'
       + '<button class="ds-a" id="a1"></button><button class="ds-a" id="a2"></button>'
       + '<button class="ds-a" id="a3"></button><button class="ds-a" id="a4"></button></div>',
-    { host: [0, 0, 360, 640], chip: [10, 10, 40, 20],
+    { host: [0, 0, 440, 640], chip: [10, 10, 40, 20],
       a1: [10, 10, 8, 8], a2: [42, 10, 8, 8], a3: [10, 22, 8, 8], a4: [42, 22, 8, 8] })
     const s = scanTargets(document)
     expect(s.small.filter((t) => t.path === 'button.ds-chip').map((t) => [t.hit, corner(t.coveredBy)]))
@@ -847,7 +847,7 @@ describe('сам предикат', () => {
   // открывает одно. Прощение накладки требует свободного ЦЕНТРА.
   it('стопка событий одной ширины — промах у всех, кроме верхнего: центр накрыт соседом', () => {
     const tops = [184, 193, 202, 211, 219, 228]
-    const boxes: Record<string, Box> = { host: [0, 0, 360, 640] }
+    const boxes: Record<string, Box> = { host: [0, 0, 440, 640] }
     tops.forEach((t, i) => { boxes[`e${i + 1}`] = [152, t, 35, (i === 5 ? 324.2 : 324) - t] })
     page('<div class="wbf-host" id="host">'
       + tops.map((_, i) => `<button class="ds-eventcal__event" id="e${i + 1}">${i + 1}</button>`).join('') + '</div>',
@@ -861,14 +861,14 @@ describe('сам предикат', () => {
   it('контроль стопки: крестик у края вкладки прощён и при новом правиле — центр вкладки свободен', () => {
     page('<div class="wbf-host" id="host"><button class="ds-tabs__tab" id="tab">t</button>'
       + '<button class="ds-tabs__close" id="close"></button></div>',
-    { host: [0, 0, 360, 640], tab: [10, 10, 120, 40], close: [106, 18, 24, 24] })
+    { host: [0, 0, 440, 640], tab: [10, 10, 120, 40], close: [106, 18, 24, 24] })
     expect(scanTargets(document).unhittable).toEqual([])
   })
 
   it('`coveredBy` называет накрывшую ЦЕЛЬ, а не лист под точкой (иконку пункта меню)', () => {
     page('<div class="wbf-host" id="host"><button class="ds-btn" id="btn">x</button>'
       + '<button class="ds-dropdown__item" id="item"><span class="ds-icon" id="ico"></span></button></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 40, 40], item: [0, 0, 20, 20], ico: [0, 0, 20, 20] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 40, 40], item: [0, 0, 20, 20], ico: [0, 0, 20, 20] })
     expect(scanTargets(document).unhittable[0]!.coveredBy)
       .toBe('TL (13.0,13.0) button.ds-dropdown__item; центр (30.0,30.0) — сама цель')
   })
@@ -876,7 +876,7 @@ describe('сам предикат', () => {
   it('соседний случай: накрывший — не цель, путь до самого узла', () => {
     page('<div class="wbf-host" id="host"><button class="ds-btn" id="btn">x</button>'
       + '<div class="ds-veil" id="veil"><span class="ds-icon" id="ico"></span></div></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 40, 40], veil: [0, 0, 20, 20], ico: [0, 0, 20, 20] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 40, 40], veil: [0, 0, 20, 20], ico: [0, 0, 20, 20] })
     expect(corner(scanTargets(document).unhittable[0]!.coveredBy)).toBe('TL (13.0,13.0) div.ds-veil > span.ds-icon')
   })
 
@@ -888,8 +888,8 @@ describe('сам предикат', () => {
     + '<div class="ds-transcript__scroll" id="box" style="overflow-x:auto;overflow-y:auto">'
     + '<button class="ds-codeblock__copy" id="btn">c</button></div>'
     + '<button class="ds-transcript__tail" id="tail">↓</button></div></div>',
-  { host: [0, 0, 360, 640], tr: [0, 0, 360, 200], box: [0, 0, 360, 200],
-    btn: [10, 500, 40, 40], tail: [0, 170, 360, 30] })
+  { host: [0, 0, 440, 640], tr: [0, 0, 440, 200], box: [0, 0, 440, 200],
+    btn: [10, 500, 40, 40], tail: [0, 170, 440, 30] })
 
   it('цель в прокрутке листается К ЦЕНТРУ: слой у края области её не накрывает', () => {
     floating()
@@ -913,7 +913,7 @@ describe('сам предикат', () => {
   const wrapped = (veil: Box | null) => page('<div class="wbf-host" id="host"><p class="ds-prose__p" id="para">'
     + '<a href="#" id="link">ссылка</a></p>'
     + (veil ? '<div class="ds-veil" id="veil"></div>' : '') + '</div>',
-  { host: [0, 0, 360, 640], para: [0, 0, 360, 100], link: [100, 10, 200, 40],
+  { host: [0, 0, 440, 640], para: [0, 0, 440, 100], link: [100, 10, 200, 40],
     ...(veil ? { veil } : {}) },
   [0, 0], { link: [[200, 10, 100, 20], [100, 30, 120, 20]] })
 
@@ -950,8 +950,8 @@ describe('сам предикат', () => {
       + '<div class="ds-transcript__scroll" id="sc" style="overflow-y:auto">'
       + '<div id="fill"></div><button class="ds-btn" id="tab">t</button></div>'
       + '<button class="ds-transcript__tail" id="tail" style="position:absolute">к последнему</button></div></div>',
-    { host: [0, 0, 360, 640], wrap: [0, 0, 360, 200], sc: [0, 0, 360, 200], fill: [0, 0, 360, 600], tab,
-      tail: [0, 70, 360, 130] })
+    { host: [0, 0, 440, 640], wrap: [0, 0, 440, 200], sc: [0, 0, 440, 200], fill: [0, 0, 440, 600], tab,
+      tail: [0, 70, 440, 130] })
     document.getElementById('sc')!.scrollTop = rest
     return scanTargets(document)
   }
@@ -976,7 +976,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host"><div id="fill"></div>'
       + '<button class="ds-btn" id="next">Следующая кнопка</button>'
       + '<div class="ds-dropdown__menu" id="menu" style="position:absolute"></div></div>',
-    { host: [0, 0, 360, 640], fill: [0, 0, 360, 2000], menu: [0, 900, 280, 200], next: [10, 1000, 200, 42] })
+    { host: [0, 0, 440, 640], fill: [0, 0, 440, 2000], menu: [0, 900, 280, 200], next: [10, 1000, 200, 42] })
     const s = scanTargets(document)
     expect(s.unhittable.map((u) => [u.path, corner(u.coveredBy)]))
       .toEqual([['button.ds-btn', expect.stringMatching(/ div\.ds-dropdown__menu$/)]])
@@ -985,22 +985,22 @@ describe('сам предикат', () => {
   it('промах называет и ЦЕНТР: кто лежит там, куда целится рука', () => {
     page('<div class="wbf-host" id="host">'
       + '<button class="ds-btn" id="btn">x</button><div class="ds-veil" id="veil"></div></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 40, 40], veil: [0, 0, 360, 640] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 40, 40], veil: [0, 0, 440, 640] })
     expect(scanTargets(document).unhittable[0]!.coveredBy).toBe('TL (13.0,13.0) div.ds-veil; центр (30.0,30.0) накрыт div.ds-veil')
   })
 
   it('соседний случай: накрыт только угол — центр назван самой целью', () => {
     page('<div class="wbf-host" id="host">'
       + '<button class="ds-btn" id="btn">x</button><div class="ds-veil" id="veil"></div></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 40, 40], veil: [0, 0, 20, 20] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 40, 40], veil: [0, 0, 20, 20] })
     expect(scanTargets(document).unhittable[0]!.coveredBy).toBe('TL (13.0,13.0) div.ds-veil; центр (30.0,30.0) — сама цель')
   })
 
   const stuck = (cover: string, extra = '') => page('<div class="wbf-host" id="host">'
     + '<div class="ds-formtabs" id="sc" style="overflow-x:auto;overflow-y:auto">'
     + '<div id="fill"></div><button class="ds-formtabs__tab" id="tab">t</button>' + cover + '</div>' + extra + '</div>',
-  { host: [0, 0, 360, 640], sc: [0, 0, 360, 100], fill: [0, 0, 360, 400], tab: [10, 110, 100, 40],
-    home: [0, 0, 360, 40], ico: [0, 0, 360, 40], veil: [100, 140, 20, 20], abs: [0, 80, 360, 40] })
+  { host: [0, 0, 440, 640], sc: [0, 0, 440, 100], fill: [0, 0, 440, 400], tab: [10, 110, 100, 40],
+    home: [0, 0, 440, 40], ico: [0, 0, 440, 40], veil: [100, 140, 20, 20], abs: [0, 80, 440, 40] })
 
   it('угол под sticky-слоем прокрученного контейнера промахом не считается', () => {
     stuck('<button class="ds-formtabs__home" id="home" style="position:sticky;top:0">⌂</button>')
@@ -1037,7 +1037,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host"><div class="ds-formtabs" id="ft">'
       + '<button class="ds-formtabs__tab" id="tab">t</button>'
       + '<div class="ds-pivot__corner" id="home" style="position:sticky;top:0"></div></div></div>',
-    { host: [0, 0, 360, 640], ft: [0, 0, 360, 100], tab: [10, 10, 100, 40], home: [0, 0, 40, 40] })
+    { host: [0, 0, 440, 640], ft: [0, 0, 440, 100], tab: [10, 10, 100, 40], home: [0, 0, 40, 40] })
     expect(scanTargets(document).unhittable.map((u) => corner(u.coveredBy)))
       .toEqual(['TL (13.0,13.0) div.ds-formtabs > div.ds-pivot__corner'])
   })
@@ -1050,7 +1050,7 @@ describe('сам предикат', () => {
       + '<div class="ds-formtabs" id="sc" style="overflow-x:auto;overflow-y:auto">'
       + '<div id="fill"></div><button class="ds-formtabs__tab" id="tab">t</button>'
       + '<div class="ds-pivot__corner" id="home" style="position:sticky;top:10px"></div></div></div>',
-    { host: [0, 0, 360, 640], sc: [0, 0, 360, 100], fill: [0, 0, 360, 400], tab: [10, 10, 100, 40],
+    { host: [0, 0, 440, 640], sc: [0, 0, 440, 100], fill: [0, 0, 440, 400], tab: [10, 10, 100, 40],
       home: [0, 10, 40, 40] })
     expect(scanTargets(document).unhittable.map((u) => corner(u.coveredBy)))
       .toEqual(['TL (13.0,13.0) div.ds-formtabs > div.ds-pivot__corner'])
@@ -1066,8 +1066,8 @@ describe('сам предикат', () => {
       + '<div class="ds-other" id="sc2" style="overflow-x:auto;overflow-y:auto">'
       + '<div id="fill2" style="pointer-events:none"></div>'
       + '<div class="ds-pivot__corner" id="home" style="position:sticky;top:0"></div></div></div>',
-    { host: [0, 0, 360, 640], sc: [0, 0, 360, 100], fill: [0, 0, 360, 400], tab: [10, 110, 100, 40],
-      sc2: [0, 0, 360, 40], fill2: [0, 0, 360, 200], home: [0, 0, 360, 40] })
+    { host: [0, 0, 440, 640], sc: [0, 0, 440, 100], fill: [0, 0, 440, 400], tab: [10, 110, 100, 40],
+      sc2: [0, 0, 440, 40], fill2: [0, 0, 440, 200], home: [0, 0, 440, 40] })
     document.getElementById('sc2')!.scrollTop = 50
     expect(scanTargets(document).unhittable.map((u) => corner(u.coveredBy)))
       .toEqual(['TL (13.0,33.0) div.ds-other > div.ds-pivot__corner'])
@@ -1078,7 +1078,7 @@ describe('сам предикат', () => {
     // одно из-под другого нельзя.
     page('<div class="wbf-host" id="host"><div class="ds-bar" id="bar" style="position:sticky;top:0">'
       + '<button class="ds-formtabs__tab" id="tab">t</button><div class="ds-badge" id="badge"></div></div></div>',
-    { host: [0, 0, 360, 640], bar: [0, 0, 360, 100], tab: [10, 10, 100, 40], badge: [0, 0, 40, 40] })
+    { host: [0, 0, 440, 640], bar: [0, 0, 440, 100], tab: [10, 10, 100, 40], badge: [0, 0, 40, 40] })
     expect(scanTargets(document).unhittable.map((u) => corner(u.coveredBy))).toEqual(['TL (13.0,13.0) div.ds-bar > div.ds-badge'])
   })
 
@@ -1090,7 +1090,7 @@ describe('сам предикат', () => {
       + '<button class="ds-btn" id="folded">b</button></div>'
       + '<button class="ds-btn" id="gone" style="visibility:hidden">c</button>'
       + '<button class="ds-btn" id="live">d</button></div>',
-    { host: [0, 0, 360, 640], bg: [10, 10, 40, 40], pane: [0, 0, 0, 640], folded: [0, 60, 40, 40],
+    { host: [0, 0, 440, 640], bg: [10, 10, 40, 40], pane: [0, 0, 0, 640], folded: [0, 60, 40, 40],
       gone: [10, 110, 40, 40], live: [100, 100, 40, 40] })
     const s = scanTargets(document)
     expect([s.total, s.inert, s.clipped]).toEqual([1, 1, 1])
@@ -1107,7 +1107,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host"><div id="clip" style="overflow-x:clip">'
       + '<div id="sc" style="overflow-x:auto;overflow-y:hidden">'
       + '<button class="ds-btn" id="far">a</button><button class="ds-btn" id="near">b</button></div></div></div>',
-    { host: [0, 0, 360, 640], clip: [0, 0, 200, 100], sc: [0, 0, 200, 100], far: [180, 10, 40, 40], near: [10, 10, 40, 40] })
+    { host: [0, 0, 440, 640], clip: [0, 0, 200, 100], sc: [0, 0, 200, 100], far: [180, 10, 40, 40], near: [10, 10, 40, 40] })
     const sig = targetSignature(document).split(';').filter(Boolean)
     const s = scanTargets(document)
     expect(sig).toHaveLength(2)
@@ -1118,7 +1118,7 @@ describe('сам предикат', () => {
   it('угол, отданный ПРЕДКУ-цели той же коробки, — промах, а не накладка', () => {
     page('<div class="wbf-host" id="host"><div class="ds-row" id="outer" role="button">'
       + '<span class="ds-cell" id="inner" tabindex="0"></span><div class="ds-lid" id="lid"></div></div></div>',
-    { host: [0, 0, 360, 640], outer: [10, 10, 40, 40], inner: [10, 10, 40, 40], lid: [10, 10, 10, 10] })
+    { host: [0, 0, 440, 640], outer: [10, 10, 40, 40], inner: [10, 10, 40, 40], lid: [10, 10, 10, 10] })
     expect(scanTargets(document).unhittable.map((u) => [u.path, corner(u.coveredBy)]))
       // Накрывший назван ЦЕЛЬЮ, которой принадлежит лист (`coverName`): нажатие
       // на крышку достаётся строке.
@@ -1130,7 +1130,7 @@ describe('сам предикат', () => {
     // попадания тут не снят — это «не измерено», и обвинять компонент в
     // перекрытии, которого никто не видел, нельзя.
     page('<div class="wbf-host" id="host"><button class="ds-btn" id="btn">x</button></div>',
-      { host: [0, 0, 360, 640], btn: [-100, 10, 40, 40] })
+      { host: [0, 0, 440, 640], btn: [-100, 10, 40, 40] })
     const s = scanTargets(document)
     expect(s.small).toEqual([])
     expect(s.unhittable).toEqual([])
@@ -1141,7 +1141,7 @@ describe('сам предикат', () => {
   it('прокручиваемая область по-прежнему не цель — исключение по форме цело', () => {
     page('<div class="wbf-host" id="host">'
       + '<div class="ds-log__scroll" id="sc" tabindex="0" style="overflow-x:auto"></div></div>',
-    { host: [0, 0, 360, 640], sc: [0, 0, 10, 10] })
+    { host: [0, 0, 440, 640], sc: [0, 0, 10, 10] })
     const s = scanTargets(document)
     expect(s.small).toEqual([])
     expect(s.scrollers).toBe(1)
@@ -1153,7 +1153,7 @@ describe('сам предикат', () => {
     // за «вернула в ноль».
     const sc = page('<div class="wbf-host" id="host"><div id="tall"></div>'
       + '<div class="ds-log__scroll" id="box" style="overflow-y:auto"><button class="ds-btn" id="btn">x</button></div></div>',
-    { host: [0, 0, 360, 2100], tall: [0, 0, 360, 2000], box: [0, 2000, 360, 100], btn: [10, 2300, 40, 40] }, [0, 30])
+    { host: [0, 0, 440, 2100], tall: [0, 0, 440, 2000], box: [0, 2000, 440, 100], btn: [10, 2300, 40, 40] }, [0, 30])
     const a = targetSignature(document)
     expect(sc.y).toBe(30)
     expect(sc.inner(document.getElementById('box')!)).toEqual({ l: 0, t: 0 })
@@ -1162,7 +1162,7 @@ describe('сам предикат', () => {
 
   it('подпись в координатах ДОКУМЕНТА: прокрутка окна её не меняет, сдвиг цели — меняет', () => {
     const sc = page('<div class="wbf-host" id="host"><button class="ds-btn" id="btn">x</button></div>',
-      { host: [0, 0, 360, 2000], btn: [10, 10, 40, 40] })
+      { host: [0, 0, 440, 2000], btn: [10, 10, 40, 40] })
     const a = targetSignature(document)
     window.scrollTo(0, 500)
     expect(sc.y).toBe(500)
@@ -1170,7 +1170,7 @@ describe('сам предикат', () => {
     // Цель уехала, не меняя размера (хвост ушёл в «Ещё»): сумма сторон бы
     // этого не заметила, а попадание — заметит.
     page('<div class="wbf-host" id="host"><button class="ds-btn" id="btn">x</button></div>',
-      { host: [0, 0, 360, 2000], btn: [60, 10, 40, 40] })
+      { host: [0, 0, 440, 2000], btn: [60, 10, 40, 40] })
     expect(targetSignature(document)).not.toBe(a)
   })
 
@@ -1178,7 +1178,7 @@ describe('сам предикат', () => {
     page('<div class="wbf-host" id="host"><button class="ds-btn" id="btn">x</button>'
       + '<button class="ds-btn" id="gone" style="visibility:hidden">y</button>'
       + '<div class="ds-log__scroll" id="sc" tabindex="0" style="overflow-x:auto"></div></div>',
-    { host: [0, 0, 360, 640], btn: [10, 10, 40, 40], gone: [10, 60, 40, 40], sc: [0, 100, 300, 40] })
+    { host: [0, 0, 440, 640], btn: [10, 10, 40, 40], gone: [10, 60, 40, 40], sc: [0, 100, 300, 40] })
     const parts = targetSignature(document).split(';')
     const s = scanTargets(document)
     expect(parts.filter((p) => p !== 's')).toHaveLength(s.total)
@@ -1202,7 +1202,7 @@ describe('сам предикат', () => {
     + '<span class="ds-formtabs__close" id="close" aria-hidden="true"%ATTR%>×</span>'
     + '</button></div>'
   const tabPage = (attr: string) => page(TAB.replace('%ATTR%', attr),
-    { host: [0, 0, 360, 640], tab: [10, 10, 120, 32], close: [106, 16, 20, 20] })
+    { host: [0, 0, 440, 640], tab: [10, 10, 120, 32], close: [106, 16, 20, 20] })
 
   it('объявленный `data-ds-target` — цель: крестик 20×20 судится по размеру', () => {
     tabPage(' data-ds-target=""')
@@ -1237,7 +1237,7 @@ describe('сам предикат', () => {
     + '<button class="ds-btn" id="b">сосед</button>'
     + `<button class="ds-formtabs__label" id="tab">Форма<span class="ds-formtabs__close" id="close"${attr}>×</span></button>`
     + '</div>',
-  { host: [0, 0, 360, 640], b: [100, 100, 60, 60], tab: [95, 95, 34, 34], close: [100, 100, 24, 24] })
+  { host: [0, 0, 440, 640], b: [100, 100, 60, 60], tab: [95, 95, 34, 34], close: [100, 100, 24, 24] })
 
   it('объявление УГЛУБЛЯЕТ `ownerTarget` и тем расширяет прощение накладок', () => {
     overlapped('')

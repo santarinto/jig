@@ -1,8 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { frameFacts, frameWhy, type FrameFacts } from './frame-facts.js'
 
-const VIEW = { width: 360 }
-const good: FrameFacts = { theme: 'light', scale: '1.5', clientWidth: 360, empty: null }
+const VIEW = { width: 440 }
+const good: FrameFacts = { theme: 'light', scale: '1.5', clientWidth: 440, empty: null }
 
 afterEach(() => {
   document.body.innerHTML = ''
@@ -48,11 +48,11 @@ describe('тот ли кадр мерился — в вердикте', () => {
     expect(frameWhy({ ...good, theme: 'dark' }, 1.5, VIEW)).toBe('тема кадра dark')
     expect(frameWhy({ ...good, scale: '' }, 1.5, VIEW)).toBe('шкала на документе (пусто) вместо 1.5')
     expect(frameWhy({ ...good, scale: '1' }, 1.5, VIEW)).toBe('шкала на документе 1 вместо 1.5')
-    expect(frameWhy({ ...good, clientWidth: 345 }, 1.5, VIEW))
-      .toBe('clientWidth 345 вместо 360 — мерился не тот вьюпорт')
+    expect(frameWhy({ ...good, clientWidth: 425 }, 1.5, VIEW))
+      .toBe('clientWidth 425 вместо 440 — мерился не тот вьюпорт')
   })
 
-  it('вьюпорт сверяется с ПЕРЕДАННЫМ, а не с зашитым 360', () => {
+  it('вьюпорт сверяется с ПЕРЕДАННЫМ, а не с зашитым 440', () => {
     expect(frameWhy({ ...good, clientWidth: 768 }, 1.5, { width: 768 })).toBeNull()
   })
 })
