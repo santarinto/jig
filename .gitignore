@@ -64,6 +64,9 @@ ds-bundle/
 # машины, адрес его трекера и чата, грамматика приватного MCP.
 /CLAUDE.local.md
 /.mcp.json
+# JIG-35: то же для opencode — раскладчик флота прописывает туда `t` с путём
+# его машины, ровно как в .mcp.json.
+/opencode.json
 /.claude/skills/
 /docs/tracker.md
 /docs/code-search.md
