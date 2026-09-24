@@ -8,7 +8,7 @@ import { run, type SweepResult } from './sweep.js'
 import type { SweepSpec } from './sweep-plan.js'
 
 const USAGE = `await __dsSweep.run({
-  c: 'Pagination', cases: ['base'], widths: [300, 360, 900], scales: [1, 1.5],
+  c: 'Pagination', cases: ['base'], widths: [440, 900], scales: [1, 1.5],
   targets: [{ name: 'next', selector: '.ds-pagination__next' }],
   invariants: [{ metric: 'h', min: 24 }, { metric: 'h', grows: 'scale' }, { fits: true }],
 })
