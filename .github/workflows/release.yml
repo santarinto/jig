@@ -8,12 +8,21 @@
 # источника не было вовсе — версию (26.x) брали по единственному косвенному
 # сигналу, мажору devDependencies."@types/node" ("^26.1.1"), а не из явного
 # решения. .github/workflows/ci.yml берёт версию тем же файлом.
+#
+# workflow_dispatch — СУХОЙ прогон (JIG-32): всё то же до `npm pack` и тела
+# релиза включительно, без `gh release create`. Без него файл проверялся
+# только настоящим выпуском, то есть ПОСЛЕ тега: сломанный шаг давал тег на
+# origin без ассета и красный `make published`. 24.09.2026 это уже стреляло —
+# первый push тега workflow не запустил вовсе. Правку этого файла гонять так:
+# `gh workflow run release.yml --ref main`. Версия тела в сухом прогоне —
+# из package.json (тег не пушился, `GITHUB_REF_NAME` там имя ветки).
 name: release
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -22,11 +31,19 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Мажоры — те же, что в ci.yml, и по той же причине: @v4 объявляли
+      # node20, раннер гнал их на node24 принудительно, а после снятия node20
+      # они не запустились бы вовсе (JIG-32).
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      # package-manager-cache: false — с v5 setup-node САМ включает кэш npm,
+      # если в package.json есть поле packageManager. Сейчас его нет, но
+      # джоба собирает публичный ассет, и поле, добавленное позже по другой
+      # причине, не должно молча подложить в неё восстановленный кэш.
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+          package-manager-cache: false
 
       - run: npm ci
 
@@ -43,10 +60,15 @@ jobs:
 
       - name: тело релиза из CHANGELOG.md
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$(node -p "require('./package.json').version")"
+          fi
           node scripts/print-changelog-section.mjs "$version" > /tmp/release-notes.md
 
       - name: gh release create
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
