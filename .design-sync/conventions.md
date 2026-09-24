@@ -1,6 +1,6 @@
 # jig — design system conventions
 
-> **Version 1.0.0** — canonical `jig` design system. Synced from git `santarinto/jig` via /design-sync (manual).
+> **Version 9.9.9** — canonical `jig` design system. Synced from git `santarinto/jig` via /design-sync (manual).
 
 A dense enterprise UI system for business screens: compact controls, 14px base text, tight spacing, turquoise accent, light **and** dark themes. Density is a declared value of this system, not an inherited habit — it is what buys the 24px click-target floor over 44. Build business screens (documents, registers, forms, dashboards) with realistic Russian-language business data.
 
