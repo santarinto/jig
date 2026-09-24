@@ -8,13 +8,13 @@
 # `vite build` never looks at types, so a removed API shape used to sail through
 # this smoke green (DS-89).
 #
-# Usage: npm run smoke            — from the packed tarball (what `npm run pack` emits)
+# Usage: npm run smoke            — from the packed tarball (what `npm run tarball` emits)
 #        npm run smoke:noscripts  — same tarball, ALSO installed once with --ignore-scripts
 #
 # JIG-28: there is no git mode any more. The consumer no longer pins a git tag —
 # `dist/` is not committed at all (see `.gitignore`, gate `dist-untracked`) —
 # GitHub Actions builds and attaches the tarball to a GitHub Release on push of
-# `v*`, and a consumer installs THAT. `npm run pack` here builds the SAME way
+# `v*`, and a consumer installs THAT. `npm run tarball` here builds the SAME way
 # release does (`prepack`/`postpack` strip devDependencies/scripts — see
 # `scripts/strip-manifest.mjs`, gate `dist-shipped`), so this script proves the
 # tarball a real release would produce, not a lookalike.
@@ -35,7 +35,10 @@ TGZ="$DS_DIR/santarinto-jig-$VERSION.tgz"
 DEP_SPEC="file:$TGZ"
 
 echo "== packing @santarinto/jig@$VERSION =="
-(cd "$DS_DIR" && npm run --silent pack >/dev/null)
+# Без `--silent`: он глушит и вывод npm об ошибке, и отказ приезжает пустым
+# логом (та же ловушка, что и в smoke-delivery.sh). stdout всё ещё в /dev/null
+# — он несёт только список файлов npm pack, — а stderr не тронут.
+(cd "$DS_DIR" && npm run tarball >/dev/null)
 [ -f "$TGZ" ] || { echo "FAIL: $TGZ not produced"; exit 1; }
 echo "tarball: $(du -h "$TGZ" | cut -f1)"
 

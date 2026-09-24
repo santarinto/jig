@@ -39,7 +39,7 @@ jobs:
         run: npx vitest run src/__guards__/dist-shipped.test.ts
 
       - name: npm pack
-        run: npm run --silent pack
+        run: npm run tarball
 
       - name: тело релиза из CHANGELOG.md
         run: |

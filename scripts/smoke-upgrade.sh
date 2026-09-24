@@ -20,7 +20,7 @@
 # ФАКТОМ, что версия в node_modules действительно сдвинулась.
 #
 # Каждый тег пакуется из СВОЕГО коммита отдельным `git worktree` (детач, без
-# правки основного дерева) — тем же `npm run pack`, каким соберёт релиз CI —
+# правки основного дерева) — тем же `npm run tarball`, каким соберёт релиз CI —
 # а не берётся готовым откуда-то: тегов на GitHub Release ещё может не быть
 # локально доступно, а предмет — лок npm, не сеть до места публикации (та
 # сеть — область `make published`).
@@ -51,7 +51,7 @@ trap 'rm -rf "$WORK"; git worktree remove --force "$WORK/wt-prev" 2>/dev/null ||
 pack_tag() {
   local tag="$1" wt="$2"
   git worktree add -q --detach "$wt" "$tag" >&2
-  ( cd "$wt" && npm ci --no-audit --no-fund --loglevel=error >&2 && npm run --silent pack >/dev/null )
+  ( cd "$wt" && npm ci --no-audit --no-fund --loglevel=error >&2 && npm run tarball >/dev/null )
   local v
   v="$(node -p "require('$wt/package.json').version")"
   echo "$wt/santarinto-jig-$v.tgz"

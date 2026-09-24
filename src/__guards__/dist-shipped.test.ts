@@ -56,7 +56,7 @@ describe('поставка: потребитель получает собран
     // Против способа 3: проверка обязана иметь что читать. Пустой scripts
     // сделал бы её зелёной, ничего не проверив.
     expect(pkg.scripts?.build, 'скрипта build нет — собирать нечем').toBeTruthy()
-    expect(pkg.scripts?.pack, 'скрипта pack нет — тарбол собрать нечем').toBeTruthy()
+    expect(pkg.scripts?.tarball, 'скрипта tarball нет — тарбол собрать нечем').toBeTruthy()
     expect(pkg.scripts?.prepack, 'скрипта prepack нет — манифест в тарболе не почистится').toBeTruthy()
     expect(pkg.scripts?.postpack, 'скрипта postpack нет — рабочее дерево останется урезанным').toBeTruthy()
   })

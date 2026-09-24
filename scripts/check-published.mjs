@@ -185,7 +185,7 @@ export function compareTgzContents(a, b) {
 }
 
 /** Тег в своём `git worktree` (детач, без правки основного дерева) — тем же
- *  `npm run pack`, каким его соберёт CI. Возвращает путь собранного тарбола и
+ *  `npm run tarball`, каким его соберёт CI. Возвращает путь собранного тарбола и
  *  его снос — снос вызывает ВЫЗЫВАЮЩИЙ, когда сравнение содержимого закончено. */
 function packTagLocally(root, tag) {
   const wt = mkdtempSync(join(tmpdir(), 'jig-pack-'))
@@ -193,7 +193,7 @@ function packTagLocally(root, tag) {
   execFileSync('git', ['worktree', 'add', '-q', '--detach', wt, tag], { cwd: root })
   try {
     execFileSync('npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], { cwd: wt, stdio: 'ignore' })
-    execFileSync('npm', ['run', '--silent', 'pack'], { cwd: wt, stdio: 'ignore' })
+    execFileSync('npm', ['run', 'tarball'], { cwd: wt, stdio: ['ignore', 'ignore', 'inherit'] })
     const version = JSON.parse(readFileSync(join(wt, 'package.json'), 'utf8')).version
     const tgz = join(wt, `santarinto-jig-${version}.tgz`)
     const dest = join(mkdtempSync(join(tmpdir(), 'jig-local-tgz-')), `santarinto-jig-${version}.tgz`)
@@ -236,7 +236,7 @@ export async function checkAssetReached(root = process.cwd()) {
   if (!same) {
     throw new Error(
       `${url}: содержимое ассета (список файлов + их содержимое) не совпадает с тем, что тег ${tag}`
-      + ' пакует здесь `npm run pack` — CI собрал релиз из другого дерева, либо ассет устарел.',
+      + ' пакует здесь `npm run tarball` — CI собрал релиз из другого дерева, либо ассет устарел.',
     )
   }
   return { url, tag }

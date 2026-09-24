@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && (cd src && find . -name '*.css' -exec cp --parents {} ../dist/src/ \\;) && mkdir -p dist/tokens dist/fonts && cp tokens/*.css dist/tokens/ && cp fonts/* dist/fonts/ && node scripts/build-bundles.mjs",
-    "pack": "npm run build && npm pack --pack-destination .",
+    "tarball": "npm run build && npm pack --pack-destination .",
     "prepack": "node scripts/strip-manifest.mjs strip",
     "postpack": "node scripts/strip-manifest.mjs restore",
     "test": "vitest run",

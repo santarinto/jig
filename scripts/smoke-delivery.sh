@@ -26,7 +26,7 @@
 # ~25M с реестра на каждый прогон. Тёплый кэш измерял бы состояние машины.
 #
 # Меряется КОММИТ, не рабочее дерево: тарбол пакуется в ОТДЕЛЬНОМ клоне HEAD
-# (`git clone`), тем же `npm run pack`, каким его пакует релиз, — иначе гейт
+# (`git clone`), тем же `npm run tarball`, каким его пакует релиз, — иначе гейт
 # проверял бы похожую самоделку, а не то, что реально уедет к потребителю.
 # Клон сначала ставит СВОИ devDependencies обычным `npm ci` (тёплым кэшем —
 # это работа пакующей машины, не то, что здесь измеряется), потом собирает и
@@ -55,8 +55,10 @@ VERSION="$(git -C "$CLONE" show HEAD:package.json \
 echo "== npm ci в клоне (пакующая машина, тёплый кэш) =="
 (cd "$CLONE" && npm ci --no-audit --no-fund --loglevel=error)
 
-echo "== npm run pack (build + prepack/postpack + npm pack) =="
-(cd "$CLONE" && npm run --silent pack >/dev/null)
+echo "== npm run tarball (build + prepack/postpack + npm pack) =="
+# Без `--silent`: он глушит и ошибку тоже, и провал приезжает пустым логом
+# (тот же довод уже стоит ниже, у установки в throwaway-приложение).
+(cd "$CLONE" && npm run tarball >/dev/null)
 TGZ="$CLONE/santarinto-jig-$VERSION.tgz"
 [ -f "$TGZ" ] || { echo "FAIL: $TGZ не создан"; exit 1; }
 echo "тарбол: $(du -h "$TGZ" | cut -f1)"
