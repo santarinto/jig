@@ -1,0 +1,89 @@
+# CI (JIG-5, было — GitFlic, .gitflic-ci.yaml, снят из дерева). Один прогон,
+# push в `main` и каждый pull request: гоняет `make check`, ИСХОДНИКОВЫЙ
+# прогон — то, что владелец держит в цикле правки (guards, test, test-tz,
+# typecheck, build, dist-version, dist-untracked, dist-checks, measure,
+# states, dock-floor, shell-rhythm; состав и порядок — CLAUDE.md, цена
+# каждого шага — docs/checks.md). Ровно `make check`, а не отдельные шаги
+# вручную: список целей уже держит один документ, и дублировать его сюда
+# значило бы завести вторую версию, которая разойдётся молча при следующей
+# правке `check`.
+#
+# Чем это НЕ является. `make check-full` (матрица, все smoke, wb-smoke),
+# `make release` и `make published` по-прежнему гоняет владелец локально —
+# они не про исходник, а про то, доезжает ли пакет до потребителя и до
+# GitHub Release, и часть из них (smoke-delivery — пустой кэш, published —
+# настоящий GIT REMOTE) не то, что стоит гонять на чужой инфраструктуре при
+# каждом пуше. Этот файл их не заменяет и не приближает.
+#
+# Метрик нет. У прежнего CI была пара JIG-снятых стадий — obs-probe и запись
+# в `stat` через bin/ci-stat-metrics.sh — они слали события и числа на
+# приватный коллектор владельца по VPN (10.8.1.12:9880). Размещённые
+# GitHub-раннеры в эту сеть не попадают никогда, поэтому оба скрипта
+# (bin/ci-notify.sh тоже) удалены вместе со сборкой этого workflow, а не
+# перенесены поломанными.
+#
+# Образ — mcr.microsoft.com/playwright:v<X>-noble, ТЕГ СЛЕДУЕТ ЗА ЛОКОМ:
+# `X` — версия из package-lock.json (devDependencies → playwright →
+# resolved "version"), не из ^-диапазона package.json. `measure`, `states`,
+# `dock-floor` и `shell-rhythm` меряют то, что рисует Chromium, и незакреплённый
+# образ подвинул бы их числа сменой браузера в CI, а не правкой кода — ровно
+# то, чего образ с уже вшитым Chromium у GitFlic избегал (см. историю в
+# .gitflic-ci.yaml). Бампнули playwright в package-lock.json — подняли и `X` тут.
+#
+# fetch-depth: 0. По умолчанию `actions/checkout` берёт глубину 1 без тегов, и
+# минимум один гейт читает настоящую историю репозитория, а не свою фикстуру:
+# src/__guards__/changelog-search-command.test.ts спрашивает `git tag --list`
+# у корня репозитория, чтобы отличить ВЫПУЩЕННУЮ секцию CHANGELOG от готовящейся
+# (по наличию тега её версии). На пустом от тегов клоне это правило тихо
+# перепутало бы «тегов ещё не было» с «тегов не видно», а гейт рассчитан
+# отличать эти случаи — глубокий клон нужен, чтобы отличие было настоящим, а
+# не совпадением. Другие гейты, что зовут `git` (stat-shallow, check-public-root,
+# release-flow, publish-reach), работают на СВОИХ фикстурных репозиториях во
+# временном каталоге и от глубины этого чекаута не зависят.
+#
+# Образ playwright:noble несёт git, но не `make` — ставим его отдельным шагом.
+# Контейнер работает от root, а чекаут — на каталоге, которым владеет другой
+# uid (раннер монтирует рабочую директорию снаружи контейнера): без
+# `safe.directory` git отказывает подряд всем командам гейтов словом про
+# dubious ownership, поэтому строка стоит ДО checkout.
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.0-noble
+
+    steps:
+      - name: safe.directory — контейнер root, чекаут не его uid
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: make — в образе playwright его нет
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends make
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - run: npm ci
+
+      - run: make check
