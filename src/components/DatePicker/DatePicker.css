@@ -1,9 +1,37 @@
-.ds-datepicker { position: relative; }
+/* `--ds-datepicker-clear-w` — фактическая ширина крестика очистки, ОДНО число
+   для его собственных width/height и для резерва под текст ниже: до JIG-38 обе
+   считались раздельно (тут — max(1.5rem*scale, target-min) через `width` +
+   `min-width`, в резерве — не считались вовсе), и разъехались именно поэтому. */
+.ds-datepicker {
+  position: relative;
+  --ds-datepicker-clear-w: max(calc(1.5rem * var(--ds-ui-scale)), var(--ds-target-min));
+}
 .ds-datepicker__control { position: relative; display: flex; align-items: center; }
 
-/* Input reserves space for the clear (×) + calendar buttons on the right. */
-.ds-datepicker__input { width: 100%; padding-right: calc(var(--ds-h-default) + var(--ds-space-5)); }
-.ds-datepicker__input.ds-input--sm { padding-right: calc(var(--ds-h-compact) + var(--ds-space-5)); }
+/* Резерв справа = кнопка календаря (`__btn`, всегда `--ds-h-default` шириной) +
+   фактическая ширина крестика (`--ds-datepicker-clear-w`) + зазор между текстом
+   и крестиком (`--ds-space-2` — тот же токен, которым `SearchBar` держит зазор
+   между полем и своим крестиком, DS). Раньше здесь стояло только
+   `--ds-h-default + --ds-space-5`: `--ds-space-5` — это зазор МЕЖДУ кнопкой
+   календаря и крестиком, а не резерв ПОД крестик, крестик в счёт не входил
+   вовсе. На шкале 1.15 крестик — 27.6px при зазоре 13.8px: крестик перекрывал
+   текст на 13.8px при любой ширине поля (JIG-38, найдено на верстаке
+   24.09.2026: кадр 528, шкала 1.5, поле 175px, «17.03.202×»).
+   Резерв ОДИН для `md` и `sm`, не `--ds-h-default`/`--ds-h-compact` по size:
+   `__btn` и `__clear` не получают sm-варианта нигде в системе (grep
+   `__btn--sm|__clear--sm` по CSS-листам `src/components` пуст — ни у `Combobox`,
+   ни у `Select` инлайновая кнопка не следует за size поля), они всегда
+   `--ds-h-default`/`1.5rem` шириной независимо от size; прежний
+   `.ds-input--sm`-оверрайд ниже сужал ТОЛЬКО паддинг под `--ds-h-compact`, а
+   кнопки оставались md-ширины — тот же класс дефекта, что и с крестиком,
+   только на постоянную величину, а не на масштабе.
+   Резерв ВСЕГДА, даже когда крестика нет на экране (пустое значение): крестик
+   появляется и пропадает вместе с `value`, и условный паддинг двигал бы текст
+   при каждом наборе символа или очистке. */
+.ds-datepicker__input {
+  width: 100%;
+  padding-right: calc(var(--ds-h-default) + var(--ds-datepicker-clear-w) + var(--ds-space-2));
+}
 
 .ds-datepicker__btn {
   position: absolute; right: 0; top: 0;
@@ -20,8 +48,8 @@
 .ds-datepicker__clear {
   position: absolute; right: var(--ds-h-default); top: 50%; transform: translateY(-50%);
   display: inline-flex; align-items: center; justify-content: center;
-  width: calc(1.5rem * var(--ds-ui-scale)); height: calc(1.5rem * var(--ds-ui-scale));
-  min-width: var(--ds-target-min); min-height: var(--ds-target-min); padding: 0; font-size: var(--ds-fs-lg); line-height: 1;
+  width: var(--ds-datepicker-clear-w); height: var(--ds-datepicker-clear-w);
+  padding: 0; font-size: var(--ds-fs-lg); line-height: 1;
   color: var(--ds-text-muted); background: transparent; border: none; border-radius: 50%; cursor: pointer;
 }
 .ds-datepicker__clear:hover:not(:disabled) { color: var(--ds-text-primary); background: var(--ds-surface-subtle); }

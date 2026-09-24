@@ -10967,6 +10967,80 @@ const CASES = [
       return true
     },
   },
+  {
+    name: 'DatePicker: текст поля не заходит под кнопку очистки',
+    why: 'JIG-38, найдено на верстаке 24.09.2026: кадр 528, шкала 1.5, поле'
+      + ' 175px, «17.03.202×» — крестик очистки съедал хвост даты. Причина —'
+      + ' `.ds-datepicker__input` резервировал `--ds-h-default + --ds-space-5`'
+      + ' (только кнопка календаря плюс зазор МЕЖДУ кнопкой и крестиком), а сам'
+      + ' крестик — `max(1.5rem*scale, --ds-target-min)`, позиционированный'
+      + ' `right: --ds-h-default` — в счёт не входил вовсе. На шкале 1.15'
+      + ' крестик 27.6px против зазора 13.8px — крестик перекрывал текст на'
+      + ' 13.8px при ЛЮБОЙ ширине поля, потому что резерв меньше занятого места'
+      + ' арифметически, а не только на узком кадре. Резерв для `sm` был ещё'
+      + ' меньше (`--ds-h-compact` вместо `--ds-h-default`), хотя кнопка'
+      + ' календаря и крестик у `sm` фактически остаются md-ширины (в системе'
+      + ' нет sm-варианта инлайновой кнопки поля — ни здесь, ни у `Combobox`,'
+      + ' ни у `Select`), так что `sm` был перекрыт сильнее `md`.'
+      + ' Правка (`DatePicker.css`): резерв = `--ds-h-default` (кнопка'
+      + ' календаря) + `--ds-datepicker-clear-w` (фактическая ширина крестика,'
+      + ' та же переменная, что задаёт его собственные width/height) +'
+      + ' `--ds-space-2` (зазор текст—крестик), один резерв для `md` и `sm`.'
+      + ' Утверждение читает ПИКСЕЛИ на живой разметке компонента (классы'
+      + ' `.ds-datepicker*`, `.ds-input*` — из `DatePicker.tsx`), не CSS-текст:'
+      + ' `padding-right`, объявленный верно, ничего не доказывает, если'
+      + ' крестик или кнопка стоят не там, где предполагает арифметика.'
+      + ' Хост `.ds-root.ds-scale` — 500px, выше пола 440 (DS-380/JIG-29): поле'
+      + ' самого компонента 175px — предмет случая, а не ширина документа,'
+      + ' и ниже пола её никто не смотрит.',
+    html: (() => {
+      const SCALES = ['0.875', '1', '1.15', '1.5']
+      const SIZES = ['md', 'sm']
+      const cell = (sc, size) => `
+      <div class="ds-root ds-scale" style="--ds-ui-scale: ${sc}; width: 500px" data-dpcase data-sc="${sc}" data-size="${size}">
+        <div class="ds-field ds-field--block ds-datepicker" style="width: 175px">
+          <div class="ds-datepicker__control">
+            <input class="ds-input ds-input--${size} ds-datepicker__input" value="17.03.2026" readonly />
+            <button type="button" class="ds-datepicker__clear">×</button>
+            <button type="button" class="ds-datepicker__btn">
+              <svg width="15" height="15" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" /></svg>
+            </button>
+          </div>
+        </div>
+      </div>`
+      const out = []
+      for (const sc of SCALES) for (const size of SIZES) out.push(cell(sc, size))
+      return out.join('')
+    })(),
+    measure: () => {
+      const cells = [...document.querySelectorAll('[data-dpcase]')]
+      return cells.map((host) => {
+        const input = host.querySelector('.ds-datepicker__input')
+        const clear = host.querySelector('.ds-datepicker__clear')
+        const cs = getComputedStyle(input)
+        const rect = input.getBoundingClientRect()
+        // Граница текста — правый край контентной области, БЕЗ падинга и
+        // рамки: `box-sizing: border-box` у всех `.ds-*` (tokens.css), значит
+        // `rect.right` включает и то, и другое.
+        const contentRight = rect.right - parseFloat(cs.paddingRight) - parseFloat(cs.borderRightWidth)
+        const clearLeft = clear.getBoundingClientRect().left
+        return {
+          sc: host.dataset.sc, size: host.dataset.size,
+          contentRight: +contentRight.toFixed(2),
+          clearLeft: +clearLeft.toFixed(2),
+          gap: +(clearLeft - contentRight).toFixed(2),
+        }
+      })
+    },
+    expect: (m) => {
+      const bad = m.filter((r) => r.contentRight > r.clearLeft + 0.5)
+      if (bad.length) {
+        return `текст заходит под крестик очистки на ${bad.length} из ${m.length}: `
+          + bad.map((r) => `size=${r.size}/шкала=${r.sc} — граница текста ${r.contentRight}px правее левого края крестика ${r.clearLeft}px (нахлёст ${(r.contentRight - r.clearLeft).toFixed(2)}px)`).join('; ')
+      }
+      return true
+    },
+  },
 ]
 
 /**
