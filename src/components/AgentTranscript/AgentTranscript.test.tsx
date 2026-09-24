@@ -79,7 +79,12 @@ describe('AgentTranscript', () => {
   it('сохраняет порядок реплик и использует getTurnId', () => {
     const turns = [msg(1, { text: 'первая' }), msg(2, { text: 'вторая' }), msg(3, { text: 'третья' })]
     render(<AgentTranscript turns={turns} getTurnId={getTurnId} height={200} />)
-    const times = screen.getAllByText(/12:00:0[123]/)
+    // Час и минута — МЕСТНЫЕ для отметок `msg` (12:00 по +03:00): компонент
+    // печатает время в зоне процесса, и литерал «12:00» держался только под
+    // UTC+3, зоной машины владельца (в CI, под UTC, случай падал).
+    const t = new Date(msg(1).ts)
+    const hm = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`
+    const times = screen.getAllByText(new RegExp(`${hm}:0[123]`))
     expect(times).toHaveLength(3)
   })
 
