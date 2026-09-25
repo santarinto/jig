@@ -167,6 +167,38 @@ describe('jig-shell: ручной DOM (без Shell)', () => {
     expect(n.port!.page).toEqual({ l: 291, t: 79, r: 671, b: 479 })
     expect(n.panel!.page).toBeNull()
   })
+
+  // `sx`/`sy` без роли `port` (JIG-42) — просьба указывает в пустоту, и
+  // env() оболочки дописывает находку в address.ignored сама: auditAddress
+  // разбирает строку и ролей случая не видит.
+  it('sx без роли port — находка в address.ignored; с port или пока кадр грузится — нет', () => {
+    const f = makeFrame()
+    const withoutPort = fakeFrameJig({}, {})
+    ;(f.contentWindow as Window & { jig?: FrameJig }).jig = withoutPort
+    const jigNoPort = makeShellJig(window, { loadSearch: '?c=EventCalendar&case=month&sx=151' })
+    expect(jigNoPort.env().params.address.ignored).toContainEqual({
+      key: 'sx',
+      why: 'у случая нет роли port — прокрутку не к чему применить',
+    })
+
+    document.body.innerHTML = ''
+    const f2 = makeFrame()
+    const withPort = fakeFrameJig({}, { port: { found: true, matched: 1, path: 'div.x', box: { l: 0, t: 0, r: 0, b: 0 } } })
+    ;(f2.contentWindow as Window & { jig?: FrameJig }).jig = withPort
+    const jigWithPort = makeShellJig(window, { loadSearch: '?c=EventCalendar&case=week&sx=151' })
+    expect(jigWithPort.env().params.address.ignored).toEqual([])
+
+    document.body.innerHTML = ''
+    const f3 = makeFrame()
+    const loading = fakeFrameJig()
+    loading.nodes = vi.fn(() => {
+      throw new Error('jig: кадр ещё грузится — await jig.ready()')
+    })
+    ;(f3.contentWindow as Window & { jig?: FrameJig }).jig = loading
+    const jigLoading = makeShellJig(window, { loadSearch: '?c=EventCalendar&case=week&sx=151' })
+    expect(() => jigLoading.env()).not.toThrow()
+    expect(jigLoading.env().params.address.ignored).toEqual([])
+  })
 })
 
 describe('jig-shell: слот в реальном Shell', () => {

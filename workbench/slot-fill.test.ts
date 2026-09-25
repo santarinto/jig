@@ -63,6 +63,8 @@ const state = (over: Partial<FrameState>): FrameState => ({
   caseId: '',
   sid: 0,
   w: null,
+  sx: null,
+  sy: null,
   theme: 'light',
   mode: 'frame',
   text: 'ru',

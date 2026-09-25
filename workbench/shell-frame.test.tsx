@@ -18,6 +18,8 @@ const st = (): FrameState => ({
   caseId: 'base',
   sid: nextSid(),
   w: null,
+  sx: null,
+  sy: null,
   theme: 'light',
   mode: 'frame',
   text: 'ru',

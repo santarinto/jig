@@ -214,6 +214,8 @@ function CanvasSpotView({
     caseId: spot.caseId,
     sid: 0,
     w: null,
+    sx: null,
+    sy: null,
     theme,
     scale,
     data: spot.data,
@@ -362,6 +364,8 @@ async function loadFills(fx: AnyFixture, s: FrameState): Promise<Fills> {
       sid: 0,
       // Начинка живёт внутри чужого кадра — своего вьюпорта у неё нет вовсе.
       w: null,
+      sx: null,
+      sy: null,
       theme: s.theme,
       scale: s.scale,
       data: null,

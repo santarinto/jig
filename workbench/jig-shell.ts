@@ -42,9 +42,33 @@ export function makeShellJig(win: Window, opts: { loadSearch: string }): ShellJi
     return frameJig
   }
 
-  /** Аудит адреса ЭТОГО документа (оболочки), а не адреса, зеркалящего кадр. */
+  /**
+   * Аудит адреса ЭТОГО документа (оболочки), а не адреса, зеркалящего кадр.
+   *
+   * `sx`/`sy` БЕЗ роли `port` (JIG-42) — просьба указывает в пустоту: сама
+   * `auditAddress` этого не знает, она разбирает СТРОКУ и ролей случая не
+   * видит. Здесь роли есть — `frame().nodes()` уже спрошен ради `env()` —
+   * поэтому находка дописывается сюда, а не заводит второй проход по адресу.
+   * Кадр ещё грузится (`frame()`/`nodes()` бросает) — находка не пишется:
+   * судить пока не о чем, а не «роли нет».
+   */
   function withShellAddress(e: Env): Env {
-    return { ...e, params: { ...e.params, address: auditAddress(opts.loadSearch, 'shell') } }
+    const address = auditAddress(opts.loadSearch, 'shell')
+    const askedScroll = (['sx', 'sy'] as const).filter((k) => k in address.asked)
+    if (askedScroll.length) {
+      let roles: Record<string, NodeInfo> | null = null
+      try {
+        roles = frame().nodes()
+      } catch {
+        /* кадр ещё грузится — нечем судить о роли port */
+      }
+      if (roles && !('port' in roles)) {
+        for (const key of askedScroll) {
+          address.ignored.push({ key, why: 'у случая нет роли port — прокрутку не к чему применить' })
+        }
+      }
+    }
+    return { ...e, params: { ...e.params, address } }
   }
 
   function env(): Env {

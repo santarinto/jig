@@ -94,6 +94,19 @@ export interface FrameState {
    * адресе, его ИГНОРИРУЕТ — ширину ему задаёт тот, кто его держит.
    */
   w: number | null
+  /**
+   * Прокрутка узла роли `port` — поля адреса ОБОЛОЧКИ, тем же доводом, что у
+   * `w` (JIG-42, decisions 1.7: `sx`/`sy` в адресе — ПРОСЬБА, не текущая
+   * позиция). КАДР их не читает: применяет прокрутку держатель, одноразовым
+   * `Down {type: 'scroll-to'}`, ПОСЛЕ готовности кадра — путь сужения ширин
+   * (JIG-41) кончается там, где решает держатель, и только он знает, когда
+   * слать. `null` — просьбы нет. Живая прокрутка сюда НЕ записывается никогда
+   * (decisions 1.7, отменяет вариант «зеркало пишет ручной сдвиг обратно») —
+   * ссылку с текущей позицией собирает `CopyChip` из последнего `Up 'scroll'`,
+   * а не это поле.
+   */
+  sx: number | null
+  sy: number | null
 }
 
 export function parseFrameUrl(search: string): FrameState {
@@ -127,6 +140,11 @@ export function parseFrameUrl(search: string): FrameState {
     // рук. Число вне пределов, наоборот, ПРИЖИМАЕТСЯ: `w=99999` — это внятное
     // «как можно шире», а не опечатка.
     w: widthOf(q.get('w')),
+    // Нечисло — нет прокрутки (просьба не понята, как `w=абв`); отрицательное
+    // — «в начало» (0), тем же зажимом, что у ширины: внятная просьба, а не
+    // опечатка.
+    sx: posOf(q.get('sx')),
+    sy: posOf(q.get('sy')),
   }
 }
 
@@ -134,6 +152,12 @@ const widthOf = (raw: string | null): number | null => {
   if (raw === null || raw.trim() === '') return null
   const n = Number(raw)
   return Number.isFinite(n) ? clampWidth(n) : null
+}
+
+const posOf = (raw: string | null): number | null => {
+  if (raw === null || raw.trim() === '') return null
+  const n = Number(raw)
+  return Number.isFinite(n) ? Math.max(0, n) : null
 }
 
 export function buildFrameUrl(s: FrameState): string {
@@ -180,9 +204,13 @@ export function buildFrameUrl(s: FrameState): string {
  * ссылка на кадр обычной ширины не несёт поля, которое ничего не меняет.
  */
 export function buildShellUrl(s: FrameState): string {
-  const base = buildFrameUrl(s)
-  if (s.w === null || s.w === DEFAULT_WIDTH) return base
-  return `${base}&w=${s.w}`
+  let out = buildFrameUrl(s)
+  if (s.w !== null && s.w !== DEFAULT_WIDTH) out += `&w=${s.w}`
+  // `sx`/`sy` — тем же правилом умолчания, что `w`/`scale`/`mode`: ссылка без
+  // просьбы о прокрутке не несёт поля, которое ничего не меняет.
+  if (s.sx !== null) out += `&sx=${s.sx}`
+  if (s.sy !== null) out += `&sy=${s.sy}`
+  return out
 }
 
 /**
@@ -205,7 +233,7 @@ export function buildShellUrl(s: FrameState): string {
  *   `mode=grid` в адресе кадра (сетка только в оболочке), `sid` в адресе
  *   оболочки (она всегда начинает новую сессию).
  */
-export const FRAME_KEYS = ['c', 'case', 'sid', 'theme', 'scale', 'data', 'force', 'mode', 'text', 'aim', 'layers', 'w'] as const
+export const FRAME_KEYS = ['c', 'case', 'sid', 'theme', 'scale', 'data', 'force', 'mode', 'text', 'aim', 'layers', 'w', 'sx', 'sy'] as const
 
 export interface AddressAudit {
   of: 'shell' | 'frame'
@@ -217,7 +245,7 @@ export interface AddressAudit {
 }
 
 const DEFAULT_SPELLING: Record<string, string> = { scale: '1', mode: 'frame', text: 'ru', aim: '0', w: String(DEFAULT_WIDTH) }
-const NUMERIC = new Set(['scale', 'w', 'sid'])
+const NUMERIC = new Set(['scale', 'w', 'sid', 'sx', 'sy'])
 
 export function auditAddress(search: string, of: 'shell' | 'frame'): AddressAudit {
   const q = new URLSearchParams(search)
@@ -239,6 +267,13 @@ export function auditAddress(search: string, of: 'shell' | 'frame'): AddressAudi
     if (!(FRAME_KEYS as readonly string[]).includes(k)) { unknown.push(k); continue }
     if (of === 'frame' && k === 'w') {
       ignored.push({ key: k, why: 'ширину кадру задаёт держатель (iframe или окно); в адресе кадра w не действует' })
+      continue
+    }
+    if (of === 'frame' && (k === 'sx' || k === 'sy')) {
+      ignored.push({
+        key: k,
+        why: 'прокрутку порта ставит держатель: sx/sy — поля адреса оболочки; в своём iframe присвой scrollLeft или scrollTop узлу jig.node(«port»)',
+      })
       continue
     }
     if (of === 'frame' && k === 'mode' && v === 'grid') {

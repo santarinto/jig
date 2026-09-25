@@ -97,6 +97,7 @@ describe('auditCase — аудит фикстуры', () => {
   const state = (over: Partial<FrameState>): FrameState => ({
     c: 'Y', caseId: '', sid: 0, theme: 'light', scale: 1, data: null, force: null,
     mode: 'frame', text: 'ru', aim: false, layers: [], props: {}, slots: {}, w: null,
+    sx: null, sy: null,
     ...over,
   })
 

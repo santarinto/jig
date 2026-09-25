@@ -7,6 +7,8 @@ const base: FrameState = {
   caseId: 'fixed',
   sid: 3,
   w: null,
+  sx: null,
+  sy: null,
   theme: 'dark',
   scale: 1.25,
   data: 'rows-500',
@@ -53,6 +55,30 @@ describe('адрес кадра', () => {
 
   it('битый масштаб не превращается в NaN', () => {
     expect(parseFrameUrl('?scale=абв').scale).toBe(1)
+  })
+
+  // `sx`/`sy` — прокрутка порта, поля адреса ОБОЛОЧКИ (JIG-42, decisions 1.6/1.7).
+  it('sx/sy разбираются, нечисло — null, отрицательное — 0 (зажим, как у ширины)', () => {
+    expect(parseFrameUrl('?sx=151&sy=480')).toMatchObject({ sx: 151, sy: 480 })
+    expect(parseFrameUrl('?sx=abc').sx).toBeNull()
+    expect(parseFrameUrl('?sx=-5').sx).toBe(0)
+    expect(parseFrameUrl('?sx=151.5').sx).toBe(151.5)
+    expect(parseFrameUrl('').sx).toBeNull()
+    expect(parseFrameUrl('').sy).toBeNull()
+  })
+
+  it('sx/sy не едут в адрес КАДРА', () => {
+    const url = buildFrameUrl({ ...base, sx: 151, sy: 480 })
+    expect(url).not.toContain('sx=')
+    expect(url).not.toContain('sy=')
+  })
+
+  it('адрес ОБОЛОЧКИ несёт sx/sy и разбирается обратно, без w при умолчании', () => {
+    const url = buildShellUrl({ ...base, w: null, sx: 151, sy: 480 })
+    expect(url).toContain('sx=151')
+    expect(url).toContain('sy=480')
+    expect(url).not.toContain('w=')
+    expect(parseFrameUrl(url)).toMatchObject({ sx: 151, sy: 480 })
   })
 
   it('канвас едет туда и обратно', () => {
@@ -201,6 +227,25 @@ describe('аудит адреса', () => {
     expect(a.ignored.map((i) => i.key)).toEqual(['sid'])
   })
 
+  it("'shell': sx/sy разбираются, непонятое — replaced на умолчание, отрицательное — прижатое", () => {
+    const clean = auditAddress('?c=X&sx=151&sy=480', 'shell')
+    expect(clean.unknown).toEqual([])
+    expect(clean.replaced).toEqual([])
+    expect(clean.ignored).toEqual([])
+
+    expect(auditAddress('?c=X&sx=abc', 'shell').replaced).toEqual([{ key: 'sx', asked: 'abc', used: '' }])
+    expect(auditAddress('?c=X&sx=-5', 'shell').replaced).toEqual([{ key: 'sx', asked: '-5', used: '0' }])
+    expect(auditAddress('?c=X&sx=151.50', 'shell').replaced).toEqual([])
+  })
+
+  it("'frame': sx/sy не действуют — ignored, довод без «=», держатель назван", () => {
+    const a = auditAddress('?c=X&sx=151', 'frame')
+    expect(a.ignored[0]?.key).toBe('sx')
+    expect(a.ignored[0]?.why).toContain('держатель')
+    expect(a.ignored[0]?.why).not.toContain('=')
+    expect(a.replaced).toEqual([])
+  })
+
   it('повтор ключа — игнорируется, действует первое вхождение', () => {
     const a = auditAddress('?mode=states&mode=canvas', 'shell')
     expect(a.ignored).toEqual([{ key: 'mode', why: 'повтор — действует первое' }])
@@ -217,6 +262,7 @@ describe('аудит адреса', () => {
     const s: FrameState = {
       c: 'X', caseId: 'y', sid: 1, theme: 'dark', scale: 1.5, data: 'd', force: 'f',
       mode: 'states', text: 'pseudo', aim: true, layers: ['a'], props: {}, slots: {}, w: 1024,
+      sx: 151, sy: 480,
     }
     const keys = new Set(new URLSearchParams(buildShellUrl(s).slice(1)).keys())
     expect(keys).toEqual(new Set(FRAME_KEYS))
