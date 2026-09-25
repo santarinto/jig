@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseFrameUrl, buildFrameUrl, buildShellUrl, type FrameState } from './frame-url.js'
+import { auditAddress, buildFrameUrl, buildShellUrl, FRAME_KEYS, parseFrameUrl, type FrameState } from './frame-url.js'
 import { DEFAULT_WIDTH, MAX_WIDTH, MIN_WIDTH } from './frame-width.js'
 
 const base: FrameState = {
@@ -137,5 +137,88 @@ describe('адрес кадра', () => {
       expect(parseFrameUrl('?c=X&w=99999').w).toBe(MAX_WIDTH)
       expect(parseFrameUrl('?c=X&w=1').w).toBe(MIN_WIDTH)
     })
+  })
+})
+
+/**
+ * Аудит адреса ЗАГРУЗКИ (JIG-40, решение спецификации п.2а/п.3): что из
+ * `location.search`, захваченного до `createRoot`, `parseFrameUrl` не
+ * прочитал, заменил или проигнорировал — это и есть опечатка агента, до того
+ * как её можно прочесть глазами (адрес переписывается зеркалом за 250 мс).
+ */
+describe('аудит адреса', () => {
+  it('чистый адрес оболочки — ни одной находки', () => {
+    const search = '?c=Tabs&case=many&theme=dark&scale=1.5&mode=states&text=pseudo&aim=1'
+      + '&layers=tabstops&data=long&p.size=sm&s.left=Badge:base&w=1024'
+    expect(auditAddress(search, 'shell')).toEqual({
+      of: 'shell',
+      asked: expect.any(Object),
+      unknown: [],
+      replaced: [],
+      ignored: [],
+    })
+  })
+
+  it('умолчания, записанные ЯВНО, — не опечатка', () => {
+    const search = '?c=Tabs&scale=1&mode=frame&text=ru&aim=0&w=768'
+    const a = auditAddress(search, 'shell')
+    expect(a.unknown).toEqual([])
+    expect(a.replaced).toEqual([])
+    expect(a.ignored).toEqual([])
+  })
+
+  it('неизвестный ключ — в unknown', () => {
+    expect(auditAddress('?c=Tabs&wdth=768', 'shell').unknown).toEqual(['wdth'])
+  })
+
+  it('известный ключ с непонятым значением — в replaced, используемое значение — умолчание или канон', () => {
+    expect(auditAddress('?c=X&mode=gird', 'shell').replaced).toEqual([{ key: 'mode', asked: 'gird', used: 'frame' }])
+    expect(auditAddress('?c=X&theme=drak', 'shell').replaced).toEqual([{ key: 'theme', asked: 'drak', used: 'light' }])
+    expect(auditAddress('?c=X&text=psuedo', 'shell').replaced).toEqual([{ key: 'text', asked: 'psuedo', used: 'ru' }])
+    expect(auditAddress('?c=X&scale=abc', 'shell').replaced).toEqual([{ key: 'scale', asked: 'abc', used: '1' }])
+  })
+
+  it('scale=1.50 не заменено — сравнение числом, а не строкой', () => {
+    expect(auditAddress('?c=X&scale=1.50', 'shell').replaced).toEqual([])
+  })
+
+  it('w в адресе ОБОЛОЧКИ: непонятое — умолчание, вне пределов — прижатое', () => {
+    expect(auditAddress('?c=X&w=abc', 'shell').replaced).toEqual([{ key: 'w', asked: 'abc', used: '768' }])
+    expect(auditAddress('?c=X&w=99999', 'shell').replaced).toEqual([{ key: 'w', asked: '99999', used: '2560' }])
+  })
+
+  it("'frame': w и mode=grid не действуют — ignored, а не replaced", () => {
+    const w = auditAddress('?c=X&w=768', 'frame')
+    expect(w.ignored[0]?.key).toBe('w')
+    expect(w.replaced).toEqual([])
+
+    const grid = auditAddress('?c=X&mode=grid', 'frame')
+    expect(grid.ignored.map((i) => i.key)).toEqual(['mode'])
+  })
+
+  it("'shell': sid не действует — оболочка всегда начинает новую сессию", () => {
+    const a = auditAddress('?c=X&sid=5', 'shell')
+    expect(a.ignored.map((i) => i.key)).toEqual(['sid'])
+  })
+
+  it('повтор ключа — игнорируется, действует первое вхождение', () => {
+    const a = auditAddress('?mode=states&mode=canvas', 'shell')
+    expect(a.ignored).toEqual([{ key: 'mode', why: 'повтор — действует первое' }])
+    expect(a.replaced).toEqual([])
+  })
+
+  it('ни одной строки адреса в ответе — BLOCKED режет строку целиком', () => {
+    const search = '?c=Tabs&wdth=768&mode=gird&w=99999&p.size=sm&s.left=Badge:base'
+    const json = JSON.stringify(auditAddress(search, 'shell'))
+    expect(json).not.toMatch(/[?&][\w.]+=/)
+  })
+
+  it('FRAME_KEYS — полный список того, что пишет buildShellUrl, в обе стороны', () => {
+    const s: FrameState = {
+      c: 'X', caseId: 'y', sid: 1, theme: 'dark', scale: 1.5, data: 'd', force: 'f',
+      mode: 'states', text: 'pseudo', aim: true, layers: ['a'], props: {}, slots: {}, w: 1024,
+    }
+    const keys = new Set(new URLSearchParams(buildShellUrl(s).slice(1)).keys())
+    expect(keys).toEqual(new Set(FRAME_KEYS))
   })
 })

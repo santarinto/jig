@@ -184,3 +184,75 @@ export function buildShellUrl(s: FrameState): string {
   if (s.w === null || s.w === DEFAULT_WIDTH) return base
   return `${base}&w=${s.w}`
 }
+
+/**
+ * АУДИТ АДРЕСА ЗАГРУЗКИ (JIG-40, решение спецификации п.2а/п.3) — рядом с
+ * разбором, чтобы список ключей был ОДИН: второй список (в отдельном модуле)
+ * разошёлся бы с `parseFrameUrl` при первом же новом поле `FrameState`.
+ *
+ * ОБЪЕКТОМ, А НЕ СТРОКОЙ. Ответ `jig.env()` уходит агенту через
+ * `javascript_tool`, а тот режет ЦЕЛИКОМ любой ответ, содержащий адрес или
+ * куки строкой вида `?a=b&c=d` (бриф, «BLOCKED: Cookie/query string data»).
+ * Поэтому `asked`/`replaced`/`ignored` — только объекты и массивы объектов,
+ * без единой сырой пары `ключ=значение`.
+ *
+ * Три способа опечатки, и это три разных списка, а не один флаг «не так»:
+ * - `unknown` — ключа `parseFrameUrl` не читает вовсе (`wdth=768`);
+ * - `replaced` — ключ известен, но значение не понято и упало в умолчание
+ *   (`mode=gird` → `frame`) либо было прижато (`w=99999` → `MAX_WIDTH`);
+ * - `ignored` — ключ известен и понят, но НЕ ДЕЙСТВУЕТ в этом документе:
+ *   повтор («действует первое»), `w` в адресе кадра (ширину задаёт держатель),
+ *   `mode=grid` в адресе кадра (сетка только в оболочке), `sid` в адресе
+ *   оболочки (она всегда начинает новую сессию).
+ */
+export const FRAME_KEYS = ['c', 'case', 'sid', 'theme', 'scale', 'data', 'force', 'mode', 'text', 'aim', 'layers', 'w'] as const
+
+export interface AddressAudit {
+  of: 'shell' | 'frame'
+  /** Пары адреса как пришли — ОБЪЕКТОМ: строка `a=b&c=d` режется расширением. */
+  asked: Record<string, string>
+  unknown: string[]
+  replaced: { key: string; asked: string; used: string }[]
+  ignored: { key: string; why: string }[]
+}
+
+const DEFAULT_SPELLING: Record<string, string> = { scale: '1', mode: 'frame', text: 'ru', aim: '0', w: String(DEFAULT_WIDTH) }
+const NUMERIC = new Set(['scale', 'w', 'sid'])
+
+export function auditAddress(search: string, of: 'shell' | 'frame'): AddressAudit {
+  const q = new URLSearchParams(search)
+  const state = parseFrameUrl(search)
+  const canon = new URLSearchParams(buildShellUrl(state).slice(1))
+
+  const asked: Record<string, string> = {}
+  const unknown: string[] = []
+  const replaced: { key: string; asked: string; used: string }[] = []
+  const ignored: { key: string; why: string }[] = []
+  const seen = new Set<string>()
+
+  for (const [k, v] of q) {
+    const already = seen.has(k)
+    if (!already) asked[k] = v
+    if (already) { ignored.push({ key: k, why: 'повтор — действует первое' }); continue }
+    seen.add(k)
+    if (k.startsWith('p.') || k.startsWith('s.')) continue
+    if (!(FRAME_KEYS as readonly string[]).includes(k)) { unknown.push(k); continue }
+    if (of === 'frame' && k === 'w') {
+      ignored.push({ key: k, why: 'ширину кадру задаёт держатель (iframe или окно); в адресе кадра w не действует' })
+      continue
+    }
+    if (of === 'frame' && k === 'mode' && v === 'grid') {
+      ignored.push({ key: k, why: 'сетка живёт только в оболочке, кадр рисует себя обычным' })
+      continue
+    }
+    if (of === 'shell' && k === 'sid') {
+      ignored.push({ key: k, why: 'оболочка всегда начинает новую сессию кадра' })
+      continue
+    }
+    const used = canon.get(k) ?? DEFAULT_SPELLING[k] ?? ''
+    const same = NUMERIC.has(k) ? Number(v) === Number(used) : v === used
+    if (!same) replaced.push({ key: k, asked: v, used })
+  }
+
+  return { of, asked, unknown, replaced, ignored }
+}
