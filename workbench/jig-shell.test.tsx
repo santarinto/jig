@@ -3,7 +3,7 @@
  * главному кадру, слот `#jig-scratch`, `frame(which)`.
  */
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { render, screen, cleanup, fireEvent, within } from '@testing-library/react'
+import { render, screen, cleanup, act, fireEvent, within } from '@testing-library/react'
 import { Shell } from './shell-app.js'
 import { makeShellJig } from './jig-shell.js'
 import { makeFrameJig } from './jig.js'
@@ -13,6 +13,7 @@ afterEach(() => {
   cleanup()
   document.body.innerHTML = ''
   window.history.pushState(null, '', '/')
+  vi.unstubAllGlobals()
 })
 
 /** Подставной `FrameJig`: методы измерения не зовутся здесь, только делегирование. */
@@ -234,5 +235,34 @@ describe('jig-shell: слот в реальном Shell', () => {
     fireEvent.click(widths().getByRole('button', { name: '1024' }))
 
     expect(el.children.length).toBe(1)
+  })
+
+  // JIG-40: слот `#jig-scratch` был `top: 0` и лежал ПОВЕРХ тулбара (4 чипа
+  // ширины, 25 контролов). Верх слота теперь равен низу тулбара через
+  // `--wb-bar-h`, записанную тем же `ResizeObserver`, что считает `availH` —
+  // подмена наблюдателя, а не реального `getBoundingClientRect` раскладки
+  // jsdom, которая всегда нулевая.
+  it('наблюдатель тулбара пишет --wb-bar-h на .wb — слот начинается под тулбаром', () => {
+    let cb: ResizeObserverCallback | null = null
+    class TestRO {
+      constructor(callback: ResizeObserverCallback) { cb = callback }
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {}
+    }
+    vi.stubGlobal('ResizeObserver', TestRO)
+
+    render(<Shell />)
+    const shellEl = document.querySelector('.wb') as HTMLElement
+    const barEl = document.querySelector('.wb__bar') as HTMLElement
+    Object.defineProperty(shellEl, 'getBoundingClientRect', { configurable: true, value: () => ({ height: 700 }) as DOMRect })
+    Object.defineProperty(barEl, 'getBoundingClientRect', { configurable: true, value: () => ({ height: 48 }) as DOMRect })
+
+    expect(cb).not.toBeNull()
+    act(() => {
+      cb!([], null as unknown as ResizeObserver)
+    })
+
+    expect(shellEl.style.getPropertyValue('--wb-bar-h')).toBe('48px')
   })
 })

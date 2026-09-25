@@ -587,11 +587,18 @@ export function Shell() {
       // навсегда. Оболочка же нулевой от высоты дока не становится, поэтому
       // различает два случая сама.
       if (shellH === 0) return
-      const next = shellH - bar.getBoundingClientRect().height
+      const barH = bar.getBoundingClientRect().height
+      const next = shellH - barH
       setAvailH(next)
       // Высота, законно выбранная на большом мониторе, не должна съедать поле
       // на маленьком: пересчёт при каждом изменении раскладки, а не при тяге.
       setDockH((h) => clampDockH(h, next))
+      // Слот проб агента (`#jig-scratch`, JIG-40) начинается ПОД тулбаром, а не
+      // поверх него (JIG-42: приёмка нашла перекрытыми 4 чипа ширины и 25
+      // контролов). `--wb-bar-h` — та же высота, тем же наблюдателем, что и
+      // `availH`: тулбар переносится на узком окне, и низ слота обязан
+      // сдвинуться вместе с ним, а не жить угаданным литералом под одно окно.
+      shell.style.setProperty('--wb-bar-h', `${barH}px`)
     }
     measure()
     // `ResizeObserver`, а не слушатель `resize` на окне, и разница поймана
