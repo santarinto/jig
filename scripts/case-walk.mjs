@@ -1055,7 +1055,7 @@ export async function walk({ port, viewport, scales, rows, full = false, workers
   if (full) {
     for (const l of axis.lines) console.log(`  ${l}`)
   } else if (axis.lines.length) {
-    console.log(`  по компонентам ${axis.lines.length} строк — построчно: флаг --all`)
+    console.log(`  по компонентам ${axis.lines.length} ${plural(axis.lines.length, 'строка', 'строки', 'строк')} — построчно: флаг --all`)
   }
   if (touchErrors.length) {
     console.error(`ОТПЕЧАТОК НЕ СНЯТ ${touchErrors.length}:`)
@@ -1076,7 +1076,7 @@ export async function walk({ port, viewport, scales, rows, full = false, workers
   if (full) {
     for (const l of wAxis.lines) console.log(`  ${l}`)
   } else if (wAxis.lines.length) {
-    console.log(`  по компонентам ${wAxis.lines.length} строк — построчно: флаг --all`)
+    console.log(`  по компонентам ${wAxis.lines.length} ${plural(wAxis.lines.length, 'строка', 'строки', 'строк')} — построчно: флаг --all`)
   }
   if (widthErrors.length) {
     console.error(`ОТПЕЧАТОК ШИРИНЫ НЕ СНЯТ ${widthErrors.length}:`)
