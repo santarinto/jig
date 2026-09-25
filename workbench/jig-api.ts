@@ -22,7 +22,7 @@ import type { CaseAudit } from './resolve-case.js'
 export const SCRATCH_ID = 'jig-scratch'
 
 /** Методы кадра, которые оболочка делегирует главному кадру. */
-export const FRAME_API = ['ready', 'env', 'box', 'visible', 'norm', 'node', 'nodes'] as const
+export const FRAME_API = ['ready', 'env', 'box', 'visible', 'norm', 'node', 'nodes', 'roles'] as const
 
 export type Target = string | Element
 
@@ -115,6 +115,8 @@ export interface FrameJig {
   node(role: string): HTMLElement
   /** Карта ролей случая → `NodeInfo`, без селекторов. Случай без ролей — `{}`. */
   nodes(): Record<string, NodeInfo>
+  /** Словарь ролей (JIG-42): база из `NODE_ROLES` → смысл, плюс ключ с правилом уточнителя через дефис. Без `help` — там не влезал (JIG-40). */
+  roles(): Record<string, string>
 }
 
 export interface ShellJig extends FrameJig {

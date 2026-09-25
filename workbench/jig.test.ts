@@ -263,6 +263,20 @@ describe('box', () => {
     expect(() => jig.box('.nope')).toThrow('совпало 0')
   })
 
+  it('селектор со знаком равенства не печатается — словами, без «=» (JIG-40)', () => {
+    document.body.innerHTML = '<div class="wbf-host" id="host"></div>'
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    let msg = ''
+    try {
+      jig.box('[data-x="1"]')
+    } catch (e) {
+      msg = String((e as Error).message)
+    }
+    expect(msg).not.toContain('=')
+    expect(msg).toContain('совпало 0')
+    expect(msg).toContain('знак равенства')
+  })
+
   it('matched считает все совпавшие узлы, не только видимые', () => {
     document.body.innerHTML = '<div class="wbf-host" id="host">'
       + '<div class="copy" id="c1"></div><div class="copy" id="c2"></div><div class="copy" id="c3"></div></div>'
@@ -585,10 +599,19 @@ describe('дрейф', () => {
     for (const name of FRAME_API) expect(jig.help).toContain(name)
   })
 
-  it('справка называет каждую роль словаря', () => {
+  it('справка без «=» и короче 900 символов (JIG-40: инструмент агента режет длиннее и с «=» вовсе)', () => {
     document.body.innerHTML = '<div class="wbf-host" id="host"></div>'
     const jig = makeFrameJig(window, { loadSearch: '' })
-    for (const role of Object.keys(NODE_ROLES)) expect(jig.help).toContain(role)
+    expect(jig.help).not.toContain('=')
+    expect(jig.help.length).toBeLessThan(900)
+  })
+
+  it('roles() — словарь без селекторов и без «=»; каждая база NODE_ROLES в нём есть (JIG-42)', () => {
+    document.body.innerHTML = '<div class="wbf-host" id="host"></div>'
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    const json = JSON.stringify(jig.roles())
+    expect(json).not.toContain('=')
+    for (const role of Object.keys(NODE_ROLES)) expect(json).toContain(role)
   })
 
   it('norm — ТА ЖЕ функция, что у развёртки (М7 держит sweep.ts)', () => {

@@ -138,9 +138,9 @@ export function makeShellJig(win: Window, opts: { loadSearch: string }): ShellJi
       })()
       return [
         frameHelp,
-        'jig.frame(i?) → FrameJig главного кадра (или кадра i в сетке); без аргумента и кадров > 1 — бросок',
-        'jig.scratch → HTMLElement — слот #jig-scratch для проб агента (fixed, не сдвигает оболочку)',
-        'jig.clearScratch() → number — убирает детей слота, возвращает сколько убрано',
+        'jig.frame(i?) → FrameJig — кадр i в сетке (умолч. 0); без аргумента при кадрах >1 — бросок',
+        'jig.scratch → HTMLElement — слот #jig-scratch для проб (fixed, не сдвигает оболочку)',
+        'jig.clearScratch() → number — чистит слот, отдаёт сколько убрано',
       ].filter(Boolean).join('\n')
     },
     frame,

@@ -6,6 +6,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react'
 import { Shell } from './shell-app.js'
 import { makeShellJig } from './jig-shell.js'
+import { makeFrameJig } from './jig.js'
 import { FRAME_API, SCRATCH_ID, type Env, type FrameJig, type NodeInfo } from './jig-api.js'
 
 afterEach(() => {
@@ -46,6 +47,7 @@ function fakeFrameJig(envOverride: Partial<Env> = {}, nodesOverride: Record<stri
     norm: vi.fn((css: string) => css),
     node: vi.fn(() => document.createElement('div')),
     nodes: vi.fn(() => nodesOverride),
+    roles: vi.fn(() => ({})),
   }
 }
 
@@ -142,6 +144,15 @@ describe('jig-shell: ручной DOM (без Shell)', () => {
     makeFrame()
     const jig = makeShellJig(window, { loadSearch: '' })
     expect(FRAME_API.every((k) => typeof (jig as unknown as Record<string, unknown>)[k] === 'function')).toBe(true)
+  })
+
+  it('help оболочки (справка кадра + свои три строки) — без «=», короче 900 символов (JIG-40)', () => {
+    const f = makeFrame()
+    const frameWin = f.contentWindow as Window & { jig?: FrameJig }
+    frameWin.jig = makeFrameJig(frameWin, { loadSearch: '' })
+    const jig = makeShellJig(window, { loadSearch: '' })
+    expect(jig.help).not.toContain('=')
+    expect(jig.help.length).toBeLessThan(900)
   })
 
   // `nodes()` оболочки (JIG-42) добавляет `page` — коробку во вьюпорте

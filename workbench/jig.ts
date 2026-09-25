@@ -64,7 +64,13 @@ function resolve(t: Target, doc: Document): { el: Element; doc: Document; matche
   if (typeof t === 'string') {
     const matched = doc.querySelectorAll(t).length
     const el = pick(doc, t)
-    if (!el) throw new Error(`jig: «${t}» — ни одного узла с ненулевой коробкой (совпало ${matched})`)
+    if (!el) {
+      // Селектор с атрибутом (`[data-day="…"]`) несёт знак равенства, а от
+      // него режет ответ ЦЕЛИКОМ `javascript_tool` агента (JIG-40) — печатать
+      // его нельзя даже в тексте ошибки, поэтому здесь СЛОВА, а не сам селектор.
+      const shown = t.includes('=') ? 'селектор не печатается: в нём знак равенства, ответ резался бы' : `«${t}»`
+      throw new Error(`jig: ${shown} — ни одного узла с ненулевой коробкой (совпало ${matched})`)
+    }
     return { el, doc: el.ownerDocument, matched }
   }
   return { el: t, doc: t.ownerDocument, matched: 1 }
@@ -118,6 +124,15 @@ function node(role: string): HTMLElement {
   if (matched === 0) throw new Error(`jig: роль «${role}» (${at}) указывает в пустоту — ни одного узла`)
   if (el === null) throw new Error(`jig: роль «${role}» (${at}) — совпало ${matched}, у всех коробка 0×0`)
   return el
+}
+
+/**
+ * Словарь ролей (JIG-42), а не `help` (JIG-40): базы `NODE_ROLES` плюс
+ * ключ `qualifier` с правилом уточнителя через дефис («toggle-date»,
+ * «sticky-top»). Ни один текст здесь не несёт `=`.
+ */
+function roleDictionary(): Record<string, string> {
+  return { ...NODE_ROLES, qualifier: 'уточнитель роли через дефис у базы: toggle-date, sticky-top' }
 }
 
 function nodes(): Record<string, NodeInfo> {
@@ -178,17 +193,22 @@ export async function settle(doc: Document, timeoutMs: number): Promise<{ live: 
   return { live }
 }
 
+/**
+ * Только методы, по строке на метод (JIG-40): словарь ролей раньше был
+ * ЗДЕСЬ и растягивал ответ до 1788 символов — инструмент агента режет
+ * длиннее ~1000. Словарь уехал в `jig.roles()` отдельным вызовом; здесь на
+ * него только ссылка. Ни знака `=` — тот же инструмент режет ответ ЦЕЛИКОМ,
+ * стоит ему встретить хоть один.
+ */
 const HELP = [
-  "jig.ready({timeoutMs?}) → Promise<{live, fonts, ms, ...env()}> — хост устоялся, шрифты, живость вкладки",
-  'jig.env() → {theme, scale, clientWidth, empty, innerWidth, innerHeight, dpr, docBar, container, floor, belowFloor, params}',
-  'jig.box(target) → {width, height, clientWidth, clientHeight, bar, barX, scrollLeft, scrollMax, scrollTop, scrollTopMax, endX, endY, matched} — target: селектор или узел',
-  'jig.visible(target) → {state, width, height, hiddenX, hiddenY, box, seen, cutBy, matched} — cutBy называет предков и липких соседей, срезавших коробку',
-  "jig.norm(css) → 'rgba(r, g, b, a)' — тот же формат, что fg/bg развёртки",
-  "jig.node(роль) → HTMLElement — узел роли текущего случая; бросает словами (без селектора, без «=»), если роли нет, она указывает в пустоту или у всех совпадений коробка 0×0",
-  'jig.nodes() → Record<роль, {found, matched, path, box, error?}> — карта ролей случая, без селекторов; случай без ролей — {}',
-  'роли (Case.nodes): ' + Object.entries(NODE_ROLES).map(([k, v]) => `${k} — ${v}`).join('; '),
-  'уточнитель роли через дефис: toggle-date, sticky-top',
-  'числа печатай рядом с innerWidth и dpr из ready()/env()',
+  "jig.ready({timeoutMs?}) → Promise<Ready> — устоялся, шрифты, живость вкладки",
+  'jig.env() → Env — theme, scale, size, dpr, docBar, container, floor, params',
+  'jig.box(target) → Box — width, height, bar, barX, scroll*, endX, endY, matched',
+  'jig.visible(target) → Visible — state, width, height, hidden*, box, seen, cutBy, matched',
+  'jig.norm(css) → rgba(...) — тот же формат, что у развёртки',
+  'jig.node(роль) → HTMLElement; бросает словами без селектора, если роли нет, пусто или 0×0',
+  'jig.nodes() → Record<роль, NodeInfo>, без селекторов; без ролей — {}',
+  'jig.roles() → Record<string, string> — словарь ролей (JIG-42), уточнитель через дефис',
 ].join('\n')
 
 /**
@@ -349,7 +369,7 @@ export function makeFrameJig(win: Window, opts: { loadSearch: string; floor?: nu
     }
   }
 
-  return { help: HELP, ready, env, box, visible, norm: normColour, node, nodes }
+  return { help: HELP, ready, env, box, visible, norm: normColour, node, nodes, roles: roleDictionary }
 }
 
 export function installFrameJig(win: Window = window): FrameJig {
