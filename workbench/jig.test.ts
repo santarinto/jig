@@ -203,30 +203,68 @@ describe('visible', () => {
 })
 
 describe('box', () => {
-  it('рамка ds-pivot не читается полосой (М2: без вычета рамок дало бы 2)', () => {
+  it('рамка ds-pivot не читается полосой (переведено на rect.width, JIG-40)', () => {
     document.body.innerHTML = '<div class="wbf-host" id="host"><div class="ds-pivot" id="pv" style="overflow: auto; border: 1px solid"></div></div>'
-    stub(document.getElementById('pv')!, 'getBoundingClientRect', () => rectOf(0, 0, 380, 400))
-    stubGet(document.getElementById('pv')!, 'offsetWidth', () => 382)
+    stub(document.getElementById('pv')!, 'getBoundingClientRect', () => rectOf(0, 0, 382, 400))
     stubGet(document.getElementById('pv')!, 'clientWidth', () => 380)
     const jig = makeFrameJig(window, { loadSearch: '' })
     expect(jig.box('#pv').bar).toBe(0)
   })
 
-  it('полоса читается, когда она правда есть', () => {
+  it('полоса читается, когда она правда есть (переведено на rect.width, JIG-40)', () => {
     document.body.innerHTML = '<div class="wbf-host" id="host"><div class="ds-pivot" id="pv" style="overflow: auto; border: 1px solid"></div></div>'
     const pv = document.getElementById('pv')!
-    stub(pv, 'getBoundingClientRect', () => rectOf(0, 0, 365, 400))
-    stubGet(pv, 'offsetWidth', () => 382)
+    stub(pv, 'getBoundingClientRect', () => rectOf(0, 0, 382, 400))
     stubGet(pv, 'clientWidth', () => 365)
     const jig = makeFrameJig(window, { loadSearch: '' })
     expect(jig.box('#pv').bar).toBe(15)
   })
 
-  it('упор прокрутки — допуск 1 px (scrollLeft дробный при dpr ≠ 1)', () => {
+  it('dpr 1.15, рамка прижата к 0.87 CSS px — без полосы это 0, не отрицательное дробное (JIG-40)', () => {
+    document.body.innerHTML = '<div class="wbf-host" id="host"><div class="ds-pivot" id="pv" style="overflow: auto; border: 0.87px solid"></div></div>'
+    const pv = document.getElementById('pv')!
+    stub(pv, 'getBoundingClientRect', () => rectOf(0, 0, 707.74, 400))
+    stubGet(pv, 'clientWidth', () => 706)
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    expect(jig.box('#pv').bar).toBe(0)
+  })
+
+  it('dpr 1.15, полоса при той же прижатой рамке — 15, не теряется в округлении (JIG-40)', () => {
+    document.body.innerHTML = '<div class="wbf-host" id="host"><div class="ds-pivot" id="pv" style="overflow: auto; border: 0.87px solid"></div></div>'
+    const pv = document.getElementById('pv')!
+    stub(pv, 'getBoundingClientRect', () => rectOf(0, 0, 707.74, 400))
+    stubGet(pv, 'clientWidth', () => 691)
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    expect(jig.box('#pv').bar).toBe(15)
+  })
+
+  // На литералах владельца (707.74/0.87/706 и .../691) вычитание кратно и в
+  // IEEE754 сокращается ДО целого без остатка — на них снятый round/max не
+  // краснеет. Эти два случая подобраны так, чтобы сам остаток был дробным
+  // (0.1) или уходил в минус (−0.8) ДО округления, — они и доказывают, что
+  // round/max в формуле нагружены, а не декоративны.
+  it('без round формула дала бы 0.1 вместо 0 — дробный остаток меньше половины пикселя', () => {
+    document.body.innerHTML = '<div class="wbf-host" id="host"><div class="ds-pivot" id="pv" style="overflow: auto; border: 0.1px solid"></div></div>'
+    const pv = document.getElementById('pv')!
+    stub(pv, 'getBoundingClientRect', () => rectOf(0, 0, 706.3, 400))
+    stubGet(pv, 'clientWidth', () => 706)
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    expect(jig.box('#pv').bar).toBe(0)
+  })
+
+  it('без пола 0 формула ушла бы в −1 — округление дробного остатка в минус', () => {
+    document.body.innerHTML = '<div class="wbf-host" id="host"><div class="ds-pivot" id="pv" style="overflow: auto; border: 0.1px solid"></div></div>'
+    const pv = document.getElementById('pv')!
+    stub(pv, 'getBoundingClientRect', () => rectOf(0, 0, 705.4, 400))
+    stubGet(pv, 'clientWidth', () => 706)
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    expect(jig.box('#pv').bar).toBe(0)
+  })
+
+  it('упор прокрутки — допуск 1 px (scrollLeft дробный при dpr ≠ 1; bar переведён на rect.width)', () => {
     document.body.innerHTML = '<div class="wbf-host" id="host"><div class="ds-eventcal__grid" id="ec"></div></div>'
     const ec = document.getElementById('ec')!
-    stub(ec, 'getBoundingClientRect', () => rectOf(0, 0, 678, 400))
-    stubGet(ec, 'offsetWidth', () => 693)
+    stub(ec, 'getBoundingClientRect', () => rectOf(0, 0, 693, 400))
     stubGet(ec, 'clientWidth', () => 678)
     stubGet(ec, 'scrollWidth', () => 830)
     const jig = makeFrameJig(window, { loadSearch: '' })

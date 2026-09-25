@@ -52,9 +52,9 @@ export interface Box {
   height: number
   clientWidth: number
   clientHeight: number
-  /** `offsetWidth − clientWidth − рамки L/R`; у корня — `docBar`. */
+  /** `round(rect.width − рамки L/R − clientWidth)`, пол 0; у корня — `docBar`. */
   bar: number
-  /** `offsetHeight − clientHeight − рамки T/B`. */
+  /** `round(rect.height − рамки T/B − clientHeight)`, пол 0. */
   barX: number
   scrollLeft: number
   /** `scrollWidth − clientWidth`. */

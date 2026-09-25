@@ -267,10 +267,16 @@ export function makeFrameJig(win: Window, opts: { loadSearch: string; floor?: nu
     const he = el as HTMLElement
     const isRoot = el === elDoc.documentElement
 
-    const bar = isRoot ? docBarOf(elDoc) : he.offsetWidth - he.clientWidth - bl - br
+    // На dpr ≠ 1 (JIG-40: 1.15 у владельца) рамка 1 px прижимается к дробному
+    // CSS px (0.87), а `offsetWidth`/`offsetHeight` остаются целыми —
+    // «offset − client − рамки» даёт отрицательное И дробное там, где полосы
+    // нет вовсе (замер на `.ds-pivot`: −0.74 вместо 0). `getBoundingClientRect`
+    // несёт то же дробное число, что и рамка, поэтому разность с округлением
+    // и полом 0 не расходится с ней.
+    const bar = isRoot ? docBarOf(elDoc) : Math.max(0, Math.round(r.width - bl - br - he.clientWidth))
     const barX = isRoot
       ? Math.max(0, Math.round(view.innerHeight - elDoc.documentElement.clientHeight))
-      : he.offsetHeight - he.clientHeight - bt - bb
+      : Math.max(0, Math.round(r.height - bt - bb - he.clientHeight))
 
     const scrollMax = he.scrollWidth - he.clientWidth
     const scrollTopMax = he.scrollHeight - he.clientHeight
