@@ -20,6 +20,9 @@
  * получается: `.mjs` в `scripts` из TS-плагина без объявлений не импортируется.
  *
  * В ПАКЕТ НЕ ВХОДИТ: `workbench/` не собирается в `dist` вовсе.
+ *
+ * `visiblePart`, `stickyBox`, `stickySides` берёт и `jig.visible` (JIG-40):
+ * агенту тот же ответ про клип, что и гейту, а не пересказ его словами.
  */
 
 import { readablePath } from './culprit-path.js'
@@ -193,7 +196,7 @@ export interface TargetScan {
 type Rest = (a: Element | null) => readonly [number, number] | undefined
 
 /** Прямоугольник во вьюпортных координатах; пустой, если `l >= r` или `t >= b`. */
-interface Rect { l: number; t: number; r: number; b: number }
+export interface Rect { l: number; t: number; r: number; b: number }
 
 /**
  * ОБРЕЗАЮЩИЕ ПРЕДКИ цели — снизу вверх, до `.wbf-host` включительно (выше него
@@ -244,21 +247,30 @@ const rectOf = (el: Element): Rect => {
  * смещений контейнеров, и подпись с замером видят одно множество целей.
  * Без `atRest` — честное пересечение после прокрутки, по которому ставятся
  * углы; `cut` тогда называет предка, срезавшего её в ноль первым.
+ *
+ * ПЯТЫЙ ПАРАМЕТР `onCut` — JIG-40: `jig.visible` спрашивает тот же вопрос
+ * («что срезало коробку»), что и этот гейт, и без крючка завёл бы вторую
+ * версию цикла по `clippers`. Без `onCut` поведение байт-в-байт прежнее:
+ * колбэк вызывается только если он задан и хоть одна грань сдвинулась на
+ * этом предке.
  */
-function visiblePart(el: Element, doc: Document, atRest: boolean, from: Rect = rectOf(el)): Rect & { cut?: Element } {
+export function visiblePart(el: Element, doc: Document, atRest: boolean, from: Rect = rectOf(el),
+  onCut?: (a: Element) => void): Rect & { cut?: Element } {
   const v: Rect & { cut?: Element } = { ...from }
   for (const { a, x, y } of clippers(el, doc)) {
     const c = rectOf(a)
     const cutX = x && (!atRest || c.r - c.l <= 0)
     const cutY = y && (!atRest || c.b - c.t <= 0)
+    const before = { l: v.l, t: v.t, r: v.r, b: v.b }
     if (cutX) { v.l = Math.max(v.l, c.l); v.r = Math.min(v.r, c.r) }
     if (cutY) { v.t = Math.max(v.t, c.t); v.b = Math.min(v.b, c.b) }
+    if (onCut && (v.l !== before.l || v.t !== before.t || v.r !== before.r || v.b !== before.b)) onCut(a)
     if (v.cut === undefined && empty(v)) v.cut = a
   }
   return v
 }
 
-const empty = (v: Rect) => v.r - v.l <= 0 || v.b - v.t <= 0
+export const empty = (v: Rect): boolean => v.r - v.l <= 0 || v.b - v.t <= 0
 
 /**
  * ЦЕЛЬ, которой принадлежит узел: ближайший он сам или предок, который
@@ -623,6 +635,29 @@ function stuckOver(at: Element, el: Element, doc: Document): boolean {
 const listable = (v: string) => v === 'auto' || v === 'scroll' || v === 'hidden'
 
 /**
+ * Ближайший контейнер прокрутки липкого узла; `null` — окно. Вынесено из
+ * `scrolledUnder` (JIG-40): `jig.visible` спрашивает тот же вопрос про ЛЮБОЙ
+ * sticky-узел документа, не только про тот, что уже накрыл цель по
+ * `elementFromPoint`, и второй копии этого подъёма по предкам не завели.
+ */
+export function stickyBox(sticky: Element, doc: Document): Element | null {
+  const view = doc.defaultView!
+  let box: Element | null = sticky.parentElement
+  for (; box && box !== doc.body && box !== doc.documentElement; box = box.parentElement) {
+    const k = view.getComputedStyle(box)
+    if (listable(k.overflowX) || listable(k.overflowY)) break
+  }
+  const win = !box || box === doc.body || box === doc.documentElement
+  return win ? null : box
+}
+
+/** Какие стороны липкого узла заданы: значение не `''` и не `'auto'`. Вынесено из `scrolledUnder`. */
+export function stickySides(cs: CSSStyleDeclaration): { left: boolean; right: boolean; top: boolean; bottom: boolean } {
+  const set = (v: string) => v !== '' && v !== 'auto'
+  return { left: set(cs.left), right: set(cs.right), top: set(cs.top), bottom: set(cs.bottom) }
+}
+
+/**
  * Цель ушла под sticky-слой ПРОКРУТКОЙ, а не лежит под ним в покое. Все три
  * условия: ближайший контейнер прокрутки слоя (или окно) содержит цель; у него
  * есть ход по оси слоя; он прокручен в сторону отступа слоя — `top`/`left`
@@ -631,23 +666,18 @@ const listable = (v: string) => v === 'auto' || v === 'scroll' || v === 'hidden'
  */
 function scrolledUnder(sticky: Element, el: Element, doc: Document): boolean {
   const view = doc.defaultView!
-  let box: Element | null = sticky.parentElement
-  for (; box && box !== doc.body && box !== doc.documentElement; box = box.parentElement) {
-    const k = view.getComputedStyle(box)
-    if (listable(k.overflowX) || listable(k.overflowY)) break
-  }
-  const win = !box || box === doc.body || box === doc.documentElement
+  const box = stickyBox(sticky, doc)
+  const win = box === null
   if (!win && !box!.contains(el)) return false
   const root = doc.documentElement
   const [ox, oy] = win ? [view.scrollX, view.scrollY] : [box!.scrollLeft, box!.scrollTop]
   const [mx, my] = win
     ? [root.scrollWidth - view.innerWidth, root.scrollHeight - view.innerHeight]
     : [box!.scrollWidth - box!.clientWidth, box!.scrollHeight - box!.clientHeight]
-  const cs = view.getComputedStyle(sticky)
-  const set = (v: string) => v !== '' && v !== 'auto'
-  const toward = (start: string, end: string, off: number, max: number) =>
-    max > 0 && ((set(start) && off > 0) || (set(end) && off < max))
-  return toward(cs.top, cs.bottom, oy, my) || toward(cs.left, cs.right, ox, mx)
+  const sides = stickySides(view.getComputedStyle(sticky))
+  const toward = (start: boolean, end: boolean, off: number, max: number) =>
+    max > 0 && ((start && off > 0) || (end && off < max))
+  return toward(sides.top, sides.bottom, oy, my) || toward(sides.left, sides.right, ox, mx)
 }
 
 /**

@@ -51,14 +51,23 @@ export interface Room {
   bar: number
 }
 
+/**
+ * Ширина вертикальной полосы прокрутки ДОКУМЕНТА: «полоса −N» тулбара
+ * (DS-314). Вынесено из `roomOf` для `jig.env().docBar` (JIG-40) — то же
+ * число, тот же вопрос, второй копии формулы не заводим.
+ */
+export function docBarOf(doc: Document): number {
+  const view = doc.defaultView
+  return view ? Math.max(0, Math.round(view.innerWidth - doc.documentElement.clientWidth)) : 0
+}
+
 export function roomOf(target: Element): Room {
   const doc = target.ownerDocument
   const view = doc.defaultView
   const cs = view ? view.getComputedStyle(target) : null
   const pad = cs ? (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) : 0
   const cw = Math.round(target.clientWidth - pad)
-  const bar = view ? Math.max(0, Math.round(view.innerWidth - doc.documentElement.clientWidth)) : 0
-  return { cw, bar }
+  return { cw, bar: docBarOf(doc) }
 }
 
 export function reportSize(target: Element, send: (w: number, h: number, room: Room) => void): () => void {
