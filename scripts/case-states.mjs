@@ -25,6 +25,15 @@
  * гейт не трогает — сорока фикстурам объявлять нечего, и обязательное поле
  * дало бы сорок формальных строк, ни одна из которых не стоила автору мысли.
  *
+ * ЧЕТВЁРТЫЙ ВОПРОС (JIG-42): не только «показано», но и «роль
+ * (`Case.nodes`) находит узел». Проверяется ЧЕРЕЗ `window.jig.nodes()`/
+ * `jig.node()` в этом же настоящем кадре — тот самый мост, которым спрашивает
+ * браузерный агент, а не второй способ искать узел: второй способ мог быть
+ * зелёным на дефекте самого моста. Видимость (`opacity`/`visibility`) здесь
+ * НЕ утверждается — роль это адрес в DOM, а «показано» отдельно спрашивает
+ * блок `shows` выше; нулевая коробка красная, потому что `jig.node()` такой
+ * узел не отдаст — агенту это то же самое, что пустота.
+ *
  * Usage: npm run states
  */
 import { chromium } from 'playwright'
@@ -106,6 +115,7 @@ const bail = async (lines) => {
 
 let page
 let plan
+let rolesPlan
 try {
   await waitForServer(`http://${HOST}:${PORT}/`)
   browser = await chromium.launch()
@@ -117,7 +127,8 @@ try {
    * фикстурами держит `workbench/shows-plan.test.ts`.
    */
   await page.goto(`http://${HOST}:${PORT}/`, { waitUntil: 'load' })
-  plan = await page.evaluate(() => import('/shows-plan.ts').then((m) => m.showsPlan()))
+  ;({ shows: plan, nodes: rolesPlan } = await page.evaluate(() =>
+    import('/shows-plan.ts').then(async (m) => ({ shows: await m.showsPlan(), nodes: await m.nodesPlan() }))))
 } catch (e) {
   await bail([`обход не начался — ${firstLine(e)}`])
 }
@@ -127,6 +138,14 @@ try {
 // зелёного, ради которого гейт написан.
 if (plan.length === 0) {
   await bail(['ни один кейс не объявил shows — гейт состояний обошёл бы ноль случаев'])
+}
+// ЧЕТВЁРТЫЙ ВОПРОС ТОГО ЖЕ РАННЕРА (JIG-42): не только «показано ли», но и
+// «находит ли роль узел» — тем же сервером, той же `cell`, тем же «не
+// измерено». Пустой план ролей — тот же вид зелёного вхолостую, что у `plan`
+// выше: гейт ролей обошёл бы ноль случаев и остался бы зелёным на любом
+// дефекте `Case.nodes`.
+if (rolesPlan.length === 0) {
+  await bail(['ни один кейс не объявил nodes — проверка ролей обошла бы ноль случаев'])
 }
 
 /**
@@ -271,6 +290,116 @@ for (const row of plan) {
 
     if (errs.length) failures.push(`${row.c}/${row.caseId}: кадр бросил — ${errs.join(' | ')}`)
   })
+}
+
+/**
+ * РОЛИ УЗЛОВ (JIG-42) — ЧЕРЕЗ `window.jig.nodes()`, не через свой обход
+ * DOM. `jig` — тот самый код, который зовёт браузерный агент; второй способ
+ * искать узел здесь дал бы гейт, зелёный на дефекте самого моста
+ * (`bindJigFrame` читает не тот случай, `look` берёт не `pick`) — ровно то,
+ * что проверяют юниты `jig.test.ts`, но там нет настоящего кадра и
+ * раскладки.
+ *
+ * НЕ rAF, А `setTimeout`: `window.jig` ставится эффектом `bindJigFrame`
+ * ПОСЛЕ первого кадра React, и опрос ждёт этого монтирования, а не кадра
+ * растеризации (бриф §5, тот же довод, что у остальных опросов гейта).
+ *
+ * ВИДИМОСТЬ (`opacity`/`visibility`) ЗДЕСЬ НЕ УТВЕРЖДАЕТСЯ: роль — это
+ * АДРЕС в DOM, а «показано» — предмет `shows` выше. Узел с нулевой коробкой
+ * — то же самое, что `jig.node()` не отдаст, и это красное; спрятанный
+ * `opacity: 0` узел — законный адрес, к которому `sx`/`sy` вправе применяться.
+ *
+ * Предикаты БАЗЫ роли (`base = role.split('-')[0]`), не уточнителя: два поля
+ * одного вида в одном случае (`Form/overlay`: `toggle`, `toggle-date`) несут
+ * один смысл базы, и предикат про смысл, а не про конкретный узел.
+ * - `port` — `overflow-x` или `overflow-y` ∈ `auto|scroll`, иначе `sx`/`sy`
+ *   молча не применятся к нему (решение 1.5 спецификации, п. §1.6 — держатель
+ *   ставит прокрутку РОВНО узлу роли `port`).
+ * - `sticky` — `position: sticky`.
+ */
+const probeRoles = async ([want, ms]) => {
+  const deadline = performance.now() + ms
+  const sleep = (t) => new Promise((r) => setTimeout(r, t))
+  let nodes = null
+  let err = null
+  for (;;) {
+    try {
+      nodes = window.jig.nodes()
+      err = null
+    } catch (e) {
+      nodes = null
+      err = String(e?.message ?? e)
+    }
+    if (nodes && want.every((r) => nodes[r]?.found)) break
+    if (performance.now() > deadline) break
+    await sleep(50)
+  }
+  const styles = {}
+  for (const r of want) {
+    try {
+      const cs = getComputedStyle(window.jig.node(r))
+      styles[r] = { ox: cs.overflowX, oy: cs.overflowY, pos: cs.position }
+    } catch {
+      /* ответит nodes — либо роли нет, либо она указывает в пустоту */
+    }
+  }
+  return { nodes, err, styles }
+}
+
+let rolesChecked = 0
+const ROLES = rolesPlan.reduce((n, r) => n + Object.keys(r.nodes).length, 0)
+const rolesGapFrom = unmeasured.length
+
+for (const row of rolesPlan) {
+  const at = `${row.c}/${row.caseId} (роли)`
+  const url = `http://${HOST}:${PORT}/frame.html?c=${encodeURIComponent(row.c)}`
+    + `&case=${encodeURIComponent(row.caseId)}&sid=1&theme=light`
+  const want = Object.keys(row.nodes).sort()
+  const errs = []
+  page.removeAllListeners('pageerror')
+  page.on('pageerror', (e) => errs.push(String(e.message)))
+  await cell(at, url, async () => {
+    const got = await page.evaluate(probeRoles, [want, APPEAR_MS])
+    if (!got.nodes) {
+      failures.push(`${at}: jig.nodes() не ответил за ${APPEAR_MS} мс — ${got.err ?? 'jig в кадре не установлен'}`)
+      return
+    }
+    const have = Object.keys(got.nodes).sort()
+    if (have.join(',') !== want.join(',')) {
+      failures.push(`${at}: jig.nodes() отдал роли [${have.join(', ')}] при объявленных [${want.join(', ')}] — мост кадра читает не тот случай`)
+      return
+    }
+    for (const r of want) {
+      rolesChecked++
+      const sel = row.nodes[r]
+      const info = got.nodes[r]
+      const base = r.split('-')[0]
+      if (info.error) {
+        failures.push(`${at}: роль ${r} «${sel}» — селектор не разобрался`)
+        continue
+      }
+      if (info.matched === 0) {
+        failures.push(`${at}: роль ${r} «${sel}» указывает в пустоту — в кадре ни одного узла`)
+        continue
+      }
+      if (!info.found) {
+        failures.push(`${at}: роль ${r} «${sel}» — совпало ${info.matched}, у всех коробка 0×0; jig.node её не отдаст`)
+        continue
+      }
+      const st = got.styles[r]
+      if (base === 'port' && st && st.ox !== 'auto' && st.ox !== 'scroll' && st.oy !== 'auto' && st.oy !== 'scroll') {
+        failures.push(`${at}: роль ${r} — узел не контейнер прокрутки (overflow ${st.ox}/${st.oy}); sx/sy к нему не применятся`)
+      }
+      if (base === 'sticky' && st && st.pos !== 'sticky') {
+        failures.push(`${at}: роль ${r} — position ${st.pos}, а не sticky`)
+      }
+    }
+    if (errs.length) failures.push(`${at}: кадр бросил — ${errs.join(' | ')}`)
+  })
+}
+
+if (unmeasured.length === rolesGapFrom && rolesChecked !== ROLES) {
+  failures.push(`ролей проверено ${rolesChecked} вместо ${ROLES} — обход оборвался`)
 }
 
 /**
@@ -516,7 +645,7 @@ if (unmeasured.length === closedGapFrom && closedNodes !== CLOSED_NODES) {
  * исходов (`continue` не того цикла, ранний выход), и зелёный отчёт тогда
  * утверждал бы о случаях, которых никто не грузил.
  */
-const CELLS = plan.length + (ANCHORED.length + CLOSED.length) * 2 * 2
+const CELLS = plan.length + rolesPlan.length + (ANCHORED.length + CLOSED.length) * 2 * 2
 if (cells !== CELLS) failures.push(`замеров ${cells} вместо ${CELLS} — обход оборвался`)
 
 try {
@@ -536,8 +665,8 @@ if (unmeasured.length) {
 if (failures.length || unmeasured.length) {
   fail(failures)
   console.error(
-    `\nСОСТОЯНИЯ: ${failures.length} нарушений на ${selectors} обещаниях и ${anchoredNodes} всплывающих, `
-    + `${unmeasured.length} не измерено из ${CELLS} кадров.`,
+    `\nСОСТОЯНИЯ: ${failures.length} нарушений на ${selectors} обещаниях, ${rolesChecked} ролях `
+    + `и ${anchoredNodes} всплывающих, ${unmeasured.length} не измерено из ${CELLS} кадров.`,
   )
   process.exit(1)
 }
@@ -548,3 +677,5 @@ console.log(
 for (const row of plan) console.log(`  ${row.c}/${row.caseId}: ${row.shows.join(', ')}`)
 console.log(`ВСПЛЫВАЮЩИЕ OK — ${anchoredNodes} узлов держат содержимое: ${ANCHORED.map(([c, k]) => `${c}/${k}`).join(', ')} × шкалы 1, 1.5 × обе темы`)
 console.log(`ЗАКРЫТЫЕ OK — ${closedNodes} узлов держат содержимое и фолбэк листа: ${CLOSED.map(([c, k]) => `${c}/${k}`).join(', ')} × шкалы 1, 1.5 × обе темы`)
+console.log(`РОЛИ OK — ${rolesChecked} ролей в ${rolesPlan.length} кейсах находят узел через jig.nodes():`)
+for (const row of rolesPlan) console.log(`  ${row.c}/${row.caseId}: ${Object.keys(row.nodes).join(', ')}`)

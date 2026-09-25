@@ -70,6 +70,33 @@ export interface CaseRow {
  * сверяя компоненты плана со списком каталогов на диске: план, согласный сам
  * с собой, зелен и тогда, когда glob потерял половину каталога.
  */
+/** Строка плана гейта ролей (JIG-42): адрес кадра плюс объявленные роли. */
+export interface NodesRow {
+  c: string
+  caseId: string
+  nodes: Record<string, string>
+}
+
+/**
+ * ТОТ ЖЕ `mods` (доводом `casesPlan` выше) — второй `import.meta.glob`
+ * покраснил бы `fixture-coverage` («копии найдены все», десять копий
+ * литералом) и мог молча обойти меньше каталогов, оставаясь зелёным.
+ *
+ * Без `?.length`-фильтра, тем же доводом, что у `showsPlan`: пустой `nodes:
+ * {}` — ошибка состава, её называет `validateFixtures`, а не тишина здесь.
+ */
+export async function nodesPlan(): Promise<NodesRow[]> {
+  const rows: NodesRow[] = []
+  for (const load of Object.values(mods)) {
+    const fx = (await load()).default
+    for (const c of fx.cases) {
+      if (c.nodes) rows.push({ c: fx.name, caseId: c.id, nodes: c.nodes as Record<string, string> })
+    }
+  }
+  rows.sort((a, b) => a.c.localeCompare(b.c) || a.caseId.localeCompare(b.caseId))
+  return rows
+}
+
 export async function casesPlan(): Promise<CaseRow[]> {
   const rows: CaseRow[] = []
   for (const load of Object.values(mods)) {

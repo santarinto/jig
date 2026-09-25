@@ -12,7 +12,7 @@
  */
 /// <reference types="vite/client" />
 import { describe, it, expect } from 'vitest'
-import { casesPlan, showsPlan } from './shows-plan.js'
+import { casesPlan, nodesPlan, showsPlan } from './shows-plan.js'
 import type { AnyFixture } from '../src/internal/fixture.js'
 
 // Второй обход — eager, а не тот же ленивый список: два одинаковых способа
@@ -24,6 +24,11 @@ const shipped = import.meta.glob<{ default: AnyFixture }>(['../src/components/*/
 const direct = Object.values(shipped)
   .map((m) => m.default)
   .flatMap((fx) => fx.cases.filter((c) => c.shows).map((c) => `${fx.name}/${c.id}`))
+  .sort()
+
+const directNodes = Object.values(shipped)
+  .map((m) => m.default)
+  .flatMap((fx) => fx.cases.filter((c) => c.nodes).map((c) => `${fx.name}/${c.id}`))
   .sort()
 
 describe('shows-plan', () => {
@@ -49,5 +54,27 @@ describe('shows-plan', () => {
       .sort()
     const plan = await casesPlan()
     expect(plan.map((r) => `${r.c}/${r.caseId}${r.shows ? ` [${r.shows.join(',')}]` : ''}${r.overflows !== undefined ? ` overflows=${r.overflows}` : ''}${r.tinyTargets !== undefined ? ` tiny=${r.tinyTargets}` : ''}`).sort()).toEqual(all)
+  })
+
+  // Роли узлов (JIG-42) — тот же ЖИВОЙ `mods`, доводом casesPlan выше: два
+  // независимых обхода одних и тех же фикстур, а не разбор regexp.
+  it('nodesPlan видит все случаи с nodes, и ни одного лишнего', async () => {
+    const plan = await nodesPlan()
+    expect(plan.map((r) => `${r.c}/${r.caseId}`)).toEqual(directNodes)
+  })
+
+  it('план ролей непустой — иначе гейт ролей зелен, ничего не обойдя', async () => {
+    expect((await nodesPlan()).length).toBeGreaterThan(0)
+  })
+
+  it('в строке — те же роли и селекторы, что в фикстуре', async () => {
+    const byKey = new Map(
+      Object.values(shipped)
+        .map((m) => m.default)
+        .flatMap((fx) => fx.cases.map((c) => [`${fx.name}/${c.id}`, c.nodes] as const)),
+    )
+    for (const row of await nodesPlan()) {
+      expect(row.nodes, `${row.c}/${row.caseId}`).toEqual(byKey.get(`${row.c}/${row.caseId}`))
+    }
   })
 })

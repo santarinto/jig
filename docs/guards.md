@@ -927,6 +927,15 @@ directions — the field returns, the directive goes unused, `tsc` reddens on th
 check itself. `frame` was the first (DS-91). Note this one is red under
 `npm run typecheck`, not under `vitest`: its subject is the type.
 
+`Case.nodes` (JIG-42) holds a SECOND `@ts-expect-error`, same mechanism, a
+different failure: a typo in the ROLE NAME (`prot` instead of `port`) is
+`TS2353` on the closed base of `NodeRoleName`, not a removed field —
+`validateFixtures` catches the runtime side of the same typo on the `as any`
+path (`nodesErrors`), a `.ds-*` class in `nodes` is legal on purpose (unlike
+`shows`: `nodes` is our address into the component's DOM, not a claim about
+its contract), and the dictionary/regex convergence is asserted both ways —
+every `NODE_ROLES` key and its `-a` suffix must pass.
+
 ## `workbench/kinds-truth.test.ts`
 
 The workbench's static kinds map, built by
@@ -1296,6 +1305,38 @@ scrollHeight 29 при clientHeight 23, разница ровно 6 — зазо
 измерено», 124 остальных измерены, код 1; пропущенный `cells++` у одной
 ячейки — «замеров 125 вместо 126»; порт 5299 у загрузки плана — «обход не
 начался». Верстак на 5277 после каждого из них не слушает.
+ЧЕТВЁРТЫЙ ВОПРОС ТОГО ЖЕ РАННЕРА (JIG-42): не только «показано», но и «роль
+(`Case.nodes`) находит узел». План приходит той же страницей, вторым полем
+`nodesPlan()` рядом с `showsPlan()` — ТОТ ЖЕ `mods`, второй `import.meta.glob`
+покраснил бы `fixture-coverage`. Проверяется ЧЕРЕЗ `window.jig.nodes()`/
+`jig.node()` в этом же кадре (решение 1.5 спецификации JIG-42) — тот самый
+мост, которым спрашивает браузерный агент, а не второй способ искать узел:
+второй способ мог быть зелёным на дефекте самого моста (`bindJigFrame` читает
+не тот случай, `look` берёт не `pick`), и ровно это ловит юнит `jig.test.ts`,
+но там нет настоящего кадра и раскладки. Видимость (`opacity`/`visibility`) не
+утверждается — роль это адрес в DOM, а «показано» отдельно спрашивает блок
+`shows`; нулевая коробка красная, потому что `jig.node()` такой узел не
+отдаст — агенту это то же самое, что пустота. Два предиката базы роли (не
+уточнителя: `toggle`/`toggle-date` — два поля одного смысла): `port` обязан
+быть контейнером прокрутки (`overflow-x`/`overflow-y` ∈ `auto|scroll`, иначе
+`sx`/`sy` молча не применятся), `sticky` обязан быть `position: sticky`.
+Полнота — тем же счётом, что у `ANCHORED`/`CLOSED`: `rolesChecked` против
+`ROLES` (сумма ролей по плану), расхождение при пустом «не измерено» —
+«ролей проверено N вместо M — обход оборвался»; `CELLS` учитывает
+`rolesPlan.length`. Пустой план ролей (никто не объявил `nodes`) — тот же
+вид зелёного вхолостую, что у пустого `plan`: `bail` до открытия браузера.
+Пять мутаций, каждая проверена прогоном: опечатка в СЕЛЕКТОРЕ роли (класс
+`.ds-eventcal__grid` → `.ds-eventcal__gird`, не в ИМЕНИ роли — то ловит
+типизация `NodeRoleName`, не этот гейт) — «роль port «…» указывает в пустоту»;
+временная роль `panel` на закрытом пузырьке `Tooltip/base` (DS-308,
+`hidden`) — «совпало 1, у всех коробка 0×0; jig.node её не отдаст»; `port` на
+корневом `.ds-eventcal` (не контейнер прокрутки) — «узел не контейнер
+прокрутки (overflow visible/visible)»; `jig.ts` `nodes()` роняет первую роль
+(`Object.entries(roles).slice(1)`) — «jig.nodes() отдал роли […] при
+объявленных […] — мост кадра читает не тот случай» на каждом размеченном
+случае разом, плюс «ролей проверено 0 вместо 22 — обход оборвался»;
+`nodesPlan()` → `[]` — `bail`, код 1, до открытия браузера. Все пять
+восстановлены обратной правкой между прогонами.
 
 ## `scripts/case-walk.mjs` (DS-177)
 
