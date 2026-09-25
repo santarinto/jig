@@ -438,21 +438,25 @@ const coversOver = (crit) => crit === 'документ' || crit === 'оба'
 const coversEscape = (crit) => crit === 'коробка' || crit === 'оба'
 const bad = (m) => m.over || m.escape > 0.5
 
-const report = ({ measured, unmeasured }, area) => {
+// `known` — карта известных нарушений; ходок её не передаёт и получает `KNOWN`
+// модуля (тем же доводом, что у строки цели клика, DS-329): параметр нужен
+// синтетике гейта `matrix-report.test.ts` (JIG-30), которая судит печать без
+// живой карты на ~сотню пар.
+const report = ({ measured, unmeasured, known = KNOWN }, area) => {
   if (unmeasured.length) {
     unmeasured.sort((a, b) => a.at.localeCompare(b.at))
     console.error(`НЕ ИЗМЕРЕНО ${unmeasured.length}:`)
     for (const u of unmeasured) console.error(`  ${u.at}: ${u.why}\n    ${human(u.url)}`)
   }
 
-  // `matchedKnown` — карта, которую видит `classify`. Запись из `KNOWN`
+  // `matchedKnown` — карта, которую видит `classify`. Запись из `known`
   // остаётся в ней, только когда суффикс покрывает ВСЁ, что у ЭТОЙ ячейки
   // сейчас нарушено; иначе она выброшена — `classify` тогда судит ячейку как
   // ОБЫЧНОЕ нарушение (`!known.has(m.at)`), и текст ниже называет, что именно
   // прощено, а что нет. Ячейку, у которой `bad(m)` уже ложно (нарушения нет
   // вовсе), матч не сужает — её решает `stale` у `classify`, как и раньше.
   const matchedKnown = new Map()
-  for (const [at, code] of KNOWN) {
+  for (const [at, code] of known) {
     const m = measured.get(at)
     if (!m || !bad(m)) { matchedKnown.set(at, code); continue }
     const crit = criterionOf(code)
@@ -481,7 +485,7 @@ const report = ({ measured, unmeasured }, area) => {
   // ключа нет в `matchedKnown`), но исходная `KNOWN` про неё что-то знает —
   // это не «нашли новое», а «прощение не покрыло». Текст называет обе вещи.
   const mismatchNote = (v) => {
-    const code = KNOWN.get(v.at)
+    const code = known.get(v.at)
     if (!code) return ''
     const crit = criterionOf(code)
     const broken = []
@@ -522,17 +526,26 @@ const report = ({ measured, unmeasured }, area) => {
     for (const x of sections.stale) console.error(`  ${x.at}: ${x.why}, задача ${x.code}`)
   }
 
+  // ВЕРДИКТ БОЛЬШЕ НЕ ПЕЧАТАЕТСЯ ЗДЕСЬ (JIG-30): строка `OVERFLOW OK`/`OVERFLOW
+  // FAIL` уезжала то в stdout, то в stderr, и при `> log` FAIL пропадал из
+  // файла целиком, а OK на 20 000-строчном прогоне тонул посреди простыни.
+  // `report` теперь ВОЗВРАЩАЕТ вердикт, и печатает его ходок — один раз, одним
+  // потоком, в самом конце обхода вместе с вердиктами всех остальных строк.
+  // Тело секций (известно/объявлено/нарушения/устаревшее, строка площади при
+  // FAIL) печатается здесь же, как раньше.
   if (sections.badCount) {
     console.error(`\n${area}`)
-    console.error(
-      `OVERFLOW FAIL — ${sections.violations.length} нарушений вне списка, ${sections.stale.length} устаревших исключений, `
-      + `${sections.declaredQuiet.length} объявленных без переполнения, ${unmeasured.length} не измерено.`,
-    )
-    return false
+    return {
+      green: false,
+      verdict: `OVERFLOW FAIL — ${sections.violations.length} нарушений вне списка, ${sections.stale.length} устаревших исключений, `
+        + `${sections.declaredQuiet.length} объявленных без переполнения, ${unmeasured.length} не измерено.`,
+    }
   }
 
-  console.log(`OVERFLOW OK — 0 нарушений вне списка; известно ${sections.known.length}, объявлено ${sections.declared.length}; ${area}`)
-  return true
+  return {
+    green: true,
+    verdict: `OVERFLOW OK — 0 нарушений вне списка; известно ${sections.known.length}, объявлено ${sections.declared.length}; ${area}`,
+  }
 }
 
 /** Строка 2 матрицы. Точка входа — `scripts/case-matrix.mjs`. */

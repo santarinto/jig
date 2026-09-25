@@ -128,7 +128,10 @@ const lines = (m, url) => {
   return collapseRepeats(heads).map((h) => `${h}\n    ${url}`)
 }
 
-const report = ({ measured, unmeasured }, area) => {
+// `known` — параметр, по умолчанию `KNOWN` модуля, тем же доводом, что у
+// строки цели клика (DS-329): синтетике гейта `matrix-report.test.ts`
+// (JIG-30) нужна маленькая карта, а не живая.
+const report = ({ measured, unmeasured, known = KNOWN }, area) => {
   if (unmeasured.length) {
     unmeasured.sort((a, b) => a.at.localeCompare(b.at))
     console.error(`НЕ ИЗМЕРЕНО ${unmeasured.length}:`)
@@ -136,7 +139,7 @@ const report = ({ measured, unmeasured }, area) => {
   }
 
   const sections = classify({
-    measured, unmeasured, known: KNOWN,
+    measured, unmeasured, known,
     bad: (m) => m.narrow.length > 0,
     declaredOf: (m) => m.row.narrowFields,
     gapOf: gap,
@@ -150,7 +153,7 @@ const report = ({ measured, unmeasured }, area) => {
 
   if (sections.known.length) {
     console.log(`ИЗВЕСТНО ${sections.known.length} в ${new Set(sections.known.map((v) => v.c)).size} компонентах (не краснеет, у каждой строки задача):`)
-    for (const v of sections.known) console.log(`${lines(v, human(v.url)).join('\n')}\n    задача ${KNOWN.get(v.at)}`)
+    for (const v of sections.known) console.log(`${lines(v, human(v.url)).join('\n')}\n    задача ${known.get(v.at)}`)
   }
   if (sections.declared.length) {
     console.log(`ОБЪЯВЛЕНО narrowFields ${sections.declared.length} (узкое поле обязано найтись):`)
@@ -182,17 +185,22 @@ const report = ({ measured, unmeasured }, area) => {
     for (const x of sections.stale) console.error(`  ${x.at}: ${x.why}, задача ${x.code}`)
   }
 
+  // ВЕРДИКТ БОЛЬШЕ НЕ ПЕЧАТАЕТСЯ ЗДЕСЬ (JIG-30) — тем же доводом, что у строки
+  // переполнения: `report` возвращает его, печатает ходок, один раз и одним
+  // потоком, в конце обхода вместе с остальными строками.
   if (sections.badCount) {
     console.error(`\n${area}; ${narrowed}`)
-    console.error(
-      `FIELDS FAIL — ${sections.violations.length} нарушающих ячеек вне списка, ${sections.stale.length} устаревших исключений, `
-      + `${sections.declaredQuiet.length} объявленных без узкого поля, ${unmeasured.length} не измерено.`,
-    )
-    return false
+    return {
+      green: false,
+      verdict: `FIELDS FAIL — ${sections.violations.length} нарушающих ячеек вне списка, ${sections.stale.length} устаревших исключений, `
+        + `${sections.declaredQuiet.length} объявленных без узкого поля, ${unmeasured.length} не измерено.`,
+    }
   }
 
-  console.log(`FIELDS OK — 0 нарушений вне списка; известно ${sections.known.length}, объявлено ${sections.declared.length}; ${area}; ${narrowed}`)
-  return true
+  return {
+    green: true,
+    verdict: `FIELDS OK — 0 нарушений вне списка; известно ${sections.known.length}, объявлено ${sections.declared.length}; ${area}; ${narrowed}`,
+  }
 }
 
 /** Строка 3 матрицы. Точка входа — `scripts/case-matrix.mjs`. */

@@ -382,10 +382,20 @@ async function waitForServer(url, tries = 80) {
  *   кольцо перехвата (`measureCell`), и «не измерено» достаётся тем судьям, кто ещё не
  *   отчитался. Роняет обход только упавшее ВНЕ ячейки — санитар или отчёт, и там падение
  *   и должно быть громким.
- * @property {Function} report `({ measured, unmeasured }, area) => boolean` — печать секций,
- *   `true` если строка зелёная. Классификацию исходов строка зовёт сама (`classify`
- *   из `workbench/case-report.ts`): ей нужны `KNOWN` и предикаты строки, а ходок о них
- *   не знает и знать не должен.
+ * @property {Function} report `({ measured, unmeasured, full, known }, area) => { green:
+ *   boolean, verdict: string }` (контракт JIG-30, было — печатал вердикт сам и возвращал
+ *   `boolean`). Печатает ТЕЛО секций (известно/объявлено/нарушения/устаревшее, строку
+ *   площади при FAIL) сама, как раньше, но строку OK/FAIL больше НЕ печатает — она едет
+ *   строкой `verdict`, и печатает её ходок, один раз, одним потоком, в самом конце
+ *   обхода вместе с вердиктами всех остальных строк и осей (TOUCH/WIDTH): прежде FAIL
+ *   уходил в stderr, а OK — в stdout, и при `> log` FAIL пропадал из файла целиком, а на
+ *   20 000-строчном прогоне даже OK тонул посреди простыни известного и объявленного.
+ *   `full` — короткий вывод (по умолчанию) против полного (`--all`): секции «известно» и
+ *   «объявлено» строкой счёта против построчного листинга, всё остальное решающее
+ *   вердикт печатается целиком в обоих режимах. `known` — карта известных, по умолчанию
+ *   `KNOWN` модуля строки: параметр нужен синтетике гейта `matrix-report.test.ts`.
+ *   Классификацию исходов строка зовёт сама (`classify` из `workbench/case-report.ts`):
+ *   ей нужны предикаты строки, а ходок о них не знает и знать не должен.
  */
 
 /**
@@ -1012,15 +1022,29 @@ export async function walk({ port, viewport, scales, rows, workers = 4, recycle 
             + ': ячейка отчиталась дважды'))))
   }
 
+  // ВЕРДИКТЫ СТРОК КОПЯТСЯ, А НЕ ПЕЧАТАЮТСЯ ТУТ ЖЕ (JIG-30): каждый — строка `verdict`
+  // из `{ green, verdict }`, печать всех разом — в самом конце walk, одним потоком.
   let ok = true
+  const verdicts = []
   for (const row of rows) {
-    const green = row.report({ measured: measured.get(row), unmeasured: unmeasured.get(row) }, areaOf(row))
-    // Не `!green`, а `!== true`: строка, забывшая вернуть вердикт, роняет прогон
-    // громко. Молчаливый зелёный от забывчивости — худший из исходов.
-    if (green !== true) ok = false
+    console.log(`── ${row.name} ──`)
+    const result = row.report({ measured: measured.get(row), unmeasured: unmeasured.get(row), full: true }, areaOf(row))
+    // Форма проверяется целиком, а не `!green`: строка, забывшая вернуть
+    // `{ green, verdict }` (вернувшая `boolean` по старому контракту, `undefined`,
+    // что угодно неверной формы), роняет прогон громко и называется по имени —
+    // молчаливый зелёный от забывчивости остаётся худшим из исходов.
+    const shaped = result !== null && typeof result === 'object'
+      && (result.green === true || result.green === false) && typeof result.verdict === 'string'
+    if (!shaped) {
+      ok = false
+      verdicts.push(`FAIL: строка «${row.name}» вернула из report() не { green, verdict } — забытый вердикт не может дать зелёный`)
+      continue
+    }
+    if (result.green !== true) ok = false
+    verdicts.push(result.verdict)
   }
 
-  // ── Вердикт сенсорной оси: ветка обязана была хоть что-то поменять ──────────
+  // ── Ось «касание»: тело печатается по ходу, как и у строк; финальный вердикт копится ──
   const axis = touchVerdict({ surface, prints, same: TOUCH_SAME })
   const where = [...touchDisk.byComponent].map(([c, { hits }]) => `${c} (${hits.join('; ')})`).join(', ')
   console.log(`СЕНСОРНАЯ ОСЬ: площадь с диска — ${where || 'пуста'}`)
@@ -1030,13 +1054,14 @@ export async function walk({ port, viewport, scales, rows, workers = 4, recycle 
     for (const u of touchErrors) console.error(`  ${u.at}: ${u.why}\n    ${humanUrl(u.url)}`)
   }
   for (const l of axis.bad) console.error(`  ${l}`)
+  let touchLine
   if (axis.bad.length || touchErrors.length) {
-    console.error(`TOUCH FAIL — ${axis.bad.length} компонентов без проверенной разницы, ${touchErrors.length} отпечатков не снято.`)
+    touchLine = `TOUCH FAIL — ${axis.bad.length} компонентов без проверенной разницы, ${touchErrors.length} отпечатков не снято.`
     ok = false
   } else {
-    console.log(`TOUCH OK — ${surface.length} компонентов, ${touchPlan.length} случаев; hasTouch видит (hover: none) и (pointer: coarse).`)
+    touchLine = `TOUCH OK — ${surface.length} компонентов, ${touchPlan.length} случаев; hasTouch видит (hover: none) и (pointer: coarse).`
   }
-  // ── Вердикт оси ширины: между полом (440) и 768 ветка обязана что-то поменять ──
+  // ── Ось «ширина»: между полом (440) и 768 ветка обязана что-то поменять ─────
   const wAxis = widthVerdict({ surface: widthSurfaceList, prints: widthPrints, same: WIDTH_SAME })
   const wWhere = [...widthDisk.byComponent].map(([c, { hits }]) => `${c} (${hits.join('; ')})`).join(', ')
   console.log(`ОСЬ ШИРИНЫ: площадь с диска — ${wWhere || 'пуста'}`)
@@ -1046,12 +1071,23 @@ export async function walk({ port, viewport, scales, rows, workers = 4, recycle 
     for (const u of widthErrors) console.error(`  ${u.at}: ${u.why}\n    ${humanUrl(u.url)}`)
   }
   for (const l of wAxis.bad) console.error(`  ${l}`)
+  let widthLine
   if (wAxis.bad.length || widthErrors.length) {
-    console.error(`WIDTH FAIL — ${wAxis.bad.length} компонентов без проверенной разницы, ${widthErrors.length} отпечатков не снято.`)
+    widthLine = `WIDTH FAIL — ${wAxis.bad.length} компонентов без проверенной разницы, ${widthErrors.length} отпечатков не снято.`
     ok = false
   } else {
-    console.log(`WIDTH OK — ${widthSurfaceList.length} компонентов, ${widthPlan.length} случаев; вторая ширина ${WIDTH_SECOND}.`)
+    widthLine = `WIDTH OK — ${widthSurfaceList.length} компонентов, ${widthPlan.length} случаев; вторая ширина ${WIDTH_SECOND}.`
   }
+
+  // ── СВОДКА ОДНИМ ПОТОКОМ (JIG-30), stdout: заголовок, вердикты строк в порядке
+  // `rows`, потом TOUCH, потом WIDTH. Намеренно: при `> log` хвост файла обязан
+  // содержать ВСЕ вердикты — прежде FAIL уходил в stderr и на `> log` пропадал
+  // из файла целиком, а OK на 20 000-строчном прогоне тонул посреди простыни.
+  // На шаге 2 флага `--all` ещё нет — заголовок всегда называет полный вывод.
+  console.log('ИТОГ — полный вывод (--all)')
+  for (const v of verdicts) console.log(v)
+  console.log(touchLine)
+  console.log(widthLine)
 
   if (!ok) process.exit(1)
 }

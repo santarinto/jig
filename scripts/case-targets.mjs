@@ -299,18 +299,22 @@ const report = ({ measured, unmeasured, known = KNOWN }, area) => {
     for (const x of sections.stale) console.error(`  ${x.at}: ${x.why}, задача ${x.code}`)
   }
 
+  // ВЕРДИКТ БОЛЬШЕ НЕ ПЕЧАТАЕТСЯ ЗДЕСЬ (JIG-30) — тем же доводом, что у соседних
+  // строк: `report` возвращает его, печатает ходок в конце обхода одним потоком.
   if (sections.badCount) {
     console.error(`\n${area}; ${narrowed}`)
-    console.error(
-      `TARGETS FAIL — ${sections.violations.length} нарушающих ячеек вне списка, ${farCount} целей не достать, `
-      + `${sections.stale.length} устаревших исключений, ${absent.length} объявленных без мелкой цели, `
-      + `${unmeasured.length} не измерено.`,
-    )
-    return false
+    return {
+      green: false,
+      verdict: `TARGETS FAIL — ${sections.violations.length} нарушающих ячеек вне списка, ${farCount} целей не достать, `
+        + `${sections.stale.length} устаревших исключений, ${absent.length} объявленных без мелкой цели, `
+        + `${unmeasured.length} не измерено.`,
+    }
   }
 
-  console.log(`TARGETS OK — 0 нарушений вне списка; известно ${sections.known.length}, объявлено ${sections.declared.length}; ${area}; ${narrowed}`)
-  return true
+  return {
+    green: true,
+    verdict: `TARGETS OK — 0 нарушений вне списка; известно ${sections.known.length}, объявлено ${sections.declared.length}; ${area}; ${narrowed}`,
+  }
 }
 
 /** Строка 1 матрицы. Точка входа — `scripts/case-matrix.mjs`. */

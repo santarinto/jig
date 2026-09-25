@@ -45,11 +45,16 @@ const cell = (at: string, small: unknown[], extra: Partial<Cell> = {}): Cell => 
 
 /** `known` не задан — отчёт берёт реальную карту `KNOWN` модуля. */
 const printed = (cells: Cell[], known?: [string, string][]): string => {
+  // `report()` больше не печатает свой вердикт сам (контракт JIG-30) — он его
+  // ВОЗВРАЩАЕТ, `{ green, verdict }`. Хелпер печатает `r.verdict` следом, тем же
+  // `console.log`, каким раньше это делал сам `report`: утверждения теста ниже
+  // читают общий текст (`out`), и это сохраняет его состав, не ослабляя их.
   const code = `
     const { targetsRow } = await import(${JSON.stringify(MOD)})
     const cells = JSON.parse(process.env.CELLS)
     const known = process.env.KNOWN_ROWS ? new Map(JSON.parse(process.env.KNOWN_ROWS)) : undefined
-    targetsRow.report({ measured: new Map(cells.map((m) => [m.at, m])), unmeasured: [], known }, 'ПЛОЩАДЬ')`
+    const r = targetsRow.report({ measured: new Map(cells.map((m) => [m.at, m])), unmeasured: [], full: true, known }, 'ПЛОЩАДЬ')
+    console.log(r.verdict)`
   const r = spawnSync(process.execPath, ['--input-type=module', '-e', code], {
     env: { ...process.env, CELLS: JSON.stringify(cells), KNOWN_ROWS: known ? JSON.stringify(known) : '' },
     encoding: 'utf8',
