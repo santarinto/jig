@@ -49,6 +49,7 @@ import type { DsTextOverrides } from '../src/dictionary/index.js'
 import { metaOf } from './fixture-meta.js'
 import { reportSize } from './frame-size.js'
 import { fillsOf, fitsSlot, parseFill } from './slot-fill.js'
+import { bindJigFrame, type FrameCtx } from './jig.js'
 import { sameAsBefore, toneLabel, isTransparent, effectiveTone } from './state-tones.js'
 import { aimChainOf, aimTargetOf, describeNode, labelShiftOf } from './aim.js'
 import { runAxe } from './axe-layer.js'
@@ -425,6 +426,17 @@ const STATE_COPIES: { state: ForceState | null; label: string }[] = [
 export function Frame() {
   const [state, setState] = useState(() => parseFrameUrl(window.location.search))
   const [fx, setFx] = useState<AnyFixture | null | undefined>(undefined)
+
+  // Мост `Frame → jig` (JIG-40, п.2б): `jig.env().params.fixture` спрашивает
+  // про случай/набор/крутилки ТЕКУЩЕГО кадра, а `jig.ts` живёт вне дерева
+  // React и не может прочитать `fx`/`state` иначе, чем через эту ссылку.
+  // `ref`, не состояние: `env()` вызывается синхронно из чужого кода в любой
+  // момент, не только во время рендера. JIG-42 возьмёт тот же мост под
+  // `Case.nodes` текущего случая.
+  const ctxRef = useRef<FrameCtx>({ fx, state })
+  ctxRef.current = { fx, state }
+  useEffect(() => bindJigFrame(() => ctxRef.current), [])
+
   // Различает ДВА диагноза за одним `fx === null`: имени нет в реестре вовсе
   // (`.fixture.tsx` ещё не написан — это НЕ ошибка) и модуль ЕСТЬ, но падает
   // при импорте (это ошибка, и молчать про неё нельзя). Сбрасывается в НАЧАЛЕ
