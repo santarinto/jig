@@ -21,10 +21,23 @@
  * 0.875, 1 и 1.5, цель клика и ширина поля — ещё и 1.15. `--row overflow` грузит ровно три шкалы своей строки, а
  * не четыре ради соседки, которую не спрашивали.
  *
- * Usage: npm run matrix                  — все строки (это зовёт `check-full`)
- *        npm run matrix -- --row <ключ>  — одна строка: только её ячейки и её отчёт
- * Неизвестный ключ или лишний аргумент — список ключей и код 2, ДО подъёма
- * дев-сервера: опечатка в ключе не должна стоить минуты обхода.
+ * ВЫВОД — КОРОТКИЙ ПО УМОЛЧАНИЮ, ПОЛНЫЙ — ПОД `--all` (JIG-30). Секции
+ * «известно» и «объявлено» каждой строки — то, что НЕ решает вердикт, у каждой
+ * строки уже есть задача или довод — печатаются короткой строкой счёта, а не
+ * построчным листингом на тысячи одинаковых узлов (EventCalendar/week на
+ * полном обходе — тысячи строк одного слота). Всё, что РЕШАЕТ вердикт (не
+ * измерено, нарушения, «не достать», устаревшее исключение, строка площади при
+ * FAIL), печатается ЦЕЛИКОМ в обоих режимах. `--all` не строка и грузит те же
+ * ячейки — это вопрос печати, не обхода.
+ *
+ * Usage: npm run matrix                        — все строки, короткий вывод
+ *        npm run matrix -- --all                — все строки, полный построчный вывод
+ *        npm run matrix -- --row <ключ>          — одна строка, короткий вывод
+ *        npm run matrix -- --all --row <ключ>    — одна строка, полный вывод
+ * `--all` — в любом месте аргументов, не более одного раза; остаток — пусто
+ * либо `--row <ключ>`. Неизвестный ключ, лишний `--all`, `--row` без ключа
+ * или лишний аргумент — список ключей и код 2, ДО подъёма дев-сервера:
+ * опечатка в аргументе не должна стоить минуты обхода.
  */
 import { walk } from './case-walk.mjs'
 import { overflowRow } from './case-overflow.mjs'
@@ -54,14 +67,23 @@ const ROWS = new Map([
 ])
 
 const args = process.argv.slice(2)
+// `--all` — В ЛЮБОМ МЕСТЕ аргументов, не более одного раза: снимается по
+// первому вхождению, а если после снятия он всё ещё в остатке — значит их
+// было два, и это отказ, а не «взяли последний».
+const allIdx = args.indexOf('--all')
+const full = allIdx !== -1
+const rest = full ? [...args.slice(0, allIdx), ...args.slice(allIdx + 1)] : args
+const dupAll = full && rest.includes('--all')
+
 let keys
-if (args.length === 0) keys = [...ROWS.keys()]
-else if (args.length === 2 && args[0] === '--row' && ROWS.has(args[1])) keys = [args[1]]
+if (!dupAll && rest.length === 0) keys = [...ROWS.keys()]
+else if (!dupAll && rest.length === 2 && rest[0] === '--row' && ROWS.has(rest[1])) keys = [rest[1]]
 else {
   console.error(
     `case-matrix: не понял аргументы «${args.join(' ')}». `
-    + `Строки: ${[...ROWS.keys()].join(', ')}; без аргумента — все.\n`
-    + 'Usage: npm run matrix [-- --row <ключ>]',
+    + `Строки: ${[...ROWS.keys()].join(', ')}; без аргумента — все, коротким выводом; `
+    + `добавь --all для полного.\n`
+    + 'Usage: npm run matrix [-- --all] [-- --row <ключ>]',
   )
   process.exit(2)
 }
@@ -69,4 +91,4 @@ else {
 const rows = keys.map((k) => ROWS.get(k))
 const scales = [...new Set(rows.flatMap((r) => r.scales))].sort((a, b) => a - b)
 
-await walk({ port: PORT, viewport: VIEWPORT, scales, rows })
+await walk({ port: PORT, viewport: VIEWPORT, scales, rows, full })

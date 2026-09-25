@@ -131,7 +131,7 @@ const lines = (m, url) => {
 // `known` — параметр, по умолчанию `KNOWN` модуля, тем же доводом, что у
 // строки цели клика (DS-329): синтетике гейта `matrix-report.test.ts`
 // (JIG-30) нужна маленькая карта, а не живая.
-const report = ({ measured, unmeasured, known = KNOWN }, area) => {
+const report = ({ measured, unmeasured, full = false, known = KNOWN }, area) => {
   if (unmeasured.length) {
     unmeasured.sort((a, b) => a.at.localeCompare(b.at))
     console.error(`НЕ ИЗМЕРЕНО ${unmeasured.length}:`)
@@ -151,16 +151,28 @@ const report = ({ measured, unmeasured, known = KNOWN }, area) => {
   const narrowed = `осмотрено полей ${sum('total')}; пропущено: невидимых ${sum('invisible')}, `
     + `в [inert] ${sum('inert')}, в схлопнутом предке ${sum('clipped')}`
 
+  // ИЗВЕСТНО/ОБЪЯВЛЕНО — то, что НЕ решает вердикт: коротким выводом (JIG-30)
+  // обе секции сворачиваются в строку счёта, построчный листинг — под `--all`.
   if (sections.known.length) {
-    console.log(`ИЗВЕСТНО ${sections.known.length} в ${new Set(sections.known.map((v) => v.c)).size} компонентах (не краснеет, у каждой строки задача):`)
-    for (const v of sections.known) console.log(`${lines(v, human(v.url)).join('\n')}\n    задача ${known.get(v.at)}`)
+    const head = `ИЗВЕСТНО ${sections.known.length} в ${new Set(sections.known.map((v) => v.c)).size} компонентах (не краснеет, у каждой строки задача)`
+    if (full) {
+      console.log(`${head}:`)
+      for (const v of sections.known) console.log(`${lines(v, human(v.url)).join('\n')}\n    задача ${known.get(v.at)}`)
+    } else {
+      console.log(`${head} — построчно: флаг --all`)
+    }
   }
   if (sections.declared.length) {
-    console.log(`ОБЪЯВЛЕНО narrowFields ${sections.declared.length} (узкое поле обязано найтись):`)
-    for (const v of sections.declared) {
-      if (!v.narrow.length) console.log(`  ${v.at.padEnd(40)} на этой шкале узкого поля нет\n    ${human(v.url)}`)
-      const heads = v.narrow.map((f) => `  ${v.at.padEnd(40)} ${f.inner}/${f.need} ${f.path}  довод «${v.row.narrowFields}»`)
-      for (const h of collapseRepeats(heads)) console.log(`${h}\n    ${human(v.url)}`)
+    const head = `ОБЪЯВЛЕНО narrowFields ${sections.declared.length} (узкое поле обязано найтись)`
+    if (full) {
+      console.log(`${head}:`)
+      for (const v of sections.declared) {
+        if (!v.narrow.length) console.log(`  ${v.at.padEnd(40)} на этой шкале узкого поля нет\n    ${human(v.url)}`)
+        const heads = v.narrow.map((f) => `  ${v.at.padEnd(40)} ${f.inner}/${f.need} ${f.path}  довод «${v.row.narrowFields}»`)
+        for (const h of collapseRepeats(heads)) console.log(`${h}\n    ${human(v.url)}`)
+      }
+    } else {
+      console.log(`${head} — построчно: флаг --all`)
     }
   }
 

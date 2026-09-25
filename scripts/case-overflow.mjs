@@ -442,7 +442,7 @@ const bad = (m) => m.over || m.escape > 0.5
 // модуля (тем же доводом, что у строки цели клика, DS-329): параметр нужен
 // синтетике гейта `matrix-report.test.ts` (JIG-30), которая судит печать без
 // живой карты на ~сотню пар.
-const report = ({ measured, unmeasured, known = KNOWN }, area) => {
+const report = ({ measured, unmeasured, full = false, known = KNOWN }, area) => {
   if (unmeasured.length) {
     unmeasured.sort((a, b) => a.at.localeCompare(b.at))
     console.error(`НЕ ИЗМЕРЕНО ${unmeasured.length}:`)
@@ -472,13 +472,26 @@ const report = ({ measured, unmeasured, known = KNOWN }, area) => {
     gapOf: (m) => Math.max(m.sw - m.cw, m.escape),
   })
 
+  // ИЗВЕСТНО/ОБЪЯВЛЕНО — то, что НЕ решает вердикт: у известного уже есть
+  // задача, у объявленного — довод в фикстуре. Коротким выводом (JIG-30) обе
+  // секции сворачиваются в строку счёта; построчный листинг — под `--all`.
   if (sections.known.length) {
-    console.log(`ИЗВЕСТНО ${sections.known.length} в ${new Set(sections.known.map((v) => v.c)).size} компонентах (не краснеет, у каждой строки задача):`)
-    for (const v of sections.known) console.log(`${line(v)}  ${matchedKnown.get(v.at)}\n    ${human(v.url)}`)
+    const head = `ИЗВЕСТНО ${sections.known.length} в ${new Set(sections.known.map((v) => v.c)).size} компонентах (не краснеет, у каждой строки задача)`
+    if (full) {
+      console.log(`${head}:`)
+      for (const v of sections.known) console.log(`${line(v)}  ${matchedKnown.get(v.at)}\n    ${human(v.url)}`)
+    } else {
+      console.log(`${head} — построчно: флаг --all`)
+    }
   }
   if (sections.declared.length) {
-    console.log(`ОБЪЯВЛЕНО overflows ${sections.declared.length} (обязаны переполнять):`)
-    for (const v of sections.declared) console.log(`${line(v)}  ${v.over ? 'переполняет, как объявлено' : 'НЕ ПЕРЕПОЛНЯЕТ'}`)
+    const head = `ОБЪЯВЛЕНО overflows ${sections.declared.length} (обязаны переполнять)`
+    if (full) {
+      console.log(`${head}:`)
+      for (const v of sections.declared) console.log(`${line(v)}  ${v.over ? 'переполняет, как объявлено' : 'НЕ ПЕРЕПОЛНЯЕТ'}`)
+    } else {
+      console.log(`${head} — построчно: флаг --all`)
+    }
   }
 
   // Ячейка, прощённая ЧАСТИЧНО, попала выше в `sections.violations` (её

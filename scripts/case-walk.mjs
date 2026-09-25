@@ -582,10 +582,14 @@ async function measureCell(frame, { planRow, scale, pointer, touch, width, at, u
  * @param {{width: number, height: number}} o.viewport
  * @param {number[]} o.scales Оси обхода: какие шкалы ГРУЗЯТСЯ.
  * @param {Row[]} o.rows
+ * @param {boolean} [o.full] Полный вывод (`--all`, JIG-30) против короткого по
+ *   умолчанию: секции «известно»/«объявлено» строкой счёта против построчного
+ *   листинга — во всех строках И в осях TOUCH/WIDTH. Не влияет на то, что
+ *   ГРУЗИТСЯ, только на то, что печатается: обход одинаков в обоих режимах.
  * @param {number} [o.workers]
  * @param {number} [o.recycle]
  */
-export async function walk({ port, viewport, scales, rows, workers = 4, recycle = 40 }) {
+export async function walk({ port, viewport, scales, rows, full = false, workers = 4, recycle = 40 }) {
   // ОБХОД БЕЗ СУДЕЙ — минута загрузок и ноль утверждений, а печатается он как
   // зелёный прогон. Всё, что различимо ДО `spawn`, здесь и отказывает: за
   // миллисекунды, тем же доводом, каким `loadTs` зовётся раньше дев-сервера.
@@ -1028,7 +1032,7 @@ export async function walk({ port, viewport, scales, rows, workers = 4, recycle 
   const verdicts = []
   for (const row of rows) {
     console.log(`── ${row.name} ──`)
-    const result = row.report({ measured: measured.get(row), unmeasured: unmeasured.get(row), full: true }, areaOf(row))
+    const result = row.report({ measured: measured.get(row), unmeasured: unmeasured.get(row), full }, areaOf(row))
     // Форма проверяется целиком, а не `!green`: строка, забывшая вернуть
     // `{ green, verdict }` (вернувшая `boolean` по старому контракту, `undefined`,
     // что угодно неверной формы), роняет прогон громко и называется по имени —
@@ -1048,7 +1052,11 @@ export async function walk({ port, viewport, scales, rows, workers = 4, recycle 
   const axis = touchVerdict({ surface, prints, same: TOUCH_SAME })
   const where = [...touchDisk.byComponent].map(([c, { hits }]) => `${c} (${hits.join('; ')})`).join(', ')
   console.log(`СЕНСОРНАЯ ОСЬ: площадь с диска — ${where || 'пуста'}`)
-  for (const l of axis.lines) console.log(`  ${l}`)
+  if (full) {
+    for (const l of axis.lines) console.log(`  ${l}`)
+  } else if (axis.lines.length) {
+    console.log(`  по компонентам ${axis.lines.length} строк — построчно: флаг --all`)
+  }
   if (touchErrors.length) {
     console.error(`ОТПЕЧАТОК НЕ СНЯТ ${touchErrors.length}:`)
     for (const u of touchErrors) console.error(`  ${u.at}: ${u.why}\n    ${humanUrl(u.url)}`)
@@ -1065,7 +1073,11 @@ export async function walk({ port, viewport, scales, rows, workers = 4, recycle 
   const wAxis = widthVerdict({ surface: widthSurfaceList, prints: widthPrints, same: WIDTH_SAME })
   const wWhere = [...widthDisk.byComponent].map(([c, { hits }]) => `${c} (${hits.join('; ')})`).join(', ')
   console.log(`ОСЬ ШИРИНЫ: площадь с диска — ${wWhere || 'пуста'}`)
-  for (const l of wAxis.lines) console.log(`  ${l}`)
+  if (full) {
+    for (const l of wAxis.lines) console.log(`  ${l}`)
+  } else if (wAxis.lines.length) {
+    console.log(`  по компонентам ${wAxis.lines.length} строк — построчно: флаг --all`)
+  }
   if (widthErrors.length) {
     console.error(`ОТПЕЧАТОК ШИРИНЫ НЕ СНЯТ ${widthErrors.length}:`)
     for (const u of widthErrors) console.error(`  ${u.at}: ${u.why}\n    ${humanUrl(u.url)}`)
@@ -1083,8 +1095,9 @@ export async function walk({ port, viewport, scales, rows, workers = 4, recycle 
   // `rows`, потом TOUCH, потом WIDTH. Намеренно: при `> log` хвост файла обязан
   // содержать ВСЕ вердикты — прежде FAIL уходил в stderr и на `> log` пропадал
   // из файла целиком, а OK на 20 000-строчном прогоне тонул посреди простыни.
-  // На шаге 2 флага `--all` ещё нет — заголовок всегда называет полный вывод.
-  console.log('ИТОГ — полный вывод (--all)')
+  console.log(full
+    ? 'ИТОГ — полный вывод (--all)'
+    : 'ИТОГ — известное и объявленное свёрнуто в счёт, построчно: флаг --all')
   for (const v of verdicts) console.log(v)
   console.log(touchLine)
   console.log(widthLine)

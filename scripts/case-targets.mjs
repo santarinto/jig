@@ -207,7 +207,7 @@ const lines = (m, url, list) => {
 // модуля. Параметр ради печати слова при коде через запятую (DS-329):
 // после снятия 329 в `KNOWN` не осталось ни одной строки с двумя кодами, и
 // тест, бивший по реальной строке, остался бы без предмета.
-const report = ({ measured, unmeasured, known = KNOWN }, area) => {
+const report = ({ measured, unmeasured, full = false, known = KNOWN }, area) => {
   if (unmeasured.length) {
     unmeasured.sort((a, b) => a.at.localeCompare(b.at))
     console.error(`НЕ ИЗМЕРЕНО ${unmeasured.length}:`)
@@ -241,30 +241,42 @@ const report = ({ measured, unmeasured, known = KNOWN }, area) => {
   const narrowed = `сужения: в [inert] ${sum('inert')}${topByComponent('inert')}, `
     + `в схлопнутом предке ${sum('clipped')}${topByComponent('clipped')} (цели по ячейкам, вне счёта целей)`
 
+  // ИЗВЕСТНО/ОБЪЯВЛЕНО — то, что НЕ решает вердикт: коротким выводом (JIG-30)
+  // обе секции сворачиваются в строку счёта, построчный листинг — под `--all`.
   if (sections.known.length) {
-    console.log(`ИЗВЕСТНО ${sections.known.length} в ${new Set(sections.known.map((v) => v.c)).size} компонентах (не краснеет, у каждой строки задача):`)
-    for (const v of sections.known) {
-      const code = known.get(v.at)
-      const word = code.includes(',') ? 'задачи' : 'задача'
-      console.log(`${lines(v, human(v.url), charged(v)).join('\n')}\n    ${word} ${code}`)
+    const head = `ИЗВЕСТНО ${sections.known.length} в ${new Set(sections.known.map((v) => v.c)).size} компонентах (не краснеет, у каждой строки задача)`
+    if (full) {
+      console.log(`${head}:`)
+      for (const v of sections.known) {
+        const code = known.get(v.at)
+        const word = code.includes(',') ? 'задачи' : 'задача'
+        console.log(`${lines(v, human(v.url), charged(v)).join('\n')}\n    ${word} ${code}`)
+      }
+    } else {
+      console.log(`${head} — построчно: флаг --all`)
     }
   }
   if (sections.declared.length) {
-    console.log(`ОБЪЯВЛЕНО tinyTargets ${sections.declared.length} (мелкая цель обязана найтись):`)
-    for (const v of sections.declared) {
-      // Объявленная ячейка БЕЗ мелкой цели тоже здесь (так её отдаёт `classify`),
-      // и строкой, а не молчанием: заголовок без строк читался бы как сбой печати.
-      // На ЭТОЙ шкале мелкой нет, а на другой есть — цель выросла по шкале, и
-      // это не протухание. Ссылка на «ОБЪЯВЛЕНО, НО НЕТ» — только когда случай
-      // там действительно назван, иначе она отсылала бы к секции, которой нет.
-      if (!v.small.length) {
-        const why = absentCases.has(caseOf(v.at))
-          ? 'мелкой цели НЕТ — см. «ОБЪЯВЛЕНО, НО НЕТ»'
-          : 'на этой шкале мелкой цели нет — выросла по шкале'
-        console.log(`  ${v.at.padEnd(40)} ${why}\n    ${human(v.url)}`)
+    const head = `ОБЪЯВЛЕНО tinyTargets ${sections.declared.length} (мелкая цель обязана найтись)`
+    if (full) {
+      console.log(`${head}:`)
+      for (const v of sections.declared) {
+        // Объявленная ячейка БЕЗ мелкой цели тоже здесь (так её отдаёт `classify`),
+        // и строкой, а не молчанием: заголовок без строк читался бы как сбой печати.
+        // На ЭТОЙ шкале мелкой нет, а на другой есть — цель выросла по шкале, и
+        // это не протухание. Ссылка на «ОБЪЯВЛЕНО, НО НЕТ» — только когда случай
+        // там действительно назван, иначе она отсылала бы к секции, которой нет.
+        if (!v.small.length) {
+          const why = absentCases.has(caseOf(v.at))
+            ? 'мелкой цели НЕТ — см. «ОБЪЯВЛЕНО, НО НЕТ»'
+            : 'на этой шкале мелкой цели нет — выросла по шкале'
+          console.log(`  ${v.at.padEnd(40)} ${why}\n    ${human(v.url)}`)
+        }
+        const heads = v.small.map((t) => `  ${v.at.padEnd(40)} ${size(t).padEnd(11)} ${t.path}  довод «${v.row.tinyTargets}»`)
+        for (const h of collapseRepeats(heads)) console.log(`${h}\n    ${human(v.url)}`)
       }
-      const heads = v.small.map((t) => `  ${v.at.padEnd(40)} ${size(t).padEnd(11)} ${t.path}  довод «${v.row.tinyTargets}»`)
-      for (const h of collapseRepeats(heads)) console.log(`${h}\n    ${human(v.url)}`)
+    } else {
+      console.log(`${head} — построчно: флаг --all`)
     }
   }
 
