@@ -28,13 +28,13 @@ const FILTERS: ToggleItem[] = [
  */
 const COLOURS: SwatchItem[] = [
   { id: 'c1', label: 'Бирюзовый', swatch: 'var(--ds-chart-1)' },
-  { id: 'c2', label: 'Охра', swatch: 'var(--ds-chart-2)' },
+  { id: 'c2', label: 'Жёлтый', swatch: 'var(--ds-chart-2)' },
   { id: 'c3', label: 'Фиолетовый', swatch: 'var(--ds-chart-3)' },
-  { id: 'c4', label: 'Синий', swatch: 'var(--ds-chart-4)' },
+  { id: 'c4', label: 'Голубой', swatch: 'var(--ds-chart-4)' },
   { id: 'c5', label: 'Красный', swatch: 'var(--ds-chart-5)' },
   { id: 'c6', label: 'Зелёный', swatch: 'var(--ds-chart-6)' },
-  { id: 'c7', label: 'Сине-лиловый', swatch: 'var(--ds-chart-7)' },
-  { id: 'c8', label: 'Пыльная роза', swatch: 'var(--ds-chart-8)' },
+  { id: 'c7', label: 'Синий', swatch: 'var(--ds-chart-7)' },
+  { id: 'c8', label: 'Розовый', swatch: 'var(--ds-chart-8)' },
 ]
 
 /**
