@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { EventCalendar } from './EventCalendar.js'
 import type { EventCalendarEvent } from './layout.js'
 
@@ -413,10 +415,27 @@ describe('EventCalendar — находки приёмки в браузере', 
   })
 })
 
-describe('EventCalendar — вбок к дню курсора при сужении (DS-334, возврат с приёмки 19.09)', () => {
-  // jsdom не раскладывает: геометрию порта и колонки задаём руками, а
+// Геометрия — из токенов EventCalendar.css, не хардкод. Пол трека дня —
+// `--ds-eventcal-col-min` (5.625rem), колонка часов — `--ds-eventcal-gutter`
+// (3.5rem); rem = 16. Сверено с CSS санитаром ниже.
+const REM = 16
+const COL_MIN_REM = 5.625
+const GUTTER_REM = 3.5
+const dayW = (scale: number) => COL_MIN_REM * REM * scale
+const gutterW = (scale: number) => GUTTER_REM * REM * scale
+// «Обвязка» и полоса скролла — не токен компонента (каркас страницы и системная
+// полоса), источник: EventCalendar.css, коммент к `--ds-eventcal-col-min`
+// (замер 22.09.2026): кадр 440 даёт кромку порта 365 (обвязка 440 − 365 = 75) и
+// видимую часть 350 (кромка 365 − полоса 15).
+const OBVYAZKA = 75
+const SCROLLBAR = 15
+const clientAt = (frame: number) => frame - OBVYAZKA - SCROLLBAR
+// Неделя от 2026-08-31: пн, вт, СР(курсор, 2026-09-02) — третья колонка (индекс 2).
+
+describe('EventCalendar — якорь недели: условие А, «меньше трёх дней и курсор скрыт» (JIG-9)', () => {
+  // jsdom не раскладывает: геометрию порта и колонок задаём руками, а
   // ResizeObserver подменяем, чтобы дёрнуть его ровно тогда, когда в браузере
-  // сузился бы контейнер (чип ширины верстака — живой ресайз, не перемонтаж).
+  // сработал бы наблюдатель (живой ресайз, не перемонтаж).
   let fire: () => void = () => {}
   beforeEach(() => {
     class RO {
@@ -429,45 +448,188 @@ describe('EventCalendar — вбок к дню курсора при сужен�
   })
   afterEach(() => { vi.unstubAllGlobals(); fire = () => {} })
 
-  /** Порт с управляемой шириной; колонка среды стоит на 180 от начала полотна. */
-  const mount = () => {
-    const box = { client: 700, scroll: 700 }
-    const { container, rerender } = view()
+  /**
+   * Порт со scrollLeft и живыми rect колонок. Часы занимают `[0, gutter]` и не
+   * двигаются со scrollLeft (липкие); колонка i (0 — понедельник) стоит от
+   * `gutter + i×day − scrollLeft` до `+day` — та же формула, что и в реальном
+   * DOM (часы и колонки — соседние flex-элементы `.ds-eventcal__canvas`,
+   * `offsetLeft` колонки не включает gutter, потому что offsetParent —
+   * `.ds-eventcal__cols`, а не `.ds-eventcal__canvas`).
+   *
+   * Первый `fire()` в тесте моделирует ПЕРВОЕ применение условия А. В jsdom
+   * layout не считается: на монтаже все rect нулевые, и эффект на них не
+   * срабатывает (мока ещё нет — его ставит этот хелпер уже ПОСЛЕ рендера). В
+   * браузере это не проблема: `apply()` читает уже посчитанный layout что на
+   * монтаже, что на первом колбэке `ResizeObserver` (тот стреляет сразу же при
+   * `observe()`) — это один и тот же код с одной и той же геометрией.
+   */
+  const mount = (scale: number, frame: number, scrollLeft = 0) => {
+    const day = dayW(scale)
+    const gutter = gutterW(scale)
+    const box = { client: clientAt(frame), scrollLeft }
+    const { container, rerender } = render(
+      <EventCalendar events={WEEK} view="week" date="2026-09-02" calendars={CALENDARS} />,
+    )
     const port = container.querySelector('.ds-eventcal__grid') as HTMLElement
+    const hours = container.querySelector('.ds-eventcal__hours') as HTMLElement
+    const cols = [...container.querySelectorAll<HTMLElement>('.ds-eventcal__col')]
     Object.defineProperty(port, 'clientWidth', { configurable: true, get: () => box.client })
-    Object.defineProperty(port, 'scrollWidth', { configurable: true, get: () => box.scroll })
-    const wed = container.querySelector('.ds-eventcal__col[data-day="2026-09-02"]') as HTMLElement
-    Object.defineProperty(wed, 'offsetLeft', { configurable: true, get: () => 180 })
-    return { port, box, rerender }
+    Object.defineProperty(port, 'getBoundingClientRect', {
+      configurable: true, value: () => ({ left: 0, right: box.client }) as DOMRect,
+    })
+    Object.defineProperty(port, 'scrollLeft', {
+      configurable: true, get: () => box.scrollLeft, set: (v: number) => { box.scrollLeft = v },
+    })
+    // Не читается условием А (оно смотрит на rect колонок, не на scrollWidth) —
+    // мок нужен только мутации M1 (JIG-9), которая временно возвращает
+    // старую защёлку на `scrollWidth > clientWidth`.
+    Object.defineProperty(port, 'scrollWidth', { configurable: true, get: () => gutter + 7 * day })
+    Object.defineProperty(hours, 'getBoundingClientRect', {
+      configurable: true, value: () => ({ left: 0, right: gutter }) as DOMRect,
+    })
+    cols.forEach((col, i) => {
+      Object.defineProperty(col, 'offsetLeft', { configurable: true, get: () => i * day })
+      Object.defineProperty(col, 'getBoundingClientRect', {
+        configurable: true,
+        value: () => {
+          const left = gutter + i * day - box.scrollLeft
+          return { left, right: left + day } as DOMRect
+        },
+      })
+    })
+    return { port, box, cols, rerender }
   }
 
-  it('порт перестал вмещать неделю — встаёт на день курсора', () => {
-    const { port, box } = mount()
+  it('санитар: пол трека дня и гаттер в тесте совпадают с токенами EventCalendar.css', () => {
+    // Держит связь между этим файлом и CSS: подними `--ds-eventcal-col-min`
+    // молча (мутация M3) — здесь загорится КОНКРЕТНОЕ число, а не «тест
+    // сломался», и падение случая 1 ниже (см. отчёт задачи) станет понятным.
+    const css = readFileSync(resolve(__dirname, 'EventCalendar.css'), 'utf8')
+    const colMin = css.match(/--ds-eventcal-col-min:\s*calc\(([\d.]+)rem \* var\(--ds-ui-scale\)\)/)
+    const gutter = css.match(/--ds-eventcal-gutter:\s*calc\(([\d.]+)rem \* var\(--ds-ui-scale\)\)/)
+    expect(colMin?.[1]).toBe(String(COL_MIN_REM))
+    expect(gutter?.[1]).toBe(String(GUTTER_REM))
+  })
+
+  it('монтаж, шкала 1, кадр 440: курсор виден с самого начала — якорь не трогает прокрутку', () => {
+    // Гаттер 56, день 90: пн/вт/СР целиком видны уже на scrollLeft=0 (n=3),
+    // курсорный день (СР) в их числе. До JIG-9 монтаж прыгал на 180
+    // БЕЗУСЛОВНО, если неделя вообще не влезала целиком, — то есть двигал
+    // прокрутку, даже когда курсор уже был виден.
+    const { port } = mount(1, 440)
+    fire()
     expect(port.scrollLeft).toBe(0)
-    box.client = 304; box.scroll = 686
-    fire()
-    expect(port.scrollLeft).toBe(180)
   })
 
-  it('уже переполненный порт при следующем ресайзе НЕ отбирает прокрутку у человека', () => {
-    const { port, box } = mount()
-    box.client = 304; box.scroll = 686
+  it('монтаж, шкала 1.5, кадр 440: курсор скрыт — якорь встаёт сразу (разведка 25.09.2026: sl 270)', () => {
+    // Гаттер 84, день 135: на scrollLeft=0 целиком виден только понедельник
+    // (n=1), курсор (СР, 2×135=270 от начала колонок) скрыт целиком.
+    const { port } = mount(1.5, 440)
     fire()
-    port.scrollLeft = 40
-    box.client = 290
-    fire()
-    expect(port.scrollLeft).toBe(40)
+    expect(port.scrollLeft).toBe(270)
   })
 
-  it('снова влез и снова перестал — это новый переход, якорь срабатывает опять', () => {
-    const { port, box } = mount()
-    box.client = 304; box.scroll = 686
+  it('1. переполненный порт (шкала 1.5, кадр 1024) сужается до 440 — якорь ставит курсор сразу за часы', () => {
+    // Разведка 25.09.2026: до этой правки scrollLeft оставался 103 (защёлка
+    // «первый переход» уже сработала на 1024 и больше не срабатывает) —
+    // целиком виден один вторник, среда обрезана. 103 — число разведки, взято
+    // как есть: воспроизводит застрявшую позицию старого кода.
+    const { port, box } = mount(1.5, 1024, 103)
+    // Первый fire() на 1024 — не часть сценария, а СБРОС jsdom-артефакта: у
+    // мутации M1 (старая защёлка `overflowed`) начальное значение защёлки
+    // всегда false (реальный mount видел нулевую jsdom-геометрию, а не нашу
+    // мокнутую), и без этого вызова любой ПЕРВЫЙ fire() в тесте — уже
+    // «переход», и старый код совпал бы с новым случайно. Порт на 1024
+    // реально переполнен (1029 > 934), поэтому этот fire() старую защёлку
+    // взводит; scrollLeft после него неважен — переписываем его явно на 103,
+    // чтобы получить ИМЕННО застрявшую позицию разведки, а не то, что решит
+    // взвести защёлка.
     fire()
-    port.scrollLeft = 40
-    box.client = 700; box.scroll = 700
+    box.scrollLeft = 103
+    box.client = clientAt(440)
     fire()
-    box.client = 304; box.scroll = 686
+    expect(port.scrollLeft).toBe(270) // 2 × 135 — колонка среды, сразу за часами
+  })
+
+  it('2. курсор виден целиком — scrollLeft не меняется, даже если n < 3', () => {
+    // Шкала 1.5, узкий порт (день 135 + гаттер 84 + запас 10 = 229): целиком
+    // влезает только курсорная колонка (n=1 < 3), но она и есть та, что нужна
+    // — трогать нечего.
+    const { port, box } = mount(1.5, 440)
+    box.client = 229
+    box.scrollLeft = 270 // 2 × 135 — колонка среды стоит вплотную к часам
     fire()
-    expect(port.scrollLeft).toBe(180)
+    expect(port.scrollLeft).toBe(270)
+  })
+
+  it('3. n ≥ 3 и курсор не виден — scrollLeft не меняется (рука листает свободно)', () => {
+    // Шкала 1, рука отлистала на пт/сб/вс (n=3, целиком видны), среда (курсор)
+    // ушла за часы влево — трогать нечего, пока целых дней три и больше.
+    const { port, box } = mount(1, 440)
+    box.client = 330
+    box.scrollLeft = 360 // 4 × 90 — колонка пятницы встаёт к часам
+    fire()
+    expect(port.scrollLeft).toBe(360)
+  })
+
+  it('n ровно 2 (не 1 и не 3) и курсор скрыт — якорь всё равно срабатывает', () => {
+    // Отдельно от случая 3: там n=3 и якорь молчит, здесь n=2 и он обязан
+    // сработать — иначе порог «< 3» неотличим от «< 2» (мутация M2).
+    const { port, box } = mount(1, 440)
+    box.client = 236
+    box.scrollLeft = 360 // видны целиком пт (index4) и сб (index5), n=2; среда скрыта
+    fire()
+    expect(port.scrollLeft).toBe(180) // 2 × 90 — вернулся на среду
+  })
+
+  it('4. рука увела курсор, n < 3 — якорь возвращает его (цена условия А)', () => {
+    const { port, box } = mount(1.5, 440)
+    fire()
+    expect(port.scrollLeft).toBe(270)
+    box.scrollLeft = 500 // рука увела прокрутку далеко — курсор снова скрыт, n остаётся 1
+    fire()
+    expect(port.scrollLeft).toBe(270)
+  })
+
+  it('5. вид «день» — якорь ничего не делает (единственная колонка и так вмещается)', () => {
+    const day = dayW(1)
+    const gutter = gutterW(1)
+    const { container } = render(
+      <EventCalendar events={WEEK} view="day" date="2026-09-02" calendars={CALENDARS} />,
+    )
+    const port = container.querySelector('.ds-eventcal__grid') as HTMLElement
+    const hours = container.querySelector('.ds-eventcal__hours') as HTMLElement
+    const col = container.querySelector('.ds-eventcal__col') as HTMLElement
+    const box = { client: day + gutter + 40, scrollLeft: 0 }
+    Object.defineProperty(port, 'clientWidth', { configurable: true, get: () => box.client })
+    Object.defineProperty(port, 'getBoundingClientRect', {
+      configurable: true, value: () => ({ left: 0, right: box.client }) as DOMRect,
+    })
+    Object.defineProperty(port, 'scrollLeft', {
+      configurable: true, get: () => box.scrollLeft, set: (v: number) => { box.scrollLeft = v },
+    })
+    Object.defineProperty(hours, 'getBoundingClientRect', {
+      configurable: true, value: () => ({ left: 0, right: gutter }) as DOMRect,
+    })
+    Object.defineProperty(col, 'offsetLeft', { configurable: true, get: () => 0 })
+    Object.defineProperty(col, 'getBoundingClientRect', {
+      configurable: true, value: () => ({ left: gutter - box.scrollLeft, right: gutter - box.scrollLeft + day }) as DOMRect,
+    })
+    fire()
+    expect(port.scrollLeft).toBe(0)
+  })
+
+  it('смена даты курсора — условие проверяется заново, с новой датой', () => {
+    // Шкала 1, порт на два полных дня (250): после первого fire() курсор
+    // (СР) один в кадре, вместе со вторником слева. Смена даты на пятницу
+    // (2026-09-04, четвёртая колонка) на том же эффекте — без него якорь
+    // остался бы приколот к среде.
+    const { port, box, rerender } = mount(1, 440)
+    box.client = 250
+    fire()
+    expect(port.scrollLeft).toBe(180) // 2 × 90
+
+    rerender(<EventCalendar events={WEEK} view="week" date="2026-09-04" calendars={CALENDARS} />)
+    expect(port.scrollLeft).toBe(360) // 4 × 90 — эффект зависит от `date`, применился сразу на новой
   })
 })

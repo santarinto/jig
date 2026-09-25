@@ -714,43 +714,62 @@ export function EventCalendar({
   }, [])
 
   /**
-   * Вбок — к дню курсора (DS-334). Неделя, не влезшая в контейнер,
-   * открывалась на понедельнике, а `date` — среда: на 360 курсорный день
+   * Вбок — к дню курсора (DS-334, условие А — JIG-9). Неделя, не влезшая в
+   * контейнер, открывалась на понедельнике, а `date` — среда: курсорный день
    * оказывался за краем, и первое, что человек делал, — искал его. На каждую
    * смену `date`, а не раз: «Следующая неделя» приводит в тот же день недели,
    * и он обязан остаться на экране.
    *
+   * До JIG-9 якорь стоял за защёлкой «не влезала → не влезает» и срабатывал
+   * ТОЛЬКО на этом переходе — считалось, что дальше место вбок выбрал человек.
+   * Подъём пола трека до 5.625rem (DS-334, 19.09.2026) сделал переполнение
+   * почти постоянным: переход случается один раз при первой отрисовке и
+   * потом не повторяется никогда, а сужение порта дальше — обычное дело
+   * (поворот, чип ширины, соседняя панель) — просто оставляло курсорный день
+   * за краем без всякого якоря. Разведка 25.09.2026: шкала 1.5, кадр
+   * 1024 → 440, `scrollLeft` держится на 103 — целиком виден один вторник,
+   * среда обрезана.
+   *
+   * Условие А проверяется на КАЖДОМ срабатывании наблюдателя (и на монтаже):
+   * n — число колонок `.ds-eventcal__col`, видимых ЦЕЛИКОМ между правым краем
+   * липких часов и правым краем видимой части порта. Если n < 3 И колонка
+   * курсора видна не целиком — прокрутка встаёт на неё. Цена принята
+   * владельцем: якорь отбирает прокрутку у руки, когда целых дней меньше
+   * трёх — иначе курсор снова и снова уезжает за край без всякого способа
+   * его туда вернуть, кроме листания руками.
+   *
    * `scrollLeft = offsetLeft` колонки внутри грида колонок: липкие часы
    * накрывают ровно свою ширину слева, поэтому колонка встаёт сразу за ними.
    */
-  const overflowed = useRef(false)
   useEffect(() => {
     const port = gridRef.current
     if (!port) return
-    const toCursor = () => {
-      const col = colsRef.current?.querySelector<HTMLElement>(`.ds-eventcal__col[data-day="${date}"]`)
-      if (col) port.scrollLeft = col.offsetLeft
+    const EPS = 0.5
+    const apply = () => {
+      const hours = hoursRef.current
+      const cols = colsRef.current?.querySelectorAll<HTMLElement>('.ds-eventcal__col')
+      if (!hours || !cols || cols.length === 0) return
+      const hoursRight = hours.getBoundingClientRect().right
+      const viewRight = port.getBoundingClientRect().left + port.clientWidth
+      let n = 0
+      let cursorCol: HTMLElement | null = null
+      let cursorVisible = false
+      cols.forEach((col) => {
+        const r = col.getBoundingClientRect()
+        const fully = r.left >= hoursRight - EPS && r.right <= viewRight + EPS
+        if (fully) n += 1
+        if (col.dataset.day === date) {
+          cursorCol = col
+          cursorVisible = fully
+        }
+      })
+      if (n < 3 && cursorCol && !cursorVisible) port.scrollLeft = (cursorCol as HTMLElement).offsetLeft
     }
-    const overflows = () => port.scrollWidth > port.clientWidth
-    overflowed.current = overflows()
-    if (overflowed.current) toCursor()
-    /*
-     * И на ПЕРЕХОДЕ «влезала → не влезает» (возврат DS-334 с приёмки
-     * 19.09): контейнер сузился живьём — чип ширины, поворот, панель рядом, —
-     * а `date` не менялась, и неделя оставалась на понедельнике со средой за
-     * краем. Только на переходе, не на каждом ресайзе: пока порт уже
-     * переполнен, место вбок выбрал человек, и сдвигать его на каждый пиксель
-     * ширины значило бы отбирать прокрутку из-под пальца.
-     *
-     * В фоновой вкладке наблюдатель молчит — тогда неделя просто остаётся, где
-     * была, как до этой правки; ничего другого на нём не держится.
-     */
+    apply()
+    // В фоновой вкладке наблюдатель молчит — тогда неделя просто остаётся, где
+    // была, как до этой правки; ничего другого на нём не держится.
     if (typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(() => {
-      const now = overflows()
-      if (now && !overflowed.current) toCursor()
-      overflowed.current = now
-    })
+    const ro = new ResizeObserver(apply)
     ro.observe(port)
     return () => ro.disconnect()
   }, [date, view])
