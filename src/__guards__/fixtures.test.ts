@@ -7,6 +7,7 @@
 /// <reference types="vite/client" />
 import { describe, it, expect } from 'vitest'
 import { validateFixtures } from '../internal/fixture-validate.js'
+import { NODE_ROLES } from '../internal/fixture.js'
 import type { AnyFixture } from '../internal/fixture.js'
 
 // ЗДЕСЬ eager обязателен — в отличие от кадра (workbench/registry.ts), гейту
@@ -131,6 +132,65 @@ describe('validateFixtures', () => {
       cases: [{ id: 'open', title: 'Открыт', shows: ['[role="listbox"]', '[aria-expanded="true"]'] }],
     }
     expect(validateFixtures([good])).toEqual([])
+  })
+
+  // `nodes` (JIG-42) — адрес узлов по роли, не утверждение. Проверяется
+  // только объявление: держится ли адрес, спрашивает `scripts/case-states.mjs`
+  // через `window.jig.nodes()` в настоящем кадре.
+  it('ловит пустой nodes — адрес ни о чём', () => {
+    const bad: AnyFixture = { ...ok, cases: [{ id: 'base', title: 'База', nodes: {} }] }
+    expect(validateFixtures([bad]).join('\n')).toContain('nodes объявлен пустым')
+  })
+
+  it('ловит пустой селектор роли', () => {
+    const bad: AnyFixture = { ...ok, cases: [{ id: 'base', title: 'База', nodes: { port: '  ' } }] }
+    expect(validateFixtures([bad]).join('\n')).toContain('пустой селектор у роли «port»')
+  })
+
+  it('роли нет в словаре — ошибка и в рантайме', () => {
+    const bad: AnyFixture = {
+      ...ok,
+      cases: [{ id: 'base', title: 'База', nodes: { prot: '.x' } as unknown as Record<string, string> }],
+    }
+    expect(validateFixtures([bad]).join('\n')).toContain('роли «prot» нет в словаре NODE_ROLES')
+  })
+
+  it('класс системы в nodes законен, уточнитель законен', () => {
+    const good: AnyFixture = {
+      ...ok,
+      cases: [
+        {
+          id: 'base',
+          title: 'База',
+          nodes: { port: '.ds-eventcal__grid', 'toggle-date': '.ds-datepicker__btn' },
+        },
+      ],
+    }
+    expect(validateFixtures([good])).toEqual([])
+  })
+
+  it('тип: опечатка в базе роли не компилируется', () => {
+    const bad: AnyFixture = {
+      ...ok,
+      cases: [
+        {
+          id: 'base',
+          title: 'База',
+          // @ts-expect-error — опечатка в базе роли не компилируется
+          nodes: { prot: '.x' },
+        },
+      ],
+    }
+    void bad
+  })
+
+  it('сходимость словаря и регулярки: база и уточнитель каждой роли законны', () => {
+    for (const k of Object.keys(NODE_ROLES)) {
+      expect(validateFixtures([{ ...ok, cases: [{ id: 'base', title: 'База', nodes: { [k]: '.x' } }] }])).toEqual([])
+      expect(
+        validateFixtures([{ ...ok, cases: [{ id: 'base', title: 'База', nodes: { [`${k}-a`]: '.x' } }] }]),
+      ).toEqual([])
+    }
   })
 })
 

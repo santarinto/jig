@@ -10,6 +10,7 @@
  * ловят — связка выражена данными, а не сигнатурой.
  */
 import type { AnyFixture, SlotKind } from './fixture.js'
+import { NODE_ROLES } from './fixture.js'
 
 /**
  * Годится ли фикстура вида `kind` в позицию, принимающую `accepts`.
@@ -67,6 +68,33 @@ function showsErrors(name: string, caseId: string, shows: string[] | undefined):
   return errs
 }
 
+/**
+ * `.ds-`-классы РАЗРЕШЕНЫ здесь, в отличие от `showsErrors` — довод в докблоке
+ * `Case.nodes` (`src/internal/fixture.ts`): `nodes` — наш адрес в чужой DOM, а
+ * не утверждение о контракте компонента.
+ */
+const ROLE_NAME = new RegExp(`^(${Object.keys(NODE_ROLES).join('|')})(-[a-z0-9]+)*$`)
+
+function nodesErrors(name: string, caseId: string, nodes: Partial<Record<string, string>> | undefined): string[] {
+  if (nodes === undefined) return []
+  const errs: string[] = []
+  const keys = Object.keys(nodes)
+  if (keys.length === 0) {
+    errs.push(`${name}/${caseId}: nodes объявлен пустым — адрес ни о чём`)
+    return errs
+  }
+  for (const [k, v] of Object.entries(nodes)) {
+    if (!ROLE_NAME.test(k)) {
+      errs.push(`${name}/${caseId}: роли «${k}» нет в словаре NODE_ROLES — есть: ${Object.keys(NODE_ROLES).join(', ')}`)
+      continue
+    }
+    if ((v ?? '').trim() === '') {
+      errs.push(`${name}/${caseId}: пустой селектор у роли «${k}»`)
+    }
+  }
+  return errs
+}
+
 export function validateFixtures(list: AnyFixture[]): string[] {
   const errs: string[] = []
   const byName = new Map<string, AnyFixture>()
@@ -82,6 +110,7 @@ export function validateFixtures(list: AnyFixture[]): string[] {
       if (ids.has(c.id)) errs.push(`${f.name}: кейс «${c.id}» объявлен дважды`)
       ids.add(c.id)
       errs.push(...showsErrors(f.name, c.id, c.shows))
+      errs.push(...nodesErrors(f.name, c.id, c.nodes))
       // `overflows` — довод, а не флаг (DS-177): пустая строка разрешила
       // бы случаю переполнять, ничего не сказав о том, зачем.
       if (c.overflows !== undefined && c.overflows.trim() === '') {
