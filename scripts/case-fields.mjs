@@ -102,7 +102,7 @@ const probe = async ([settleMs, planted]) => {
   return { ...frameFacts(document), scan: scanFields(document), calm, settleMs, planted }
 }
 
-const { classify } = await loadTs('workbench/case-report.ts')
+const { classify, collapseRepeats } = await loadTs('workbench/case-report.ts')
 const { frameWhy } = await loadTs('workbench/frame-facts.ts')
 
 /** Числа пробы — в ячейку либо в причину «не измерено» (тот же `frameWhy`, что у соседей). */
@@ -118,8 +118,15 @@ const verdict = (got, row, scale, viewport) => {
 /** Худшая нехватка ячейки — ею же строки и сортируются. */
 const gap = (m) => m.narrow.reduce((n, f) => Math.max(n, f.need - f.inner), 0)
 
-const lines = (m, url) => m.narrow.map((f) =>
-  `  ${m.at.padEnd(40)} ${`${f.inner}/${f.need}`.padEnd(13)} ${f.path}  (не хватает ${(f.need - f.inner).toFixed(1)} на «${f.sample}»)\n    ${url}`)
+// ГОЛОВЫ строк узлов свёрнуты (`collapseRepeats`, JIG-30) ДО приписывания URL:
+// у ячейки один адрес, а узких полей внутри неё бывают тысячи одинаковых
+// (фиксированный трек кладёт один и тот же дефицит на каждое поле повтора) —
+// `×N` обязан стоять в строке узла, а не после уже приписанного URL.
+const lines = (m, url) => {
+  const heads = m.narrow.map((f) =>
+    `  ${m.at.padEnd(40)} ${`${f.inner}/${f.need}`.padEnd(13)} ${f.path}  (не хватает ${(f.need - f.inner).toFixed(1)} на «${f.sample}»)`)
+  return collapseRepeats(heads).map((h) => `${h}\n    ${url}`)
+}
 
 const report = ({ measured, unmeasured }, area) => {
   if (unmeasured.length) {
@@ -149,7 +156,8 @@ const report = ({ measured, unmeasured }, area) => {
     console.log(`ОБЪЯВЛЕНО narrowFields ${sections.declared.length} (узкое поле обязано найтись):`)
     for (const v of sections.declared) {
       if (!v.narrow.length) console.log(`  ${v.at.padEnd(40)} на этой шкале узкого поля нет\n    ${human(v.url)}`)
-      for (const f of v.narrow) console.log(`  ${v.at.padEnd(40)} ${f.inner}/${f.need} ${f.path}  довод «${v.row.narrowFields}»\n    ${human(v.url)}`)
+      const heads = v.narrow.map((f) => `  ${v.at.padEnd(40)} ${f.inner}/${f.need} ${f.path}  довод «${v.row.narrowFields}»`)
+      for (const h of collapseRepeats(heads)) console.log(`${h}\n    ${human(v.url)}`)
     }
   }
 

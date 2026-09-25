@@ -157,7 +157,7 @@ const probe = async ([settleMs, planted]) => {
 // Классификация — `targetSections` под юнит-тестами `case-report.test.ts`:
 // «tinyTargets снимает только мелкость», «объявлено, но нет», счёт «не
 // достать» — ровно то место, где ошибка дала бы правдоподобный зелёный.
-const { targetSections, TARGET_FLOOR: FLOOR } = await loadTs('workbench/case-report.ts')
+const { targetSections, TARGET_FLOOR: FLOOR, collapseRepeats } = await loadTs('workbench/case-report.ts')
 const { frameWhy } = await loadTs('workbench/frame-facts.ts')
 
 /** Числа пробы — в ячейку либо в причину «не измерено» (тот же `frameWhy`, что у строки 2). */
@@ -193,8 +193,15 @@ const charged = (m) => [
   ...m.unhittable.map((t) => ({ t, kind: missWord(t) })),
 ]
 
-const lines = (m, url, list) => list.map(({ t, kind }) =>
-  `  ${m.at.padEnd(40)} ${size(t).padEnd(11)} ${t.path}  (${kind})\n    ${url}`)
+// ГОЛОВЫ строк узлов свёрнуты (`collapseRepeats`, JIG-30) ДО приписывания URL —
+// тем же доводом, что у строки ширины поля: `EventCalendar/week` кладёт в одну
+// ячейку десятки одинаковых слотов, и `×N` обязан стоять в строке узла, а не
+// после уже приписанного URL. Используется во всех трёх секциях, зовущих
+// `lines()`: нарушения, известные, «не достать».
+const lines = (m, url, list) => {
+  const heads = list.map(({ t, kind }) => `  ${m.at.padEnd(40)} ${size(t).padEnd(11)} ${t.path}  (${kind})`)
+  return collapseRepeats(heads).map((h) => `${h}\n    ${url}`)
+}
 
 // `known` — карта известных нарушений; обход её не передаёт и получает `KNOWN`
 // модуля. Параметр ради печати слова при коде через запятую (DS-329):
@@ -256,7 +263,8 @@ const report = ({ measured, unmeasured, known = KNOWN }, area) => {
           : 'на этой шкале мелкой цели нет — выросла по шкале'
         console.log(`  ${v.at.padEnd(40)} ${why}\n    ${human(v.url)}`)
       }
-      for (const t of v.small) console.log(`  ${v.at.padEnd(40)} ${size(t).padEnd(11)} ${t.path}  довод «${v.row.tinyTargets}»\n    ${human(v.url)}`)
+      const heads = v.small.map((t) => `  ${v.at.padEnd(40)} ${size(t).padEnd(11)} ${t.path}  довод «${v.row.tinyTargets}»`)
+      for (const h of collapseRepeats(heads)) console.log(`${h}\n    ${human(v.url)}`)
     }
   }
 

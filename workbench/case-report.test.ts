@@ -1,5 +1,20 @@
 import { describe, it, expect } from 'vitest'
-import { classify, targetSections, type Cell, type TargetCell, type TargetHit } from './case-report.js'
+import { classify, targetSections, collapseRepeats, type Cell, type TargetCell, type TargetHit } from './case-report.js'
+
+describe('collapseRepeats (JIG-30)', () => {
+  it('уникальные строки не трогает, порядок первого появления сохраняется', () => {
+    expect(collapseRepeats(['a', 'b', 'c'])).toEqual(['a', 'b', 'c'])
+  })
+
+  it('повтор, РАЗБРОСАННЫЙ, а не только подряд идущий, сворачивается на месте первого появления', () => {
+    expect(collapseRepeats(['a', 'b', 'a', 'c', 'a'])).toEqual(['a  ×3', 'b', 'c'])
+  })
+
+  it('суффикс несёт точное число повторов, не «больше одного»', () => {
+    expect(collapseRepeats(['x', 'x'])).toEqual(['x  ×2'])
+    expect(collapseRepeats(['y', 'y', 'y', 'y', 'y'])).toEqual(['y  ×5'])
+  })
+})
 
 interface M extends Cell { over: boolean; declared?: string; gap: number }
 const cell = (at: string, over: boolean, gap = 0, declared?: string): M =>
