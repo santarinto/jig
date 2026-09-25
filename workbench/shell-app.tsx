@@ -12,6 +12,7 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ShellFrame, nextSid, READY_TIMEOUT_MS } from './shell-frame.js'
+import { SCRATCH_ID } from './jig-api.js'
 import { Dock } from './dock.js'
 import { DockGrip } from './dock-grip.js'
 import { clampDockH, readDockH, writeDockH } from './dock-height.js'
@@ -2387,6 +2388,13 @@ export function Shell() {
           canvasSnippet={canvasSnippet}
         />
       </div>
+
+      {/* Слот проб агента (JIG-40): пробы кладутся `jig.scratch.append(...)`,
+          не `document.body.prepend` — `fixed` не сдвигает оболочку и
+          координаты кликов, а прежний приём сдвигал (docblock у правила в
+          shell.css). Без детей в JSX намеренно: React не рендерит сюда своих
+          детей и не трогает чужих, положенных агентом мимо React. */}
+      <section id={SCRATCH_ID} className="wb__scratch" data-caption="пробы агента" />
     </div>
   )
 }

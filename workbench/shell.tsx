@@ -9,6 +9,11 @@ import '../fonts/inter.css'
 import '../fonts/mono.css'
 import './shell.css'
 import { Shell } from './shell-app.js'
+import { installShellJig } from './jig-shell.js'
+
+// ДО createRoot, тем же доводом, что у кадра (frame.tsx): аудит адреса читает
+// `location.search` до зеркала оболочки (JIG-40).
+installShellJig(window)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

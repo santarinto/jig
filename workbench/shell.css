@@ -648,6 +648,47 @@ body,
   pointer-events: none;
 }
 
+/* Слот проб агента (JIG-40): узел, в который браузерный агент кладёт свои
+   `<iframe>`/снимки через `jig.scratch.append(...)`, а не
+   `document.body.prepend`, которое сдвигало оболочку и её координаты кликов
+   вместе с собой.
+
+   `fixed`, а не `absolute` или в потоке: слот не должен участвовать в
+   раскладке оболочки и не должен уезжать при её собственной прокрутке.
+
+   БЕЗ `overflow` намеренно: свёрнутая в прокрутку часть чужого `<iframe>` —
+   это снова «скрытый зонд», врущий на 5% ширины текста (та же находка, что и
+   у `sweep.ts`, docblock там). Слот просто растёт вниз.
+
+   Пустой — `display: none` (`:empty`): иначе он лежит поверх рукоятки дока,
+   которую `dock-floor` тянет настоящим указателем, и рукоятка становится
+   недостижимой мышью, хотя ни один агент ничего в слот не положил. */
+.wb__scratch {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-inline-size: 100vw;
+  padding: 0.5rem;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-border);
+}
+
+.wb__scratch:empty {
+  display: none;
+}
+
+.wb__scratch::before {
+  content: attr(data-caption);
+  flex: 0 0 100%;
+  color: var(--wb-text-secondary);
+  white-space: nowrap;
+}
+
 /* Скелет держится, пока кадр не сказал `ready`. Без него на месте кадра
    белизна, неотличимая от «фикстура не нарисовалась». */
 .wb__skeleton {
