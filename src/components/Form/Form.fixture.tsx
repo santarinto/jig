@@ -381,6 +381,16 @@ export default defineFixture<Props>({
       id: 'overlay',
       title: 'Всплывающее поверх строки формы, а не под ней',
       props: { overlay: true },
+      // Роли узлов (JIG-42, decisions 1.9). Обе панели ЗАКРЫТЫ при загрузке
+      // (спецификация 0.3) — роли `panel` здесь нет, она указывала бы в
+      // пустоту. `toggle`/`toggle-date` — два поля одного вида в одном
+      // случае, уточнитель через дефис держит их разными ключами.
+      nodes: {
+        toggle: '.ds-combobox__trigger',
+        'toggle-date': '.ds-datepicker__btn',
+        label: '.ds-formrow__label',
+        'input-sum': '#f-overlay-sum',
+      },
       note:
         'ВСПЛЫВАЮЩЕЕ ИЗ СТРОКИ ФОРМЫ. До этого случая все три строки фикстуры '
         + 'были `TextField`, и сочетание «строка формы плюс поле со своей '

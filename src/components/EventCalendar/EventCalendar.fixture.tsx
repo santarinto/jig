@@ -76,6 +76,15 @@ interface Props {
 }
 
 /**
+ * Дата курсора случая `week` (JIG-42). Одна ссылка, а не копия литерала: роль
+ * `cursor` (`nodes` случая `week` ниже) адресует колонку по `data-day`, и она
+ * обязана называть ТУ ЖЕ дату, на которой стоит `useState`/`onToday` — иначе
+ * роль после «Сегодня» указывала бы не туда, а расхождение было бы не видно
+ * никому, кроме гейта состояний.
+ */
+const CURSOR_DATE = '2026-09-02'
+
+/**
  * Состояние держит фикстура: компонент контролируемый, и без хозяина состояния
  * перенос выглядел бы сломанным — ручка звучит, положение не меняется.
  */
@@ -86,7 +95,7 @@ function Live({ events, withCalendars, pending, ...rest }: Props) {
   // состояние, взятое из пропа один раз, дальше жило само по себе. Стенд, где
   // крутилка ничего не делает, врёт о компоненте, а не о себе.
   useEffect(() => setView(rest.view), [rest.view])
-  const [date, setDate] = useState('2026-09-02')
+  const [date, setDate] = useState(CURSOR_DATE)
   const [hidden, setHidden] = useState<string[]>([])
 
   return (
@@ -106,7 +115,7 @@ function Live({ events, withCalendars, pending, ...rest }: Props) {
       workHours={['08:00', '20:00']}
       onViewChange={setView}
       onDateChange={setDate}
-      onToday={() => setDate('2026-09-02')}
+      onToday={() => setDate(CURSOR_DATE)}
       onEventChange={(id, next) =>
         setList((prev) => prev.map((e) => (e.id === id ? { ...e, ...next } : e)))}
       onEventCreate={(draft) =>
@@ -156,6 +165,16 @@ export default defineFixture<Props>({
       tinyTargets:
         'Высота слота сетки — шаг временной шкалы; раздуть слот до пола 24 '
         + 'значило бы изменить саму шкалу времени, а не размер кнопки — SC 2.5.8 «essential».',
+      // Роли узлов (JIG-42, decisions 1.9). Курсор адресует колонку по
+      // data-day, а не по классу — в разметке компонента у неё нет своей
+      // отметки (спецификация 0.3): после смены недели роль честно указывает
+      // в пустоту, node('cursor') бросает.
+      nodes: {
+        port: '.ds-eventcal__grid',
+        sticky: '.ds-eventcal__hours',
+        'sticky-top': '.ds-eventcal__top',
+        cursor: `.ds-eventcal__col[data-day="${CURSOR_DATE}"]`,
+      },
     },
     {
       id: 'dense',

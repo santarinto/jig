@@ -97,6 +97,9 @@ export default defineFixture<Props>({
       title: 'Закрытое',
       note: 'Так поле и живёт в форме: текст с точками, крестик и кнопка'
         + ' календаря справа. Крестик появляется только при непустом значении.',
+      // Роли узлов (JIG-42, decisions 1.9): крестик у `base` есть — значение
+      // непустое умолчанием фикстуры (`props.value`).
+      nodes: { toggle: '.ds-datepicker__btn', clear: '.ds-datepicker__clear', input: '.ds-datepicker__input' },
     },
     {
       id: 'open',
@@ -110,6 +113,13 @@ export default defineFixture<Props>({
       // показывающий закрытое поле, ничем не отличался бы от `base`.
       shows: ['[role="dialog"]', '[aria-expanded="true"]'],
       render: (p) => <Opened {...p} />,
+      // Роли узлов: те же, что у `base`, плюс открытая панель (JIG-42, decisions 1.9).
+      nodes: {
+        toggle: '.ds-datepicker__btn',
+        clear: '.ds-datepicker__clear',
+        input: '.ds-datepicker__input',
+        panel: '.ds-datepicker__popup',
+      },
     },
     {
       id: 'range',

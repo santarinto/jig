@@ -140,6 +140,8 @@ export default defineFixture<Props>({
       // же 113px (замер, DS-134).
       shows: ['[role="listbox"]', '[role="option"]', '[aria-expanded="true"]'],
       render: (p) => <Opened {...p} />,
+      // Роли узлов (JIG-42, decisions 1.9): триггер, панель, поле поиска.
+      nodes: { toggle: '.ds-combobox__trigger', panel: '.ds-combobox__popover', input: '.ds-combobox__search' },
     },
     {
       id: 'search',
@@ -151,6 +153,14 @@ export default defineFixture<Props>({
         + ' Дорохов, Иванов, Ковалёв.',
       shows: ['[role="listbox"]', '[role="option"]'],
       render: (p) => <Opened {...p} />,
+      // То же, что у `open`, плюс список — единственный настоящий port
+      // Combobox (двенадцать водителей ≈ 430 px при потолке 240, спецификация 0.3).
+      nodes: {
+        toggle: '.ds-combobox__trigger',
+        panel: '.ds-combobox__popover',
+        input: '.ds-combobox__search',
+        port: '.ds-combobox__list',
+      },
     },
     {
       id: 'create',
