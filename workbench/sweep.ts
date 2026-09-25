@@ -31,6 +31,7 @@
  */
 import { applyFrameEnv } from './frame-scale.js'
 import { buildFrameUrl, parseFrameUrl } from './frame-url.js'
+import { normColour, pick } from './probe.js'
 import { unpack, type Up } from './protocol.js'
 import {
   DEFAULT_SCALES,
@@ -66,32 +67,12 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 const frames = () =>
   Promise.race([new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))), sleep(1000)])
 
-/** Цвет к `rgba(...)` через canvas: `color(srgb …)` и `color-mix` читаются как есть. */
-const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!
-function normColour(css: string): string {
-  ctx.clearRect(0, 0, 1, 1)
-  ctx.fillStyle = '#000'
-  ctx.fillStyle = css
-  ctx.fillRect(0, 0, 1, 1)
-  const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data
-  return `rgba(${r}, ${g}, ${b}, ${Math.round((a! / 255) * 100) / 100})`
-}
-
 function backgroundOf(el: Element, win: Window): string {
   for (let n: Element | null = el; n; n = n.parentElement) {
     const bg = win.getComputedStyle(n).backgroundColor
     if (normColour(bg).endsWith(', 0)') === false) return normColour(bg)
   }
   return normColour(win.getComputedStyle(win.document.body).backgroundColor)
-}
-
-/** Первый узел селектора с ненулевой коробкой: скрытые копии не меряются. */
-function pick(doc: Document, selector: string): HTMLElement | null {
-  for (const el of doc.querySelectorAll<HTMLElement>(selector)) {
-    const r = el.getBoundingClientRect()
-    if (r.width > 0 && r.height > 0) return el
-  }
-  return null
 }
 
 /**
