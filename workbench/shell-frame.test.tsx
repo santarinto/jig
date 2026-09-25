@@ -182,6 +182,89 @@ describe('запрос карты видов (ask) — одноразовый к
 })
 
 /**
+ * `scroll-to` — просьба поставить прокрутку узла роли `port` (JIG-42,
+ * `ScrollTo` в protocol.ts). ОДНОРАЗОВАЯ, тем же приёмом, что `ask-kinds`:
+ * уходит только после `ready`, и `scrollAtLoad` заморожен ПРИ МОНТИРОВАНИИ
+ * (как `src`) — живой `pin` оболочки не должен отдёргивать прокрутку назад
+ * поверх движения, которое сделал компонент сам или агент руками.
+ */
+describe('scroll-to — одноразовый канал прокрутки порта', () => {
+  const scrollsSent = (spy: ReturnType<typeof downSpy>): (Down & { type: 'scroll-to' })[] =>
+    spy.mock.calls
+      .map(([m]) => (m as Envelope<Down>).body)
+      .filter((b): b is Down & { type: 'scroll-to' } => b.type === 'scroll-to')
+
+  it('без scrollTo — вниз ничего не уходит, даже после ready', () => {
+    const state = st()
+    render(<ShellFrame state={state} width={320} />)
+    const spy = downSpy()
+
+    sendUp(state.sid, { type: 'ready', meta: null })
+
+    expect(scrollsSent(spy)).toEqual([])
+    spy.mockRestore()
+  })
+
+  it('scrollTo до ready — вниз ничего не уходит: слушателя в кадре ещё нет', () => {
+    const state = st()
+    render(<ShellFrame state={state} width={320} scrollTo={{ x: 151, y: 480 }} />)
+    const spy = downSpy()
+
+    expect(scrollsSent(spy)).toEqual([])
+    spy.mockRestore()
+  })
+
+  it('scrollTo после ready — уходит ровно один scroll-to с теми же числами', () => {
+    const state = st()
+    render(<ShellFrame state={state} width={320} scrollTo={{ x: 151, y: 480 }} />)
+    const spy = downSpy()
+
+    sendUp(state.sid, { type: 'ready', meta: null })
+
+    expect(scrollsSent(spy)).toEqual([{ type: 'scroll-to', x: 151, y: 480 }])
+    spy.mockRestore()
+  })
+
+  it('живой pin не шлёт повторно (М9): перерисовка с новыми числами ничего не добавляет', () => {
+    const state = st()
+    const view = render(<ShellFrame state={state} width={320} scrollTo={{ x: 151, y: 480 }} />)
+    sendUp(state.sid, { type: 'ready', meta: null })
+    const spy = downSpy()
+
+    view.rerender(<ShellFrame state={state} width={320} scrollTo={{ x: 40, y: 480 }} />)
+
+    expect(scrollsSent(spy)).toEqual([])
+    spy.mockRestore()
+  })
+
+  it('перезагрузить шлёт scroll-to заново — новый документ, та же просьба', () => {
+    vi.useFakeTimers()
+    try {
+      const state = st()
+      render(<ShellFrame state={state} width={320} scrollTo={{ x: 151, y: 480 }} />)
+
+      // Кадр молчит — стенд достигает «не ответил» БЕЗ первого ready, иначе
+      // таймер стойла не сработает (условие в коде: гаснет, только пока фаза
+      // ещё 'wait').
+      act(() => vi.advanceTimersByTime(READY_TIMEOUT_MS + 1))
+      expect(screen.getByText(/не ответил/)).toBeTruthy()
+
+      act(() => screen.getByRole('button', { name: 'перезагрузить' }).click())
+      // `downSpy()` — ПОСЛЕ клика: `el.src = el.src` в jsdom переставляет
+      // `contentWindow` на новый объект, и спай, снятый раньше, слушал бы
+      // уже отпущенное окно.
+      const spy = downSpy()
+      sendUp(state.sid, { type: 'ready', meta: null })
+
+      expect(scrollsSent(spy)).toEqual([{ type: 'scroll-to', x: 151, y: 480 }])
+      spy.mockRestore()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+/**
  * DS-148. Скрытый зонд — приём из CLAUDE.md: `<iframe>` заводится из
  * страницы ОБОЛОЧКИ и в цикле крутит `frame.html?c=<другой компонент>&sid=1`.
  * Его кадр честно говорит наверх `window.parent.postMessage`, и наверху сидит

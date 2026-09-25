@@ -40,6 +40,8 @@ import {
 } from './canvas-store.js'
 import { gridPlan, GRID_LIMIT } from './grid-plan.js'
 import { makeMirror } from './mirror-url.js'
+import { CopyChip } from './copy-chip.js'
+import type { PortScroll } from './port-scroll.js'
 import type { ForceState } from './force-states.js'
 import type {
   A11yReportMsg,
@@ -303,6 +305,22 @@ export function Shell() {
   const [width, setWidth] = useState(() => initial.w ?? DEFAULT_WIDTH)
   const [scale, setScale] = useState(initial.scale)
   const [size, setSize] = useState<{ w: number; h: number; cw: number; bar: number } | null>(null)
+  /**
+   * ПРОСЬБА о прокрутке порта (JIG-42, decisions 1.7) — `sx`/`sy` адреса
+   * загрузки, не текущая позиция. Держится КОНСТАНТОЙ до `resetFrameState`
+   * (смена случая/компонента) — живая прокрутка сюда НИКОГДА не пишется, и
+   * потому это ОДНО поле служит обеим ролям: зеркало (`state.sx`/`state.sy`
+   * → `buildShellUrl`) читает его как «что писать в адрес», а тулбар — как
+   * «что просили» для пометки «упор» (сравнение с текущим пределом
+   * `portScroll.xMax`/`yMax`). Ссылку с ТЕКУЩЕЙ позицией собирает `CopyChip`
+   * из последнего `Up 'scroll'` (`portScroll` ниже) — не это поле.
+   */
+  const [pin, setPin] = useState<{ x: number | null; y: number | null } | null>(() =>
+    initial.sx !== null || initial.sy !== null ? { x: initial.sx, y: initial.sy } : null)
+  /** Живая позиция порта — тулбар и `CopyChip`; в адрес не едет. */
+  const [portScroll, setPortScroll] = useState<PortScroll | null>(null)
+  /** Довод, почему прокрутки нет (нет роли `port`, роль не нашла узел, вид canvas). */
+  const [portWhy, setPortWhy] = useState<string | null>(null)
   // Патч — накопленное состояние кадра, которое не требует перезагрузки.
   // Копится в одном объекте, а не рассылается по частям: кадр применяет
   // его целиком, и порядок применения перестаёт зависеть от порядка отправки.
@@ -696,11 +714,11 @@ export function Shell() {
     // отсекает её сам `buildFrameUrl`, а не условие здесь. Иначе поле было бы
     // «иногда в состоянии», и всякий, кто читает `state`, гадал бы, когда.
     w: width,
-    // Просьба о прокрутке порта (JIG-42): заглушка ДО коммита «прокрутка
-    // порта в тулбаре» — там заводится состояние `pin` и вместо `null`
-    // приезжает `pin?.x ?? null`/`pin?.y ?? null`.
-    sx: null,
-    sy: null,
+    // Просьба о прокрутке порта (JIG-42, decisions 1.7): `pin` — ТОЛЬКО то,
+    // что нёс адрес загрузки, а не живая позиция; `resetFrameState` снимает
+    // его сменой случая/компонента. Живая прокрутка сюда не пишется никогда.
+    sx: pin?.x ?? null,
+    sy: pin?.y ?? null,
   }
 
   // Строка адреса — считается КАЖДЫЙ рендер (сборка дешева: один проход по
@@ -797,6 +815,12 @@ export function Shell() {
     // случая. Санитар: shell-panel.test.tsx («открытый выбор начинки не
     // переживает смену случая»).
     setOpenSlot(null)
+    // Прокрутка порта (JIG-42) — принадлежит ДОКУМЕНТУ кадра, тем же доводом,
+    // что числа обхода и стопы выше: под новым случаем/компонентом просьба
+    // прошлого случая не значит ничего, а старая живая позиция — тем более.
+    setPin(null)
+    setPortScroll(null)
+    setPortWhy(null)
   }
 
   const pickComponent = (name: string): void => {
@@ -1628,6 +1652,15 @@ export function Shell() {
     // автоматически. Санитар: shell-size.test.tsx.
     if (m.type === 'size') setSize({ w: m.w, h: m.h, cw: m.cw, bar: m.bar })
 
+    // Прокрутка порта (JIG-42): ТОЛЬКО печать, тем же уговором, что `size`
+    // выше. `pin` (просьба) здесь НЕ ТРОГАЕТСЯ — decisions 1.7: живая
+    // прокрутка в адрес не пишется никогда, её несёт `CopyChip` явным
+    // действием, а не молчаливое зеркало.
+    if (m.type === 'scroll') {
+      setPortScroll(m.port)
+      setPortWhy(m.port ? null : (m.why ?? null))
+    }
+
     if (m.type === 'force-stats') setForceStats({ ms: m.ms, skipped: m.skipped })
 
     if (m.type === 'aim') {
@@ -1724,6 +1757,33 @@ export function Shell() {
     }
   }
 
+  /**
+   * Пометка «упор» (JIG-42) по одной оси: `pin` — что просил адрес,
+   * `max` — текущий предел узла роли `port`. Допуск 1 px — тот же, что у
+   * `endX`/`endY` в `jig.box()` (`scrollLeft` дробный при dpr ≠ 1).
+   */
+  const uporOf = (asked: number | null | undefined, max: number): string | null =>
+    asked !== null && asked !== undefined && asked > max + 1
+      ? `просили ${asked}, максимум ${Math.round(max)}`
+      : null
+  const uporX = portScroll ? uporOf(pin?.x, portScroll.xMax) : null
+  const uporY = portScroll ? uporOf(pin?.y, portScroll.yMax) : null
+  const upor = uporX ? `упор x: ${uporX}` : uporY ? `упор y: ${uporY}` : null
+
+  /**
+   * Ссылка с ТЕКУЩЕЙ прокруткой (JIG-42, decisions 1.7): `sx`/`sy` — из
+   * последнего `Up 'scroll'` (`portScroll`), НЕ из `pin` (просьбы адреса).
+   * Ось без хода (`max === 0`) не пишется — как и в самом `buildShellUrl`.
+   */
+  const scrollLinkState: FrameState = {
+    ...state,
+    sx: portScroll && portScroll.xMax > 0 ? Math.round(portScroll.x) : null,
+    sy: portScroll && portScroll.yMax > 0 ? Math.round(portScroll.y) : null,
+  }
+  const scrollLink = portScroll
+    ? `${window.location.origin}${window.location.pathname}${buildShellUrl(scrollLinkState)}`
+    : ''
+
   return (
     <div className="wb" ref={shellRef}>
       <div className="wb__bar" ref={barRef}>
@@ -1793,6 +1853,46 @@ export function Shell() {
             </>
           )}
         </span>
+        {/* Прокрутка порта (JIG-42). В сетке НЕТ: ячейки — разные документы,
+            каждая с потенциально своей прокруткой, а группа отвечает про
+            один кадр (тот же довод, что у скрытого переключателя темы над
+            сеткой). Видна, когда есть что сказать: живая прокрутка пришла,
+            или её просили (`pin`), но `port` в случае нет. */}
+        {mode !== 'grid' && (portScroll || (portWhy && pin)) && (
+          <span className="wb__group" role="group" aria-label="Прокрутка порта">
+            <span className="wb__group-label">прокрутка</span>
+            {portScroll && portScroll.xMax > 0 && (
+              <span className="wb__mono" aria-label="Прокрутка вбок" title="scrollLeft / максимум узла роли port">
+                x {Math.round(portScroll.x)} / {Math.round(portScroll.xMax)}
+              </span>
+            )}
+            {portScroll && portScroll.yMax > 0 && (
+              <span className="wb__mono" aria-label="Прокрутка вниз" title="scrollTop / максимум узла роли port">
+                y {Math.round(portScroll.y)} / {Math.round(portScroll.yMax)}
+              </span>
+            )}
+            {portScroll && portScroll.xMax === 0 && portScroll.yMax === 0 && (
+              <span className="wb__dock-note">нет хода</span>
+            )}
+            {upor && (
+              <span className="wb__dock-note wb__dock-note--warn" aria-label="Упор прокрутки">
+                {upor}
+              </span>
+            )}
+            {!portScroll && portWhy && (
+              <span className="wb__dock-note wb__dock-note--warn" aria-label="Прокрутка не применена">
+                sx/sy: {portWhy}
+              </span>
+            )}
+            {portScroll && (
+              <CopyChip
+                label="ссылка с прокруткой"
+                value={scrollLink}
+                title="Полный адрес оболочки с текущей прокруткой узла роли port"
+              />
+            )}
+          </span>
+        )}
         <span className="wb__group" role="group" aria-label="Масштаб">
           <span className="wb__group-label">масштаб</span>
           {SCALE_PRESETS.map((s) => (
@@ -2308,6 +2408,7 @@ export function Shell() {
                       width={cell.w}
                       patch={cellPatch}
                       onUp={cell === plan.cells[0] ? onUp : undefined}
+                      scrollTo={pin}
                     />
                   </div>
                 )
@@ -2337,6 +2438,7 @@ export function Shell() {
               ask={askSeq > 0}
               askRetry={askSeq}
               onUp={onUp}
+              scrollTo={pin}
             />
             <div
               className="wb__grip"

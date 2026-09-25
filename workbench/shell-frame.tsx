@@ -52,9 +52,16 @@ interface Props {
    */
   askRetry?: number
   onUp?: (m: Up) => void
+  /**
+   * Просьба поставить прокрутку узла роли `port` (JIG-42). `null` — просьбы
+   * нет. Одноразовое, как `ask` — не поле `patch`, потому что патч
+   * пересылается на КАЖДОЕ изменение и доезжал бы до каждого нового
+   * документа, отдёргивая живую прокрутку назад к значению просьбы.
+   */
+  scrollTo?: { x: number | null; y: number | null } | null
 }
 
-export function ShellFrame({ state, width, patch, ask, askRetry, onUp }: Props) {
+export function ShellFrame({ state, width, patch, ask, askRetry, onUp, scrollTo }: Props) {
   const ref = useRef<HTMLIFrameElement | null>(null)
   const [phase, setPhase] = useState<Phase>('wait')
   // Адрес считается ОДИН раз, при монтировании. Пересчитывать src здесь —
@@ -68,6 +75,13 @@ export function ShellFrame({ state, width, patch, ask, askRetry, onUp }: Props) 
   // мешает, потому что replaceState меняет адрес окна кадра изнутри его
   // документа, а не атрибут src у родителя.
   const [src] = useState(() => `./frame.html${buildFrameUrl(state)}`)
+  // Заморожено ПРИ МОНТИРОВАНИИ, тем же приёмом и доводом, что `src` выше:
+  // живой `pin` оболочки меняется на каждый сброс (JIG-42, decisions 1.7 —
+  // `pin` держится до смены случая/компонента), и посланный ПОВТОРНО
+  // `scroll-to` отдёргивал бы прокрутку назад к значению просьбы поверх
+  // движения, которое сделал компонент сам (якорь `EventCalendar`) или
+  // агент руками.
+  const [scrollAtLoad] = useState(() => scrollTo ?? null)
   // Счётчик перезагрузок в зависимостях эффекта — иначе «перезагрузить» вернёт
   // фазу в ожидание, но НОВЫЙ таймер не заведётся, и молчащий кадр повиснет под
   // скелетом навсегда. Ровно то состояние, ради ухода от которого нажимали.
@@ -173,6 +187,16 @@ export function ShellFrame({ state, width, patch, ask, askRetry, onUp }: Props) 
     if (!win) return
     win.postMessage(pack(state.sid, { type: 'ask-kinds' } satisfies Down), window.location.origin)
   }, [ask, phase, state.sid, askRetry])
+
+  // Прокрутка порта (JIG-42) — ОДНОРАЗОВАЯ, тем же доводом, что `ask-kinds`
+  // выше: до `ready` слушателя в кадре нет. `nonce` в зависимостях — после
+  // «перезагрузить» документ новый и просьбу надо послать заново.
+  useEffect(() => {
+    if (phase !== 'ok' || !scrollAtLoad) return
+    const win = ref.current?.contentWindow
+    if (!win) return
+    win.postMessage(pack(state.sid, { type: 'scroll-to', ...scrollAtLoad } satisfies Down), window.location.origin)
+  }, [phase, state.sid, nonce])
 
   const reload = (): void => {
     setNonce((n) => n + 1)
