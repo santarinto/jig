@@ -8,7 +8,10 @@ import {
   contrastRatio,
   deltaE,
   hex2rgb,
+  hueDeg,
   mix,
+  oklab,
+  oklchL,
   parseThemeTokens,
   simulate,
   ucs,
@@ -96,6 +99,33 @@ describe('колориметрия считает то, что обещает', 
     const a = deltaE('#2A7030', '#2764AD', VIEWING.light)
     const b = deltaE('#2A7030', '#2764AD', VIEWING.dark)
     expect(a).not.toBeCloseTo(b, 3)
+  })
+
+  it('угол тона CAM16 — рядом с эталоном CIECAM02, а не в другой четверти', () => {
+    // Тот же стимул, что у J выше: XYZ 19.01/20/21.78 при La=318.31 → h=219.0
+    // (эталон в шапке demo/palette-data.ts). Полоса широкая НЕ из-за слабого
+    // гейта: у стимула хрома почти нулевая (a'≈-0.08, b'≈-0.05 в CAM16-UCS),
+    // а на таком радиусе округление hex до 8 бит само сдвигает угол на
+    // порядок десяти градусов — это шум входа, не шум формулы. Полоса всё
+    // равно ловит настоящую порчу: перепутанные оси atan2(a,b) вместо
+    // atan2(b,a), градусы вместо радиан или знак дают угол за её пределами.
+    const vc = new Viewing(318.31, 20, 'average')
+    const grey = '#7C7C7C'
+    const deg = hueDeg(grey, vc)
+    expect(deg).toBeGreaterThan(195)
+    expect(deg).toBeLessThan(235)
+  })
+
+  it('OKLab: белый и чёрный на краях L, хроматика сходится с эталоном Ottosson', () => {
+    // #FF0000 → L 0.627955, a 0.224863, b 0.125846 — опубликованный пример
+    // автора пространства (Björn Ottosson, «A perceptual color space for
+    // image processing», 2020): sRGB (1,0,0) через линейный RGB → LMS → OKLab.
+    expect(oklchL('#FFFFFF')).toBeCloseTo(1, 3)
+    expect(oklchL('#000000')).toBeCloseTo(0, 6)
+    const [L, a, b] = oklab('#FF0000')
+    expect(L).toBeCloseTo(0.627955, 5)
+    expect(a).toBeCloseTo(0.224863, 5)
+    expect(b).toBeCloseTo(0.125846, 5)
   })
 
   it('разбор токенов берёт значения темы и не берёт закомментированные', () => {
