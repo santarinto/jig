@@ -1867,15 +1867,28 @@ export function Shell() {
             или её просили (`pin`), но `port` в случае нет. */}
         {mode !== 'grid' && (portScroll || (portWhy && pin)) && (
           <span className="wb__group" role="group" aria-label="Прокрутка порта">
-            <span className="wb__group-label">прокрутка</span>
-            {portScroll && portScroll.xMax > 0 && (
-              <span className="wb__mono" aria-label="Прокрутка вбок" title="scrollLeft / максимум узла роли port">
-                x {Math.round(portScroll.x)} / {Math.round(portScroll.xMax)}
-              </span>
-            )}
-            {portScroll && portScroll.yMax > 0 && (
-              <span className="wb__mono" aria-label="Прокрутка вниз" title="scrollTop / максимум узла роли port">
-                y {Math.round(portScroll.y)} / {Math.round(portScroll.yMax)}
+            {/* Подпись называет, что значат числа (JIG-42, приёмка): слепой
+                вопрос владельцу показал, что «x 151 / 312» само по себе не
+                читается. В JSX, не через `::after` — текст `content:` не
+                текстовый узел DOM: его не находит `screen.getByText`, не
+                выделяет и не копирует человек, и он не проверяем тем же
+                способом, что остальная подпись. */}
+            <span className="wb__group-label">прокрутка · сейчас / макс., px</span>
+            {portScroll && (portScroll.xMax > 0 || portScroll.yMax > 0) && (
+              // Обёртка несёт СВОЙ зазор (`.wb__scroll-readouts`, shell.css)
+              // между x и y — 12px пробы агента, не общий зазор группы: тот
+              // раздвинул бы и подпись от x, чего проба не просила.
+              <span className="wb__scroll-readouts">
+                {portScroll.xMax > 0 && (
+                  <span className="wb__mono" aria-label="Прокрутка вбок" title="scrollLeft / максимум узла роли port">
+                    x {Math.round(portScroll.x)} / {Math.round(portScroll.xMax)}
+                  </span>
+                )}
+                {portScroll.yMax > 0 && (
+                  <span className="wb__mono" aria-label="Прокрутка вниз" title="scrollTop / максимум узла роли port">
+                    y {Math.round(portScroll.y)} / {Math.round(portScroll.yMax)}
+                  </span>
+                )}
               </span>
             )}
             {portScroll && portScroll.xMax === 0 && portScroll.yMax === 0 && (
