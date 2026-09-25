@@ -771,6 +771,11 @@ export function EventCalendar({
     if (typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(apply)
     ro.observe(port)
+    // И за треком колонок (JIG-9): ширина `.ds-eventcal__cols` меняется вместе
+    // с треками дней, когда `events` раздвигает плотный день, а ширина порта
+    // при этом не меняется вовсе — наблюдатель только на порте такую смену не
+    // увидит, и условие А не пересчитается.
+    if (colsRef.current) ro.observe(colsRef.current)
     return () => ro.disconnect()
   }, [date, view])
 

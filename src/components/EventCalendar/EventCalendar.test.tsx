@@ -451,10 +451,17 @@ describe('EventCalendar — якорь недели: условие А, «мен
   /**
    * Порт со scrollLeft и живыми rect колонок. Часы занимают `[0, gutter]` и не
    * двигаются со scrollLeft (липкие); колонка i (0 — понедельник) стоит от
-   * `gutter + i×day − scrollLeft` до `+day` — та же формула, что и в реальном
-   * DOM (часы и колонки — соседние flex-элементы `.ds-eventcal__canvas`,
+   * `gutter + i×day − scrollLeft` до `+day`. Это МОДЕЛЬ, не точная формула
+   * реального DOM: `day` здесь — пол трека `5.625rem × scale`
+   * (`--ds-eventcal-col-min`), а в среде недели этого файла (WEEK) стоят две
+   * наложенные встречи, и её реальный трек шире пола —
+   * `max(5.625rem, 2 × 3rem)` (`--ds-eventcal-min-w`, раздвижка треков
+   * наложенными событиями). Смещение самой колонки среды (180/270 на шкале
+   * 1/1.5) от этого не зависит — она первая после часов и её левая граница
+   * считается от пола, а не от своей ширины; колонки ПРАВЕЕ среды в реальном
+   * DOM сдвинуты на разницу треков и здесь не смоделированы.
    * `offsetLeft` колонки не включает gutter, потому что offsetParent —
-   * `.ds-eventcal__cols`, а не `.ds-eventcal__canvas`).
+   * `.ds-eventcal__cols`, а не `.ds-eventcal__canvas`.
    *
    * Первый `fire()` в тесте моделирует ПЕРВОЕ применение условия А. В jsdom
    * layout не считается: на монтаже все rect нулевые, и эффект на них не
@@ -554,12 +561,33 @@ describe('EventCalendar — якорь недели: условие А, «мен
   it('2. курсор виден целиком — scrollLeft не меняется, даже если n < 3', () => {
     // Шкала 1.5, узкий порт (день 135 + гаттер 84 + запас 10 = 229): целиком
     // влезает только курсорная колонка (n=1 < 3), но она и есть та, что нужна
-    // — трогать нечего.
+    // — трогать нечего. scrollLeft НАРОЧНО не 270 (= offsetLeft колонки среды):
+    // ветку «курсор виден — не трогать» не держит ни один тест, если ничего
+    // не менять якорь и без изменений всё равно ставит ту же 270 — мутация
+    // `if (n < 3 && cursorCol)` (без `!cursorVisible`) прошла бы зелёной.
+    // Колонка среды при 265 стоит на [89, 224], целиком видна (часы до 84,
+    // видимая часть порта до 229) — и отличима от 270, которую поставил бы
+    // якорь, сработай он здесь по ошибке.
     const { port, box } = mount(1.5, 440)
     box.client = 229
-    box.scrollLeft = 270 // 2 × 135 — колонка среды стоит вплотную к часам
+    box.scrollLeft = 265
     fire()
-    expect(port.scrollLeft).toBe(270)
+    expect(port.scrollLeft).toBe(265)
+  })
+
+  it('край часов, не граница дня: курсор наполовину под часами — якорь всё равно срабатывает', () => {
+    // Шкала 1: без этого случая все scrollLeft в файле кратны дню (90), и
+    // левую границу «видимости» условие А могло бы мерить от чего угодно —
+    // ни один существующий случай это не различает (мутация hoursRight →
+    // port.left проходила бы зелёной). Здесь scrollLeft = 210 не кратен 90:
+    // колонка среды [26, 116] торчит из-под часов (их правый край — 56)
+    // ровно наполовину, видна не целиком; чт [116,206] и пт [206,296] видны
+    // целиком в порте до 300 — n = 2.
+    const { port, box } = mount(1, 440)
+    box.client = 300
+    box.scrollLeft = 210
+    fire()
+    expect(port.scrollLeft).toBe(180) // 2 × 90 — вернулся на среду
   })
 
   it('3. n ≥ 3 и курсор не виден — scrollLeft не меняется (рука листает свободно)', () => {
@@ -631,5 +659,119 @@ describe('EventCalendar — якорь недели: условие А, «мен
 
     rerender(<EventCalendar events={WEEK} view="week" date="2026-09-04" calendars={CALENDARS} />)
     expect(port.scrollLeft).toBe(360) // 4 × 90 — эффект зависит от `date`, применился сразу на новой
+  })
+
+  it('наблюдатель следит и за треком колонок (colsRef), не только за портом', () => {
+    // Ширина `.ds-eventcal__cols` меняется вместе с треками дней, когда
+    // `events` раздвигает плотный день, а ширина ПОРТА при этом не меняется
+    // вовсе — наблюдатель только на порте такую смену не увидит, и условие А
+    // не пересчитается. RO этого блока (`beforeEach`) не различает цели
+    // `observe()`, поэтому здесь своя, точечная — с записью узлов.
+    const observed: Element[] = []
+    class RO {
+      constructor(private cb: () => void) {}
+      observe(el: Element) { observed.push(el); fire = () => act(() => this.cb()) }
+      unobserve() {}
+      disconnect() { fire = () => {} }
+    }
+    vi.stubGlobal('ResizeObserver', RO)
+
+    const { port, box, cols } = mount(1.5, 440)
+    const colsEl = cols[0].parentElement as HTMLElement
+    expect(colsEl.classList.contains('ds-eventcal__cols')).toBe(true)
+    expect(observed).toContain(port)
+    expect(observed).toContain(colsEl)
+
+    // И колбэк, привязанный к обоим узлам, — тот же `apply()`, что и на
+    // порте: срабатывание пересчитывает условие А по-настоящему, а не просто
+    // регистрирует наблюдение вхолостую.
+    box.scrollLeft = 500
+    fire()
+    expect(port.scrollLeft).toBe(270)
+  })
+})
+
+describe('EventCalendar — якорь: настоящий монтаж, геометрия ДО render (JIG-9, п.3 ревью)', () => {
+  // Блок выше (`mount()`) ставит моки геометрии уже ПОСЛЕ рендера, поэтому
+  // первый `apply()` внутри эффекта монтажа (тот, что идёт ДО
+  // `ro.observe(...)`, ещё без всякого `fire()`) видит нулевой jsdom-layout
+  // и ничего не делает — эта ветка не проверена ни одним тестом выше. Здесь
+  // геометрия стоит на ПРОТОТИПЕ элементов и существует уже к моменту, когда
+  // React создаёт узлы, — значит и в момент первого `apply()`, до всякой
+  // ручной подмены на инстансе.
+  const DAY_INDEX: Record<string, number> = {
+    '2026-08-31': 0, '2026-09-01': 1, '2026-09-02': 2, '2026-09-03': 3,
+    '2026-09-04': 4, '2026-09-05': 5, '2026-09-06': 6,
+  }
+  let rectSpy: ReturnType<typeof vi.spyOn> | undefined
+  let offsetLeftDesc: PropertyDescriptor | undefined
+  let clientWidthDesc: PropertyDescriptor | undefined
+  let scrollWidthDesc: PropertyDescriptor | undefined
+
+  afterEach(() => {
+    rectSpy?.mockRestore()
+    if (offsetLeftDesc) Object.defineProperty(HTMLElement.prototype, 'offsetLeft', offsetLeftDesc)
+    if (clientWidthDesc) Object.defineProperty(Element.prototype, 'clientWidth', clientWidthDesc)
+    if (scrollWidthDesc) Object.defineProperty(Element.prototype, 'scrollWidth', scrollWidthDesc)
+  })
+
+  /** ResizeObserver в этом блоке НЕ стабится нарочно: jsdom его не даёт, и
+   * эффект возвращается сразу после первого `apply()` (см. `if (typeof
+   * ResizeObserver === 'undefined') return` в EventCalendar.tsx) — то есть
+   * тест смотрит РОВНО на прямой вызов на монтаже, без единого `fire()`. */
+  const stubGeometry = (scale: number, frame: number) => {
+    const day = dayW(scale)
+    const gutter = gutterW(scale)
+    const client = clientAt(frame)
+    rectSpy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const el = this as HTMLElement
+      if (el.classList?.contains('ds-eventcal__hours')) return { left: 0, right: gutter } as DOMRect
+      if (el.classList?.contains('ds-eventcal__grid')) return { left: 0, right: client } as DOMRect
+      if (el.classList?.contains('ds-eventcal__col')) {
+        const i = DAY_INDEX[el.dataset.day ?? ''] ?? 0
+        const left = gutter + i * day
+        return { left, right: left + day } as DOMRect
+      }
+      return { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 } as DOMRect
+    })
+    offsetLeftDesc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetLeft')
+    Object.defineProperty(HTMLElement.prototype, 'offsetLeft', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.classList.contains('ds-eventcal__col') ? (DAY_INDEX[this.dataset.day ?? ''] ?? 0) * day : 0
+      },
+    })
+    clientWidthDesc = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth')
+    Object.defineProperty(Element.prototype, 'clientWidth', {
+      configurable: true,
+      get(this: Element) { return this.classList.contains('ds-eventcal__grid') ? client : 0 },
+    })
+    scrollWidthDesc = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollWidth')
+    Object.defineProperty(Element.prototype, 'scrollWidth', {
+      configurable: true,
+      get(this: Element) { return this.classList.contains('ds-eventcal__grid') ? gutter + 7 * day : 0 },
+    })
+  }
+
+  it('шкала 1, кадр 440: курсор виден с первого apply() — прокрутка остаётся нулевой', () => {
+    // Гаттер 56, день 90: пн/вт/ср целиком видны уже на scrollLeft=0 (n=3),
+    // курсор (ср) в их числе — трогать нечего.
+    stubGeometry(1, 440)
+    const { container } = render(
+      <EventCalendar events={WEEK} view="week" date="2026-09-02" calendars={CALENDARS} />,
+    )
+    const port = container.querySelector('.ds-eventcal__grid') as HTMLElement
+    expect(port.scrollLeft).toBe(0)
+  })
+
+  it('шкала 1.5, кадр 440: курсор скрыт — первый apply() ставит его сразу за часы', () => {
+    // Гаттер 84, день 135: на scrollLeft=0 целиком виден только понедельник
+    // (n=1), курсор (ср, 2×135=270 от начала колонок) скрыт целиком.
+    stubGeometry(1.5, 440)
+    const { container } = render(
+      <EventCalendar events={WEEK} view="week" date="2026-09-02" calendars={CALENDARS} />,
+    )
+    const port = container.querySelector('.ds-eventcal__grid') as HTMLElement
+    expect(port.scrollLeft).toBe(270)
   })
 })
