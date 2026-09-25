@@ -90,6 +90,8 @@ describe('Down — два вида различимы', () => {
           return 'patch'
         case 'ask-kinds':
           return 'ask-kinds'
+        case 'scroll-to':
+          return 'scroll-to'
         default: {
           const exhaustive: never = m
           return exhaustive
@@ -99,5 +101,6 @@ describe('Down — два вида различимы', () => {
 
     expect(describeDown({ type: 'patch' })).toBe('patch')
     expect(describeDown({ type: 'ask-kinds' })).toBe('ask-kinds')
+    expect(describeDown({ type: 'scroll-to', x: null, y: null })).toBe('scroll-to')
   })
 })

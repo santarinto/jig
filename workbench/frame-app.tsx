@@ -33,7 +33,7 @@ import { applyFrameEnv } from './frame-scale.js'
 import { applyPatch } from './frame-patch.js'
 import { makeMirror } from './mirror-url.js'
 import { fixtureKinds, loadFixture } from './registry.js'
-import { resolveCase } from './resolve-case.js'
+import { caseOf, resolveCase } from './resolve-case.js'
 import { FrameBoundary } from './frame-boundary.js'
 import {
   pack,
@@ -49,7 +49,8 @@ import type { DsTextOverrides } from '../src/dictionary/index.js'
 import { metaOf } from './fixture-meta.js'
 import { reportSize } from './frame-size.js'
 import { fillsOf, fitsSlot, parseFill } from './slot-fill.js'
-import { bindJigFrame, type FrameCtx } from './jig.js'
+import { bindJigFrame, settle, type FrameCtx } from './jig.js'
+import { applyScroll, findPort, portCopies, watchScroll, PORT_FIND_MS } from './port-scroll.js'
 import { sameAsBefore, toneLabel, isTransparent, effectiveTone } from './state-tones.js'
 import { aimChainOf, aimTargetOf, describeNode, labelShiftOf } from './aim.js'
 import { runAxe } from './axe-layer.js'
@@ -435,11 +436,20 @@ export function Frame() {
   // про случай/набор/крутилки ТЕКУЩЕГО кадра, а `jig.ts` живёт вне дерева
   // React и не может прочитать `fx`/`state` иначе, чем через эту ссылку.
   // `ref`, не состояние: `env()` вызывается синхронно из чужого кода в любой
-  // момент, не только во время рендера. JIG-42 возьмёт тот же мост под
-  // `Case.nodes` текущего случая.
+  // момент, не только во время рендера. Тот же мост питает `jig.node`/
+  // `jig.nodes` (JIG-42) через `Case.nodes` текущего случая.
   const ctxRef = useRef<FrameCtx>({ fx, state })
   ctxRef.current = { fx, state }
   useEffect(() => bindJigFrame(() => ctxRef.current), [])
+
+  // Просьба о прокрутке порта (JIG-42): `Down 'scroll-to'` копится сюда, а
+  // не применяется прямо в обработчике сообщения — эффект прокрутки ниже
+  // обязан сперва дождаться готовности документа (`settle`) и узла роли
+  // `port`, иначе просьба, пришедшая ДО них, была бы потеряна. `scrollAsk`
+  // будит эффект на КАЖДУЮ просьбу, даже повторную с теми же числами
+  // (`scrollWant.current` меняется мимо React).
+  const scrollWant = useRef<{ x: number | null; y: number | null } | null>(null)
+  const [scrollAsk, setScrollAsk] = useState(0)
 
   // Различает ДВА диагноза за одним `fx === null`: имени нет в реестре вовсе
   // (`.fixture.tsx` ещё не написан — это НЕ ошибка) и модуль ЕСТЬ, но падает
@@ -628,6 +638,13 @@ export function Frame() {
         // санитар — shell-kinds.test.tsx («карта не зовёт loadFixture»).
         const msg: Up = { type: 'kinds', list: fixtureKinds() }
         window.parent.postMessage(pack(state.sid, msg), window.location.origin)
+      }
+      if (body.type === 'scroll-to') {
+        // Одноразовая просьба (JIG-42, protocol.ts): будит эффект прокрутки
+        // ниже, который применит её сам, дождавшись готовности и узла роли
+        // `port`.
+        scrollWant.current = { x: body.x, y: body.y }
+        setScrollAsk((n) => n + 1)
       }
     }
     window.addEventListener('message', onMessage)
@@ -1386,6 +1403,66 @@ export function Frame() {
     // пересоздания наблюдатель остался бы висеть на снятом со страницы узле,
     // а «фактическое» в тулбаре — на числе от прошлого вида.
   }, [fx, state.sid, state.mode])
+
+  /**
+   * ПРОКРУТКА ПОРТА (JIG-42): держатель ставит `sx`/`sy` сюда, кадр печатает
+   * живую позицию — тот же уговор, что у `size` ВЫШЕ (кадр меряет, оболочка
+   * печатает; см. `protocol.ts`, `Up 'scroll'`).
+   *
+   * ПОЧЕМУ ЖДЁМ `settle` ПЕРЕД ПРИМЕНЕНИЕМ ПРОСЬБЫ. Якорь компонента
+   * (например, `EventCalendar` «условие А», `EventCalendar.tsx:744-781`)
+   * заводит СВОЙ наблюдатель раньше и отрабатывает раньше этого эффекта; не
+   * подождав, `scroll-to` встал бы, а следующий тик якоря его тут же
+   * переписал. Предел, а не гарантия: компонент ВПРАВЕ забрать прокрутку
+   * себе и ПОСЛЕ, на дальнейшем сужении — тулбар покажет правду, а не
+   * молчаливое несовпадение.
+   *
+   * `scroll-to` ПРИМЕНЯЕТСЯ ОДИН РАЗ на документ: смена вида доезжает патчем,
+   * а патч этот эффект не перезапускает (в зависимостях его нет) и повторно
+   * не отдёргивает прокрутку к значению просьбы.
+   */
+  useEffect(() => {
+    if (!fx) return
+    const send = (m: Up): void => window.parent.postMessage(pack(state.sid, m), window.location.origin)
+    if (state.mode === 'canvas') {
+      send({ type: 'scroll', port: null, why: 'вид canvas' })
+      return
+    }
+    const sel = caseOf(fx, state.caseId)?.nodes?.port ?? null
+    if (!sel) {
+      send({ type: 'scroll', port: null, why: 'у случая нет роли port' })
+      return
+    }
+    let alive = true
+    let stop: (() => void) | null = null
+    void (async () => {
+      const el = await findPort(document, sel, PORT_FIND_MS)
+      if (!alive) return
+      if (!el) {
+        send({ type: 'scroll', port: null, why: `роль port не нашла узел за ${PORT_FIND_MS} мс` })
+        return
+      }
+      const want = scrollWant.current
+      let applied = false
+      if (want) {
+        await settle(document, 3000)
+        if (!alive) return
+        for (const c of portCopies(document, sel)) applyScroll(c, want)
+        // Только в живом прогоне: `StrictMode` гоняет эффект дважды, и второй
+        // проход не обязан повторно применять уже применённую просьбу.
+        scrollWant.current = null
+        applied = true
+      }
+      stop = watchScroll(el, (s) => {
+        send({ type: 'scroll', port: s, ...(applied ? { applied: true as const } : {}) })
+        applied = false
+      })
+    })()
+    return () => {
+      alive = false
+      stop?.()
+    }
+  }, [fx, state.caseId, state.mode, state.sid, scrollAsk])
 
   // ОДИНОЧНЫЕ ВИДЫ смотрят на `state.c`; канвас — нет. Его содержимое задано
   // списком мест (`canvas-plan.ts`), и ранние возвраты по одиночной фикстуре
