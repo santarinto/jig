@@ -8,6 +8,8 @@ import {
   Viewing,
   contrastRatio,
   deltaE,
+  hueDeg,
+  oklchL,
   simulate,
   type Vision as VisionName,
 } from './colour-science.js'
@@ -44,7 +46,11 @@ import {
  * по тем же четырём зрениям). 5.5 стоит между худшим и лучшим из них: ниже —
  * пускали бы то, что хуже общепризнанно рабочего минимума; выше — гейт краснел бы
  * на Tol bright, а объявлять дефектной палитру, которой пользуются годами, значит
- * проверять свой вкус. Нынешняя палитра даёт 6.48, то есть запас ~1.0.
+ * проверять свой вкус. Палитра JIG-12 даёт 5.72 (chart-5/chart-8, tritan, тёмная
+ * тема) — запас над порогом ~0.22, а не ~1.0, как было у палитры DS-122 (6.48).
+ * Запас куплен условиями, которых у DS-122 не было: контраст к поверхности 3.5,
+ * один тон в обеих темах, узкая полоса светлоты, закреплённая бирюза chart-1 и
+ * обязательные зелёный и красный. Поиск без них нашёл бы больше, но не то.
  */
 
 const css = readFileSync(resolve(__dirname, 'tokens.css'), 'utf8')
@@ -55,8 +61,20 @@ const MIN_PAIR_DE = 5.5
 /** Худшая пара у палитр-эталонов — источник порога, а не украшение комментария. */
 const BENCHMARKS = { 'Tol bright': 5.2, 'Tol vibrant': 5.6, 'Okabe-Ito': 6.41, 'Tol muted': 6.67 }
 
-/** WCAG 1.4.11: линия и заливка серии — графические объекты, несущие смысл. */
-const MIN_SURFACE_CONTRAST = 3
+/**
+ * WCAG 1.4.11: линия и заливка серии — графические объекты, несущие смысл.
+ * Было 3.0 (сам порог 1.4.11); поднято до 3.5 запросом потребителя
+ * (JIG-12/SLA-627): метка на поверхности читается, а 3.0 пропускал пару с
+ * фактическим контрастом 3.03 — визуально почти сливающуюся с фоном.
+ */
+const MIN_SURFACE_CONTRAST = 3.5
+
+/** JIG-12: сдвиг тона CAM16 одного токена между темами — «один токен, один тон». */
+const MAX_HUE_SHIFT_DEG = 10
+
+/** JIG-12: закон «цвет кодирует категорию, никогда величину» — разброс
+ *  светлоты внутри категориальной палитры читается как порядок. */
+const MAX_L_SPREAD = 0.15
 
 /* ------------------------------------------------------------------ цвет
    Колориметрия УЕХАЛА В МОДУЛЬ `colour-science.ts` (DS-181).
@@ -269,12 +287,12 @@ describe('chart series palette', () => {
         expect(bad, bad.join('\n')).toEqual([])
       })
 
-      it('каждый цвет даёт >= 3:1 к поверхности своей темы', () => {
+      it(`каждый цвет даёт >= ${MIN_SURFACE_CONTRAST}:1 к поверхности своей темы`, () => {
         const surface = parseSurface(block)
         const weak = colors
           .map((c, i) => ({ i: i + 1, c, ratio: contrastRatio(c, surface) }))
           .filter((x) => x.ratio < MIN_SURFACE_CONTRAST)
-          .map((x) => `${theme.name} chart-${x.i}: ${x.ratio.toFixed(2)}:1 (${x.c} на ${surface})`)
+          .map((x) => `${theme.name} chart-${x.i}: ${x.ratio.toFixed(2)}:1 (${x.c} на ${surface}, порог ${MIN_SURFACE_CONTRAST})`)
         expect(weak, weak.join('\n')).toEqual([])
       })
 
@@ -285,6 +303,56 @@ describe('chart series palette', () => {
           `худшая пара chart-${w.a}/chart-${w.b} при ${w.vision}: ΔE' ${w.de.toFixed(2)}`,
         ).toBeGreaterThanOrEqual(BENCHMARKS['Tol bright'])
       })
+
+      /**
+       * JIG-12. Закон системы «цвет кодирует категорию, никогда величину»
+       * (CLAUDE.md, System law: colour and magnitude) — если светлота внутри
+       * категориальной палитры расползается, она сама начинает читаться как
+       * порядок, ровно то, что закон запрещает. OKLCH L, не CAM16 J': шкала
+       * не зависит от условий просмотра темы, поэтому её можно назвать одним
+       * числом на восемь токенов без пересчёта на каждую тему отдельно.
+       */
+      it(`ширина полосы светлоты OKLCH L внутри темы <= ${MAX_L_SPREAD}`, () => {
+        const ls = colors.map((c, i) => ({ i: i + 1, c, L: oklchL(c) }))
+        const spread = Math.max(...ls.map((x) => x.L)) - Math.min(...ls.map((x) => x.L))
+        const detail = ls.map((x) => `chart-${x.i} L=${x.L.toFixed(3)} (${x.c})`).join(', ')
+        expect(
+          spread,
+          `${theme.name}: разброс L ${spread.toFixed(3)} > ${MAX_L_SPREAD} — ${detail}`,
+        ).toBeLessThanOrEqual(MAX_L_SPREAD)
+      })
     })
   }
+
+  /**
+   * JIG-12. «Один токен — один тон»: тёмная тема пересчитывает светлоту и
+   * насыщенность под свой фон, но НЕ тон — иначе `--ds-chart-N` называет два
+   * разных цвета в двух темах, и потребитель, запомнивший «зелёный — chart-6»
+   * при свете, получает под тёмной темой другой оттенок. Прежняя палитра
+   * (DS-122) сдвигала chart-4 на ~20°, chart-6 на ~21° — оба выше порога.
+   * Угол берётся в СВОИХ условиях просмотра каждой темы (`VIEWING.light` для
+   * hex светлой, `VIEWING.dark` для hex тёмной) — той же парой условий, что
+   * весь остальной гейт меряет ΔE и контраст, а не общими для обеих.
+   */
+  it(`сдвиг тона CAM16 между темами <= ${MAX_HUE_SHIFT_DEG}° на каждом токене`, () => {
+    const light = parseChartColors(extractBlock(css, ':root'))
+    const dark = parseChartColors(extractBlock(css, '[data-theme="dark"]'))
+    const angDiff = (a: number, b: number): number => {
+      const d = Math.abs(a - b) % 360
+      return d > 180 ? 360 - d : d
+    }
+    const bad: string[] = []
+    for (let i = 0; i < CHART_SERIES_COUNT; i++) {
+      const hl = hueDeg(light[i], THEMES[0].vc)
+      const hd = hueDeg(dark[i], THEMES[1].vc)
+      const diff = angDiff(hl, hd)
+      if (diff > MAX_HUE_SHIFT_DEG) {
+        bad.push(
+          `chart-${i + 1}: ${diff.toFixed(2)}° (светлая ${hl.toFixed(1)}°, тёмная ${hd.toFixed(1)}°,` +
+            ` ${light[i]} vs ${dark[i]})`,
+        )
+      }
+    }
+    expect(bad, bad.join('\n')).toEqual([])
+  })
 })

@@ -166,14 +166,14 @@ describe('ToggleGroup multiple', () => {
 describe('ToggleGroup variant=swatch', () => {
   const colours: SwatchItem[] = [
     { id: 'teal', label: 'Бирюзовый', swatch: 'var(--ds-chart-1)' },
-    { id: 'olive', label: 'Оливковый', swatch: 'var(--ds-chart-2)' },
+    { id: 'ochre', label: 'Охра', swatch: 'var(--ds-chart-2)' },
     { id: 'pink', label: 'Малиновый', swatch: 'var(--ds-chart-3)' },
   ]
 
   it('плашка имеет доступное имя, и это НЕ цвет', () => {
     render(<ToggleGroup mode="single" variant="swatch" value="teal" onChange={() => {}} items={colours} aria-label="Цвет метки" />)
     // Имя берётся из visually-hidden label: кнопка называется словом.
-    expect(screen.getByRole('radio', { name: 'Оливковый' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Охра' })).toBeInTheDocument()
     // И ни одна кнопка не названа значением цвета.
     for (const b of screen.getAllByRole('radio')) {
       expect(b.textContent).not.toMatch(/#|var\(/)
