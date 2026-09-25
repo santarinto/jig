@@ -83,7 +83,7 @@ else {
     `case-matrix: не понял аргументы «${args.join(' ')}». `
     + `Строки: ${[...ROWS.keys()].join(', ')}; без аргумента — все, коротким выводом; `
     + `добавь --all для полного.\n`
-    + 'Usage: npm run matrix [-- --all] [-- --row <ключ>]',
+    + 'Usage: npm run matrix [-- [--all] [--row <ключ>]]',
   )
   process.exit(2)
 }
