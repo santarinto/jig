@@ -8,10 +8,13 @@
  * видна по построению — общая приёмка 40+42, лог задачи.
  */
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { makeFrameJig } from './jig.js'
+import { bindJigFrame, makeFrameJig } from './jig.js'
 import { FRAME_API } from './jig-api.js'
 import { normColour } from './probe.js'
+import { parseFrameUrl } from './frame-url.js'
 import { WIDTH_FLOOR } from '../scripts/width-surface.mjs'
+import { NODE_ROLES } from '../src/internal/fixture.js'
+import type { AnyFixture } from '../src/internal/fixture.js'
 
 type Box = [left: number, top: number, width: number, height: number]
 
@@ -409,6 +412,165 @@ describe('ready', () => {
   })
 })
 
+/**
+ * Роли узлов (JIG-42): `jig.node`/`jig.nodes` через `bindJigFrame` — тот же
+ * мост, что `env().params.fixture`. DOM — одна колонка недели EventCalendar
+ * (`#wed` с `data-day`, как в живом компоненте), плюс узел нулевой коробки
+ * (`.zero`) и три копии одного класса (`.dup`) для случая `mode=states`.
+ */
+describe('роли узлов', () => {
+  function nodesHtml(): string {
+    return `<div class="wbf-host" id="host">
+      <div class="ds-eventcal__grid" id="port" style="overflow-x: auto; overflow-y: auto">
+        <div class="ds-eventcal__hours" id="sticky" style="position: sticky; left: 0"></div>
+        <div class="ds-eventcal__col" id="wed" data-day="2026-09-02"></div>
+      </div>
+      <div class="zero" id="zero"></div>
+      <div class="dup" id="dup1"></div>
+      <div class="dup" id="dup2"></div>
+      <div class="dup" id="dup3"></div>
+    </div>`
+  }
+
+  const NODES_BOXES: Record<string, Box> = {
+    host: [0, 0, 440, 640],
+    port: [30, 30, 380, 400],
+    sticky: [30, 30, 60, 300],
+    wed: [256, 70, 90, 300],
+    dup2: [10, 10, 90, 300],
+    dup3: [10, 10, 90, 300],
+  }
+
+  const fx = {
+    name: 'EventCalendar',
+    group: 'g',
+    props: {},
+    controls: {},
+    cases: [
+      {
+        id: 'week',
+        title: 'Неделя',
+        nodes: {
+          port: '.ds-eventcal__grid',
+          sticky: '.ds-eventcal__hours',
+          cursor: '.ds-eventcal__col[data-day="2026-09-02"]',
+          'toggle-x': '.nope',
+          panel: '.zero',
+        },
+      },
+      { id: 'bare', title: 'Без ролей' },
+      { id: 'dup', title: 'Копии', nodes: { port: '.dup' } },
+      { id: 'bad', title: 'Битый', nodes: { port: '[[[' } },
+    ],
+  } as unknown as AnyFixture
+
+  let unbind: () => void = () => {}
+  afterEach(() => {
+    unbind()
+    unbind = () => {}
+  })
+
+  function bind(ctx: { fx: AnyFixture | null | undefined; search: string }): void {
+    unbind()
+    unbind = bindJigFrame(() => ({ fx: ctx.fx, state: parseFrameUrl(ctx.search) }))
+  }
+
+  it('node(роль) — узел селектора', () => {
+    mount(nodesHtml(), NODES_BOXES)
+    bind({ fx, search: '?c=EventCalendar&case=week' })
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    expect(jig.node('port')).toBe(document.getElementById('port'))
+    expect(jig.node('cursor')).toBe(document.getElementById('wed'))
+  })
+
+  it('nodes() — карта без селекторов', () => {
+    mount(nodesHtml(), NODES_BOXES)
+    bind({ fx, search: '?c=EventCalendar&case=week' })
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    const n = jig.nodes()
+    expect(Object.keys(n).sort()).toEqual(['cursor', 'panel', 'port', 'sticky', 'toggle-x'].sort())
+    expect(n.port).toEqual({ found: true, matched: 1, path: 'div.ds-eventcal__grid', box: { l: 30, t: 30, r: 410, b: 430 } })
+    const json = JSON.stringify(n)
+    expect(json).not.toContain('=')
+    expect(json).not.toContain('data-day')
+  })
+
+  it('роль в пустоту — бросок с именем роли, без селектора', () => {
+    mount(nodesHtml(), NODES_BOXES)
+    bind({ fx, search: '?c=EventCalendar&case=week' })
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    expect(() => jig.node('toggle-x')).toThrow(/роль «toggle-x» \(EventCalendar\/week\) указывает в пустоту/)
+    let msg = ''
+    try {
+      jig.node('toggle-x')
+    } catch (e) {
+      msg = String((e as Error).message)
+    }
+    expect(msg).not.toContain('=')
+    expect(jig.nodes()['toggle-x']).toEqual({ found: false, matched: 0, path: null, box: null })
+  })
+
+  it('нулевая коробка — не узел', () => {
+    mount(nodesHtml(), NODES_BOXES)
+    bind({ fx, search: '?c=EventCalendar&case=week' })
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    expect(jig.nodes().panel).toEqual({ found: false, matched: 1, path: null, box: null })
+    expect(() => jig.node('panel')).toThrow(/совпало 1, у всех коробка 0×0/)
+  })
+
+  it('неизвестная роль — бросок со списком', () => {
+    mount(nodesHtml(), NODES_BOXES)
+    bind({ fx, search: '?c=EventCalendar&case=week' })
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    expect(() => jig.node('prot')).toThrow('нет роли «prot»; есть: port, sticky, cursor, toggle-x, panel')
+  })
+
+  it('mode=states: первая копия с коробкой', () => {
+    mount(nodesHtml(), NODES_BOXES)
+    bind({ fx, search: '?c=EventCalendar&case=dup&mode=states' })
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    expect(jig.node('port')).toBe(document.getElementById('dup2'))
+    expect(jig.nodes().port!.matched).toBe(3)
+  })
+
+  it('случай без ролей — пустая карта', () => {
+    mount(nodesHtml(), NODES_BOXES)
+    bind({ fx, search: '?c=EventCalendar&case=bare' })
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    expect(jig.nodes()).toEqual({})
+  })
+
+  it('пустой case — первый случай', () => {
+    mount(nodesHtml(), NODES_BOXES)
+    bind({ fx, search: '?c=EventCalendar' })
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    expect(Object.keys(jig.nodes()).sort()).toEqual(['cursor', 'panel', 'port', 'sticky', 'toggle-x'].sort())
+  })
+
+  it('селектор не разобрался', () => {
+    mount(nodesHtml(), NODES_BOXES)
+    bind({ fx, search: '?c=EventCalendar&case=bad' })
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    expect(jig.nodes().port!.error).toBeDefined()
+    expect(jig.nodes().port!.found).toBe(false)
+    expect(() => jig.node('port')).toThrow(/селектор фикстуры не разобрался/)
+  })
+
+  it('кадр грузится / фикстуры нет / canvas', () => {
+    mount(nodesHtml(), NODES_BOXES)
+    const jig = makeFrameJig(window, { loadSearch: '' })
+
+    bind({ fx: undefined, search: '?c=EventCalendar&case=week' })
+    expect(() => jig.node('port')).toThrow('кадр ещё грузится')
+
+    bind({ fx: null, search: '?c=EventCalendar&case=week' })
+    expect(() => jig.node('port')).toThrow('фикстуры EventCalendar нет')
+
+    bind({ fx, search: '?c=EventCalendar&case=week&mode=canvas' })
+    expect(() => jig.node('port')).toThrow('вид canvas')
+  })
+})
+
 describe('дрейф', () => {
   it('FRAME_API — ровно методы кадра', () => {
     document.body.innerHTML = '<div class="wbf-host" id="host"></div>'
@@ -421,6 +583,12 @@ describe('дрейф', () => {
     document.body.innerHTML = '<div class="wbf-host" id="host"></div>'
     const jig = makeFrameJig(window, { loadSearch: '' })
     for (const name of FRAME_API) expect(jig.help).toContain(name)
+  })
+
+  it('справка называет каждую роль словаря', () => {
+    document.body.innerHTML = '<div class="wbf-host" id="host"></div>'
+    const jig = makeFrameJig(window, { loadSearch: '' })
+    for (const role of Object.keys(NODE_ROLES)) expect(jig.help).toContain(role)
   })
 
   it('norm — ТА ЖЕ функция, что у развёртки (М7 держит sweep.ts)', () => {

@@ -8,7 +8,7 @@
  * `clearScratch()` — свои, оболочечные.
  */
 import { auditAddress } from './frame-url.js'
-import { FRAME_API, SCRATCH_ID, type Env, type FrameJig, type Ready, type ShellJig } from './jig-api.js'
+import { FRAME_API, SCRATCH_ID, type Env, type FrameJig, type NodeInfo, type Ready, type ShellJig } from './jig-api.js'
 
 const sleep = (win: Window, ms: number): Promise<void> => new Promise((res) => win.setTimeout(res, ms))
 
@@ -17,25 +17,25 @@ export function makeShellJig(win: Window, opts: { loadSearch: string }): ShellJi
    * `iframe.wb__frame` по индексу (умолчание 0) или переданный элемент.
    * Нет кадров вовсе, без аргумента при кадрах > 1 (сетка — неоднозначно,
    * какой из них «главный»), индекс вне диапазона — три разных отказа
-   * словами; окно кадра без `jig` — «кадр ещё грузится».
+   * словами.
    */
-  function frame(which?: number | HTMLIFrameElement): FrameJig {
+  function frameEl(which?: number | HTMLIFrameElement): HTMLIFrameElement {
+    if (which instanceof HTMLIFrameElement) return which
     const doc = win.document
-    let el: HTMLIFrameElement
-    if (which instanceof HTMLIFrameElement) {
-      el = which
-    } else {
-      const all = [...doc.querySelectorAll<HTMLIFrameElement>('iframe.wb__frame')]
-      if (all.length === 0) throw new Error('jig: нет iframe.wb__frame — это не оболочка верстака')
-      if (which === undefined) {
-        if (all.length > 1) throw new Error(`jig: в сетке ${all.length} кадров — jig.frame(i), i от 0 до ${all.length - 1}`)
-        el = all[0]!
-      } else {
-        const found = all[which]
-        if (!found) throw new Error(`jig: в сетке ${all.length} кадров — jig.frame(i), i от 0 до ${all.length - 1}`)
-        el = found
-      }
+    const all = [...doc.querySelectorAll<HTMLIFrameElement>('iframe.wb__frame')]
+    if (all.length === 0) throw new Error('jig: нет iframe.wb__frame — это не оболочка верстака')
+    if (which === undefined) {
+      if (all.length > 1) throw new Error(`jig: в сетке ${all.length} кадров — jig.frame(i), i от 0 до ${all.length - 1}`)
+      return all[0]!
     }
+    const found = all[which]
+    if (!found) throw new Error(`jig: в сетке ${all.length} кадров — jig.frame(i), i от 0 до ${all.length - 1}`)
+    return found
+  }
+
+  /** Окно кадра без `jig` — «кадр ещё грузится». */
+  function frame(which?: number | HTMLIFrameElement): FrameJig {
+    const el = frameEl(which)
     const frameWin = el.contentWindow as (Window & { jig?: FrameJig }) | null
     const frameJig = frameWin?.jig
     if (!frameJig) throw new Error('jig: кадр ещё грузится — await jig.ready()')
@@ -70,10 +70,35 @@ export function makeShellJig(win: Window, opts: { loadSearch: string }): ShellJi
     return withShellAddress(r) as Ready
   }
 
+  /**
+   * `nodes()` оболочки несёт ЕЩЁ И `page` — коробку узла во вьюпорте
+   * ОБОЛОЧКИ, а не только кадра (решение 1.3 спецификации): область для
+   * зума браузерному агенту без снимка-ориентира. Смещение — прямоугольник
+   * `<iframe>` плюс его собственная рамка (`clientLeft`/`clientTop`), r2 тем
+   * же округлением, что и остальные коробки `jig`.
+   */
+  function nodes(): Record<string, NodeInfo> {
+    const base = frame().nodes()
+    const f = frameEl()
+    const r = f.getBoundingClientRect()
+    const ox = r.left + f.clientLeft
+    const oy = r.top + f.clientTop
+    const r2 = (n: number): number => Math.round(n * 100) / 100
+    const out: Record<string, NodeInfo> = {}
+    for (const [role, info] of Object.entries(base)) {
+      out[role] = {
+        ...info,
+        page: info.box ? { l: r2(info.box.l + ox), t: r2(info.box.t + oy), r: r2(info.box.r + ox), b: r2(info.box.b + oy) } : null,
+      }
+    }
+    return out
+  }
+
   const delegated = {} as Record<string, unknown>
   for (const name of FRAME_API) {
     if (name === 'env') delegated[name] = env
     else if (name === 'ready') delegated[name] = ready
+    else if (name === 'nodes') delegated[name] = nodes
     else delegated[name] = (...args: unknown[]) => (frame() as unknown as Record<string, (...a: unknown[]) => unknown>)[name]!(...args)
   }
 

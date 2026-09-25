@@ -48,7 +48,7 @@ export function propOf(fx: AnyFixture, k: string, raw: string): PropVerdict {
 }
 
 /** Случай, который применяет резолвер: названный — если есть, иначе первый. */
-function caseOf(fx: AnyFixture, id: string) {
+export function caseOf(fx: AnyFixture, id: string) {
   return fx.cases.find((x) => x.id === id) ?? fx.cases[0]
 }
 

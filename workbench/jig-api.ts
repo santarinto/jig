@@ -21,8 +21,8 @@ import type { CaseAudit } from './resolve-case.js'
 
 export const SCRATCH_ID = 'jig-scratch'
 
-/** Методы кадра, которые оболочка делегирует главному кадру. JIG-42 допишет `node`/`nodes`. */
-export const FRAME_API = ['ready', 'env', 'box', 'visible', 'norm'] as const
+/** Методы кадра, которые оболочка делегирует главному кадру. */
+export const FRAME_API = ['ready', 'env', 'box', 'visible', 'norm', 'node', 'nodes'] as const
 
 export type Target = string | Element
 
@@ -84,6 +84,25 @@ export interface Visible {
   matched: number
 }
 
+/**
+ * Ответ по одной роли узла (JIG-42). Без селектора: он несёт `=`, и текст
+ * резался бы у `javascript_tool` (бриф §6).
+ */
+export interface NodeInfo {
+  /** Есть узел с ненулевой коробкой — то, что отдаст `node()`. */
+  found: boolean
+  /** Сколько узлов совпало всего (mode=states — копии случая, обычно несколько). */
+  matched: number
+  /** `readablePath` найденного узла от `.wbf-host`. */
+  path: string | null
+  /** Вьюпорт кадра, r2. */
+  box: { l: number; t: number; r: number; b: number } | null
+  /** Вьюпорт ОБОЛОЧКИ — только в ответе `ShellJig.nodes()`. */
+  page?: { l: number; t: number; r: number; b: number } | null
+  /** Селектор фикстуры не разобрался — без текста самого селектора. */
+  error?: string
+}
+
 export interface FrameJig {
   /** Список методов и форм ответа — агент без файлов, прочитать некому кроме него самого. */
   help: string
@@ -92,6 +111,10 @@ export interface FrameJig {
   box(t: Target): Box
   visible(t: Target): Visible
   norm(css: string): string
+  /** Узел роли текущего случая; бросает с именем роли, без селектора и без `=`. */
+  node(role: string): HTMLElement
+  /** Карта ролей случая → `NodeInfo`, без селекторов. Случай без ролей — `{}`. */
+  nodes(): Record<string, NodeInfo>
 }
 
 export interface ShellJig extends FrameJig {

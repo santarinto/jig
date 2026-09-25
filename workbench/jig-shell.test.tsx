@@ -6,7 +6,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react'
 import { Shell } from './shell-app.js'
 import { makeShellJig } from './jig-shell.js'
-import { FRAME_API, SCRATCH_ID, type Env, type FrameJig } from './jig-api.js'
+import { FRAME_API, SCRATCH_ID, type Env, type FrameJig, type NodeInfo } from './jig-api.js'
 
 afterEach(() => {
   cleanup()
@@ -15,7 +15,7 @@ afterEach(() => {
 })
 
 /** Подставной `FrameJig`: методы измерения не зовутся здесь, только делегирование. */
-function fakeFrameJig(envOverride: Partial<Env> = {}): FrameJig {
+function fakeFrameJig(envOverride: Partial<Env> = {}, nodesOverride: Record<string, NodeInfo> = {}): FrameJig {
   const baseEnv: Env = {
     theme: 'light',
     scale: '1',
@@ -44,6 +44,8 @@ function fakeFrameJig(envOverride: Partial<Env> = {}): FrameJig {
       box: { l: 0, t: 0, r: 0, b: 0 }, seen: null, cutBy: [], matched: 1,
     })),
     norm: vi.fn((css: string) => css),
+    node: vi.fn(() => document.createElement('div')),
+    nodes: vi.fn(() => nodesOverride),
   }
 }
 
@@ -140,6 +142,30 @@ describe('jig-shell: ручной DOM (без Shell)', () => {
     makeFrame()
     const jig = makeShellJig(window, { loadSearch: '' })
     expect(FRAME_API.every((k) => typeof (jig as unknown as Record<string, unknown>)[k] === 'function')).toBe(true)
+  })
+
+  // `nodes()` оболочки (JIG-42) добавляет `page` — коробку во вьюпорте
+  // ОБОЛОЧКИ, а не только кадра: решение 1.3 спецификации, область для зума
+  // без снимка-ориентира.
+  it('nodes() оболочки несёт page во вьюпорте оболочки', () => {
+    const f = makeFrame()
+    const frameJig = fakeFrameJig({}, {
+      port: { found: true, matched: 1, path: 'div.x', box: { l: 30, t: 30, r: 410, b: 430 } },
+      panel: { found: false, matched: 0, path: null, box: null },
+    })
+    ;(f.contentWindow as Window & { jig?: FrameJig }).jig = frameJig
+    Object.defineProperty(f, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 260, top: 48, right: 700, bottom: 688, width: 440, height: 640, x: 260, y: 48, toJSON() { return {} } }),
+    })
+    Object.defineProperty(f, 'clientLeft', { configurable: true, value: 1 })
+    Object.defineProperty(f, 'clientTop', { configurable: true, value: 1 })
+
+    const jig = makeShellJig(window, { loadSearch: '' })
+    const n = jig.nodes()
+    expect(n.port!.box).toEqual({ l: 30, t: 30, r: 410, b: 430 })
+    expect(n.port!.page).toEqual({ l: 291, t: 79, r: 671, b: 479 })
+    expect(n.panel!.page).toBeNull()
   })
 })
 

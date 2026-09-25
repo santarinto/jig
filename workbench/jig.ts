@@ -17,8 +17,9 @@ import { docBarOf, roomOf } from './frame-size.js'
 import { MIN_WIDTH } from './frame-width.js'
 import { empty, stickyBox, stickySides, visiblePart, type Rect } from './gate-predicates.js'
 import { normColour, pick } from './probe.js'
-import { auditCase } from './resolve-case.js'
-import type { Box, Env, FrameJig, Ready, Target, Visible } from './jig-api.js'
+import { auditCase, caseOf } from './resolve-case.js'
+import type { Box, Env, FrameJig, NodeInfo, Ready, Target, Visible } from './jig-api.js'
+import { NODE_ROLES } from '../src/internal/fixture.js'
 import type { AnyFixture } from '../src/internal/fixture.js'
 
 /** Что `bindJigFrame` читает у `Frame`: фикстура текущего кадра и его состояние. */
@@ -36,7 +37,7 @@ export interface FrameCtx {
  */
 let ctxGetter: (() => FrameCtx) | null = null
 
-/** Привязка моста `Frame → jig` (JIG-42 возьмёт тот же мост под `Case.nodes`). Возвращает отвязку. */
+/** Привязка моста `Frame → jig`: тот же мост питает `node`/`nodes` (JIG-42) через `Case.nodes`. Возвращает отвязку. */
 export function bindJigFrame(get: () => FrameCtx): () => void {
   ctxGetter = get
   return () => {
@@ -69,12 +70,124 @@ function resolve(t: Target, doc: Document): { el: Element; doc: Document; matche
   return { el: t, doc: t.ownerDocument, matched: 1 }
 }
 
+/**
+ * Роли текущего случая. Бросает словами, а не отдаёт `null` (в отличие от
+ * `resolve` для селектора): «случая нет» и «случай без ролей» — РАЗНЫЕ
+ * отказы, и агент без файлов различает их только по тексту.
+ */
+function rolesOf(): { at: string; roles: Record<string, string>; doc: Document } {
+  const ctx = ctxGetter?.()
+  if (!ctx || ctx.fx === undefined) throw new Error('jig: кадр ещё грузится — await jig.ready()')
+  if (ctx.fx === null) throw new Error(`jig: фикстуры ${ctx.state.c} нет — ролей нет`)
+  if (ctx.state.mode === 'canvas') throw new Error('jig: вид canvas — у мест свои фикстуры, роли случая не определены')
+  const fx = ctx.fx
+  const k = caseOf(fx, ctx.state.caseId)
+  const at = `${fx.name}/${k?.id ?? '—'}`
+  const roles = (k?.nodes ?? {}) as Record<string, string>
+  // Глобальный `document`, не аргумент: один кадр — один документ — один
+  // модуль этого файла (докблок `ctxGetter` выше), `node`/`nodes` живут вне
+  // конкретного вызова `makeFrameJig` тем же доводом.
+  return { at, roles, doc: document }
+}
+
+/** Один селектор роли: узел (`pick`, первый с ненулевой коробкой) плюс сколько совпало всего. */
+function look(dc: Document, sel: string): { el: HTMLElement | null; matched: number; error?: string } {
+  try {
+    const matched = dc.querySelectorAll(sel).length
+    const el = pick(dc, sel)
+    return { el, matched }
+  } catch {
+    return { el: null, matched: 0, error: 'селектор фикстуры не разобрался' }
+  }
+}
+
+const boxOf = (el: Element): { l: number; t: number; r: number; b: number } => {
+  const r = rectOf(el)
+  return { l: r2(r.l), t: r2(r.t), r: r2(r.r), b: r2(r.b) }
+}
+
+function node(role: string): HTMLElement {
+  const { at, roles, doc: dc } = rolesOf()
+  const sel = roles[role]
+  if (sel === undefined) {
+    const keys = Object.keys(roles)
+    throw new Error(`jig: у случая ${at} нет роли «${role}»; есть: ${keys.join(', ') || 'ни одной'}`)
+  }
+  const { el, matched, error } = look(dc, sel)
+  if (error) throw new Error(`jig: роль «${role}» (${at}) — селектор фикстуры не разобрался`)
+  if (matched === 0) throw new Error(`jig: роль «${role}» (${at}) указывает в пустоту — ни одного узла`)
+  if (el === null) throw new Error(`jig: роль «${role}» (${at}) — совпало ${matched}, у всех коробка 0×0`)
+  return el
+}
+
+function nodes(): Record<string, NodeInfo> {
+  const { roles, doc: dc } = rolesOf()
+  const host = dc.querySelector('.wbf-host')
+  const out: Record<string, NodeInfo> = {}
+  for (const [role, sel] of Object.entries(roles)) {
+    const { el, matched, error } = look(dc, sel)
+    out[role] = {
+      found: !!el,
+      matched,
+      path: el ? readablePath(el, host) : null,
+      box: el ? boxOf(el) : null,
+      ...(error ? { error } : {}),
+    }
+  }
+  return out
+}
+
+/**
+ * Шаги 1-3 `ready()`, вынесены отдельно: `scroll-to` кадра (JIG-42,
+ * `frame-app.tsx`) обязан ждать той же готовности, а не своей копии условия
+ * «хост устоялся». Поведение и тесты `ready()` (JIG-40) без изменений.
+ */
+export async function settle(doc: Document, timeoutMs: number): Promise<{ live: boolean }> {
+  const win = doc.defaultView!
+
+  // 1) Хост устоялся: «нет .wbf-host» во время загрузки и «Фикстуры нет»
+  // после неё выглядят для `frameFacts` одинаково (`empty` — строка в обоих
+  // случаях), поэтому конец ожидания — появление `.wbf-empty`/`.wbf-error`
+  // ИЛИ хост с содержимым, а не сам факт «есть непустая строка».
+  const settled = (): boolean => frameFacts(doc).empty === null || !!doc.querySelector('.wbf-empty, .wbf-error')
+  const t0 = win.performance.now()
+  while (!settled() && win.performance.now() - t0 < timeoutMs) {
+    await sleep(win, 50)
+  }
+
+  // 2) Шрифты — гонка с таймером, не `requestAnimationFrame`.
+  await Promise.race([doc.fonts.ready, sleep(win, timeoutMs)])
+
+  // 3) Живость вкладки: первый вызов СВЕЖЕГО `ResizeObserver` на
+  // `documentElement`. Спящая вкладка его не доставляет — таймер решает
+  // за неё, а не голое ожидание, которое повесило бы прогон навсегда.
+  const live = await new Promise<boolean>((res) => {
+    let settled2 = false
+    const finish = (v: boolean): void => {
+      if (settled2) return
+      settled2 = true
+      win.clearTimeout(timer)
+      ro.disconnect()
+      res(v)
+    }
+    const ro = new ResizeObserver(() => finish(true))
+    ro.observe(doc.documentElement)
+    const timer = win.setTimeout(() => finish(false), Math.min(timeoutMs, 1000))
+  })
+
+  return { live }
+}
+
 const HELP = [
   "jig.ready({timeoutMs?}) → Promise<{live, fonts, ms, ...env()}> — хост устоялся, шрифты, живость вкладки",
   'jig.env() → {theme, scale, clientWidth, empty, innerWidth, innerHeight, dpr, docBar, container, floor, belowFloor, params}',
   'jig.box(target) → {width, height, clientWidth, clientHeight, bar, barX, scrollLeft, scrollMax, scrollTop, scrollTopMax, endX, endY, matched} — target: селектор или узел',
   'jig.visible(target) → {state, width, height, hiddenX, hiddenY, box, seen, cutBy, matched} — cutBy называет предков и липких соседей, срезавших коробку',
   "jig.norm(css) → 'rgba(r, g, b, a)' — тот же формат, что fg/bg развёртки",
+  "jig.node(роль) → HTMLElement — узел роли текущего случая; бросает словами (без селектора, без «=»), если роли нет, она указывает в пустоту или у всех совпадений коробка 0×0",
+  'jig.nodes() → Record<роль, {found, matched, path, box, error?}> — карта ролей случая, без селекторов; случай без ролей — {}',
+  'роли (Case.nodes): ' + Object.entries(NODE_ROLES).map(([k, v]) => `${k} — ${v}`).join('; '),
+  'уточнитель роли через дефис: toggle-date, sticky-top',
   'числа печатай рядом с innerWidth и dpr из ready()/env()',
 ].join('\n')
 
@@ -112,38 +225,11 @@ export function makeFrameJig(win: Window, opts: { loadSearch: string; floor?: nu
     const timeoutMs = o.timeoutMs ?? 3000
     const t0 = win.performance.now()
 
-    // 1) Хост устоялся: «нет .wbf-host» во время загрузки и «Фикстуры нет»
-    // после неё выглядят для `frameFacts` одинаково (`empty` — строка в обоих
-    // случаях), поэтому конец ожидания — появление `.wbf-empty`/`.wbf-error`
-    // ИЛИ хост с содержимым, а не сам факт «есть непустая строка».
-    const settled = (): boolean => frameFacts(doc).empty === null || !!doc.querySelector('.wbf-empty, .wbf-error')
-    while (!settled() && win.performance.now() - t0 < timeoutMs) {
-      await sleep(win, 50)
-    }
-
-    // 2) Шрифты — гонка с таймером, не `requestAnimationFrame`.
-    await Promise.race([doc.fonts.ready, sleep(win, timeoutMs)])
-
-    // 3) Живость вкладки: первый вызов СВЕЖЕГО `ResizeObserver` на
-    // `documentElement`. Спящая вкладка его не доставляет — таймер решает
-    // за неё, а не голое ожидание, которое повесило бы прогон навсегда.
-    //
-    // ПРЕДЕЛ: первый вызов наблюдателя не значит, что перерисовка React по
-    // чужим `ResizeObserver` уже закоммичена — для семи компонентов на
-    // JS-раскладке после `live: true` число снимать ВТОРЫМ вызовом.
-    const live = await new Promise<boolean>((res) => {
-      let settled2 = false
-      const finish = (v: boolean): void => {
-        if (settled2) return
-        settled2 = true
-        win.clearTimeout(timer)
-        ro.disconnect()
-        res(v)
-      }
-      const ro = new ResizeObserver(() => finish(true))
-      ro.observe(doc.documentElement)
-      const timer = win.setTimeout(() => finish(false), Math.min(timeoutMs, 1000))
-    })
+    // ПРЕДЕЛ: первый вызов наблюдателя (шаг 3 `settle`) не значит, что
+    // перерисовка React по чужим `ResizeObserver` уже закоммичена — для семи
+    // компонентов на JS-раскладке после `live: true` число снимать ВТОРЫМ
+    // вызовом.
+    const { live } = await settle(doc, timeoutMs)
 
     return { ...env(), live, fonts: doc.fonts.status, ms: Math.round(win.performance.now() - t0) }
   }
@@ -263,7 +349,7 @@ export function makeFrameJig(win: Window, opts: { loadSearch: string; floor?: nu
     }
   }
 
-  return { help: HELP, ready, env, box, visible, norm: normColour }
+  return { help: HELP, ready, env, box, visible, norm: normColour, node, nodes }
 }
 
 export function installFrameJig(win: Window = window): FrameJig {
